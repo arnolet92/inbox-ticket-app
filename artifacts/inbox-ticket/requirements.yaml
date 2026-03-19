@@ -1,0 +1,21 @@
+packages:
+  "recharts": "Admin dashboard charts"
+  "framer-motion": "Animations for luxury feel and page transitions"
+  "date-fns": "Date formatting and manipulation"
+  "qrcode.react": "QR code generation for digital tickets"
+  "clsx": "Class merging utility for Tailwind"
+  "tailwind-merge": "Tailwind class conflict resolution"
+  "lucide-react": "Beautiful consistent iconography"
+
+images:
+  - path: "artifacts/inbox-ticket/public/images/hero-bg.png"
+    description: "Luxury dark african geometric pattern background with subtle emerald green and gold accents, highly elegant, abstract and minimal"
+    aspect_ratio: "16:9"
+  - path: "artifacts/inbox-ticket/public/images/logo-icon.png"
+    description: "Minimalist elegant logo icon for Inbox Ticket, combining a modern ticket shape with subtle African tribal geometric lines, emerald green on transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - MGA (Ariary) used for all currency formatting
+  - Payment flows are fully simulated per requirements
