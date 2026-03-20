@@ -1,10 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Search, ArrowRight, Music, Ticket } from "lucide-react";
+import { Search, ArrowRight, Ticket } from "lucide-react";
 import { motion } from "framer-motion";
 import { PublicLayout } from "@/components/layout";
 import { Button, Input, Select } from "@/components/ui";
 import { EventCard } from "@/components/EventCard";
+import { QueueIllustration } from "@/components/QueueIllustration";
 import { useListEvents } from "@workspace/api-client-react";
 
 export default function Home() {
@@ -79,19 +80,16 @@ export default function Home() {
               </div>
             </motion.div>
             
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, delay: 0.2 }}
               className="hidden lg:block relative"
             >
-              {/* concert crowd people dark green lighting */}
-              <img 
-                src="https://pixabay.com/get/gd1c6d50156d204afc797c02e68976abe394c9d2fc35cddb369264a06bbcead68a94c20c264e71f9ce0263adac25a70f3a7cf3047c89f1bbb384d61bc9ca4a57b_1280.jpg" 
-                alt="Concert Experience" 
-                className="rounded-2xl shadow-2xl shadow-accent/20 object-cover h-[600px] w-full border border-border"
-              />
-              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />
+              <div className="rounded-3xl overflow-hidden border border-accent/15 shadow-2xl shadow-accent/10 bg-card/40 backdrop-blur-sm">
+                <QueueIllustration />
+              </div>
+              <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/5" />
             </motion.div>
           </div>
         </div>

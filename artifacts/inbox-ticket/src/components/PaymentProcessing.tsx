@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-const LETTERS = "INBOXTICKET".split("");
-
 const STEPS = [
   "Connexion sécurisée...",
   "Vérification du paiement...",
@@ -40,47 +38,62 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
       ? "MVola"
       : "Mastercard";
 
+  const methodIcon =
+    paymentMethod === "orange_money"
+      ? "OM"
+      : paymentMethod === "mvola"
+      ? "M"
+      : "💳";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
       style={{
         background:
-          "radial-gradient(ellipse at 50% 30%, hsl(145 48% 10% / 1) 0%, hsl(150 10% 4% / 1) 70%)",
+          "radial-gradient(ellipse at 50% 30%, hsl(145 48% 8% / 1) 0%, hsl(150 10% 3% / 1) 70%)",
       }}
     >
-      {/* African pattern overlay */}
+      {/* African kente pattern background */}
       <div
-        className="absolute inset-0 opacity-[0.07]"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolygon points='40,4 76,40 40,76 4,40' fill='none' stroke='%234caf50' stroke-width='1.5'/%3E%3Cpolygon points='40,18 62,40 40,62 18,40' fill='none' stroke='%234caf50' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='5' fill='%234caf50'/%3E%3Cline x1='0' y1='40' x2='80' y2='40' stroke='%23ffffff' stroke-width='0.5'/%3E%3Cline x1='40' y1='0' x2='40' y2='80' stroke='%23ffffff' stroke-width='0.5'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolygon points='40,4 76,40 40,76 4,40' fill='none' stroke='%234caf50' stroke-width='1.5' opacity='0.07'/%3E%3Cpolygon points='40,18 62,40 40,62 18,40' fill='none' stroke='%234caf50' stroke-width='1' opacity='0.05'/%3E%3Ccircle cx='40' cy='40' r='5' fill='%234caf50' opacity='0.04'/%3E%3Cline x1='0' y1='40' x2='80' y2='40' stroke='%23ffffff' stroke-width='0.5' opacity='0.03'/%3E%3Cline x1='40' y1='0' x2='40' y2='80' stroke='%23ffffff' stroke-width='0.5' opacity='0.03'/%3E%3C/svg%3E")`,
         }}
       />
 
-      {/* Pulsing rings */}
-      <div className="relative flex items-center justify-center mb-12">
-        {[0, 1, 2].map((i) => (
+      {/* Top kente stripe */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1.5"
+        style={{
+          background: `repeating-linear-gradient(90deg, hsl(145 60% 35%) 0px, hsl(145 60% 35%) 28px, ${methodColor} 28px, ${methodColor} 48px, hsl(0 0% 100% / 0.08) 48px, hsl(0 0% 100% / 0.08) 58px, hsl(145 48% 20%) 58px, hsl(145 48% 20%) 88px)`,
+        }}
+      />
+
+      {/* Pulsing rings behind logo */}
+      <div className="relative flex items-center justify-center mb-10">
+        {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="absolute rounded-full border"
+            className="absolute rounded-full"
             style={{
-              width: `${120 + i * 50}px`,
-              height: `${120 + i * 50}px`,
-              borderColor: `hsl(145 60% 35% / ${0.35 - i * 0.1})`,
-              animation: `pulse-ring 2.4s ease-out ${i * 0.5}s infinite`,
+              width: `${130 + i * 55}px`,
+              height: `${130 + i * 55}px`,
+              border: `1.5px solid hsl(145 60% 35% / ${0.4 - i * 0.08})`,
+              animation: `pulse-ring 2.8s ease-out ${i * 0.45}s infinite`,
             }}
           />
         ))}
 
-        {/* Orbiting payment dots */}
+        {/* Orbiting payment method dot */}
         <div className="absolute" style={{ width: 0, height: 0 }}>
           <div
             style={{
-              width: 10,
-              height: 10,
+              width: 12,
+              height: 12,
               borderRadius: "50%",
               background: methodColor,
-              boxShadow: `0 0 12px ${methodColor}`,
-              animation: "orbit 2s linear infinite",
+              boxShadow: `0 0 16px ${methodColor}`,
+              animation: "orbit 2.2s linear infinite",
             }}
           />
         </div>
@@ -90,9 +103,20 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "hsl(145 60% 35%)",
-              boxShadow: "0 0 8px hsl(145 60% 35%)",
-              animation: "orbit-reverse 3s linear infinite",
+              background: "hsl(145 60% 45%)",
+              boxShadow: "0 0 10px hsl(145 60% 45%)",
+              animation: "orbit-reverse 3.5s linear infinite",
+            }}
+          />
+        </div>
+        <div className="absolute" style={{ width: 0, height: 0 }}>
+          <div
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: "50%",
+              background: "#ffffff80",
+              animation: "orbit 5s linear infinite",
             }}
           />
         </div>
@@ -101,113 +125,143 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
         <div
           className="relative z-10 flex items-center justify-center rounded-full"
           style={{
-            width: 110,
-            height: 110,
+            width: 120,
+            height: 120,
             background:
-              "radial-gradient(circle, hsl(145 48% 15%) 0%, hsl(150 10% 6%) 100%)",
-            border: "2px solid hsl(145 60% 35% / 0.5)",
+              "radial-gradient(circle, hsl(145 40% 12%) 0%, hsl(150 10% 6%) 100%)",
+            border: "2px solid hsl(145 60% 30% / 0.6)",
             boxShadow:
-              "0 0 40px hsl(145 60% 35% / 0.3), inset 0 0 20px hsl(145 48% 10% / 0.5)",
+              "0 0 50px hsl(145 60% 35% / 0.25), inset 0 0 30px hsl(145 48% 8% / 0.8)",
           }}
         >
-          {/* SVG ticket icon */}
-          <svg
-            width="46"
-            height="46"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="hsl(145 60% 45%)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ filter: "drop-shadow(0 0 6px hsl(145 60% 35%))" }}
-          >
-            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-            <path d="M13 5v2M13 17v2M13 11v2" />
-          </svg>
+          <img
+            src={`${import.meta.env.BASE_URL}images/logo-inbox-transparent.png`}
+            alt="inbox"
+            style={{
+              width: 88,
+              height: "auto",
+              filter:
+                "drop-shadow(0 0 8px hsl(145 60% 40% / 0.7)) brightness(1.1)",
+              animation: "pulse-logo 2s ease-in-out infinite",
+            }}
+          />
         </div>
       </div>
 
-      {/* Animated logo text */}
-      <div className="flex items-baseline gap-0 mb-3 select-none" aria-hidden>
-        {LETTERS.map((letter, i) => {
-          const isSecond = i >= 5;
-          return (
-            <span
-              key={i}
-              className="font-display font-extrabold text-3xl tracking-widest"
-              style={{
-                color: isSecond ? "hsl(145 60% 40%)" : "white",
-                display: "inline-block",
-                animation: `letter-wave 1.8s ease-in-out ${i * 0.09}s infinite`,
-                textShadow: isSecond
-                  ? "0 0 20px hsl(145 60% 35% / 0.8)"
-                  : "none",
-              }}
-            >
-              {letter}
-            </span>
-          );
-        })}
+      {/* TICKET subtitle under logo */}
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className="h-px w-8 rounded"
+          style={{ background: "hsl(145 60% 35% / 0.5)" }}
+        />
+        <span
+          className="font-display font-extrabold text-sm tracking-[0.4em] uppercase"
+          style={{
+            color: "hsl(145 60% 40%)",
+            textShadow: "0 0 16px hsl(145 60% 35% / 0.5)",
+          }}
+        >
+          TICKET
+        </span>
+        <div
+          className="h-px w-8 rounded"
+          style={{ background: "hsl(145 60% 35% / 0.5)" }}
+        />
       </div>
 
       {/* Payment method badge */}
       <div
-        className="mb-8 px-4 py-1.5 rounded-full text-sm font-semibold"
+        className="mb-8 px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2"
         style={{
-          background: `${methodColor}20`,
-          border: `1px solid ${methodColor}50`,
+          background: `${methodColor}18`,
+          border: `1.5px solid ${methodColor}55`,
           color: methodColor,
         }}
       >
+        <span
+          className="flex items-center justify-center text-xs font-black rounded-md w-6 h-6"
+          style={{ background: methodColor, color: "white" }}
+        >
+          {methodIcon}
+        </span>
         Paiement via {methodLabel}
       </div>
 
       {/* Progress bar */}
-      <div className="w-72 mb-4">
+      <div className="w-80 mb-5">
         <div
-          className="h-1.5 rounded-full overflow-hidden"
-          style={{ background: "hsl(145 20% 12%)" }}
+          className="h-2 rounded-full overflow-hidden"
+          style={{ background: "hsl(145 20% 10%)" }}
         >
           <div
             className="h-full rounded-full relative overflow-hidden transition-all duration-300"
             style={{
               width: `${progress}%`,
               background:
-                "linear-gradient(90deg, hsl(145 48% 20%), hsl(145 60% 35%))",
+                "linear-gradient(90deg, hsl(145 48% 18%), hsl(145 60% 40%))",
             }}
           >
             <div
-              className="absolute inset-y-0 w-12 skew-x-12"
+              className="absolute inset-y-0 w-16 skew-x-12"
               style={{
-                background: "hsl(0 0% 100% / 0.3)",
-                animation: "shimmer-bar 1.5s ease-in-out infinite",
+                background: "hsl(0 0% 100% / 0.25)",
+                animation: "shimmer-bar 1.4s ease-in-out infinite",
               }}
             />
           </div>
         </div>
-        <div className="flex justify-between mt-1.5">
-          <span className="text-xs text-muted-foreground">{progress}%</span>
-          <span className="text-xs text-muted-foreground">Sécurisé</span>
+        <div className="flex justify-between mt-1.5 px-0.5">
+          <span className="text-xs text-muted-foreground font-mono">{progress}%</span>
+          <span className="text-xs text-muted-foreground">🔒 Sécurisé SSL</span>
         </div>
       </div>
 
-      {/* Step text */}
+      {/* Step text with fade */}
       <p
         key={step}
-        className="text-muted-foreground text-sm text-center max-w-xs"
-        style={{ animation: "fade-in 0.4s ease" }}
+        className="text-muted-foreground text-sm text-center max-w-xs mb-10"
+        style={{ animation: "step-fade 0.4s ease" }}
       >
         {STEPS[step]}
       </p>
 
-      {/* Kente bottom stripe */}
+      {/* Animated dots */}
+      <div className="flex items-center gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="rounded-full"
+            style={{
+              width: i === step ? 22 : 7,
+              height: 7,
+              background:
+                i === step
+                  ? "hsl(145 60% 40%)"
+                  : "hsl(145 20% 20%)",
+              transition: "all 0.4s ease",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Bottom kente stripe */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-1"
+        className="absolute bottom-0 left-0 right-0 h-1.5"
         style={{
-          background: `repeating-linear-gradient(90deg, hsl(145 60% 35%) 0px, hsl(145 60% 35%) 30px, ${methodColor} 30px, ${methodColor} 50px, hsl(0 0% 100% / 0.1) 50px, hsl(0 0% 100% / 0.1) 60px, hsl(145 48% 20%) 60px, hsl(145 48% 20%) 90px)`,
+          background: `repeating-linear-gradient(90deg, hsl(145 48% 20%) 0px, hsl(145 48% 20%) 28px, ${methodColor} 28px, ${methodColor} 48px, hsl(145 60% 35%) 48px, hsl(145 60% 35%) 68px, hsl(0 0% 100% / 0.06) 68px, hsl(0 0% 100% / 0.06) 78px)`,
         }}
       />
+
+      <style>{`
+        @keyframes pulse-logo {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px hsl(145 60% 40% / 0.7)) brightness(1.1); }
+          50% { transform: scale(1.06); filter: drop-shadow(0 0 14px hsl(145 60% 45% / 0.9)) brightness(1.2); }
+        }
+        @keyframes step-fade {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

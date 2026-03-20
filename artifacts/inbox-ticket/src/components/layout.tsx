@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Ticket, Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight } from "lucide-react";
+import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-3 group">
-      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 transition-transform group-hover:scale-105 group-active:scale-95">
-        <Ticket className="h-6 w-6" />
-      </div>
-      <span className="font-display text-xl font-bold tracking-tight text-foreground">
-        INBOX<span className="text-accent">TICKET</span>
+    <Link href="/" className="flex items-center gap-1 group transition-opacity hover:opacity-90">
+      <img
+        src={`${import.meta.env.BASE_URL}images/logo-inbox-transparent.png`}
+        alt="inbox"
+        className="h-10 w-auto transition-transform group-hover:scale-105 group-active:scale-95"
+        style={{ filter: "drop-shadow(0 0 6px hsl(145 60% 35% / 0.35))" }}
+      />
+      <span className="font-display text-xl font-extrabold tracking-widest text-accent uppercase">
+        ticket
       </span>
     </Link>
   );
