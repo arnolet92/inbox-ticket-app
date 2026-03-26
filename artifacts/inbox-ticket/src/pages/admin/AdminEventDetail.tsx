@@ -67,34 +67,83 @@ const STAFF_ROLES = [
   { id: 5, name: "Hery Luc", role: "Coordinateur général", phone: "034 44 556 66", status: "pending" },
 ];
 
-const SHOP_INITIAL: ShopItem[] = [
-  { id: 1, name: "T-Shirt officiel", category: "Vêtements", price: 35000, stock: 200, sold: 47, imageEmoji: "👕" },
-  { id: 2, name: "Casquette événement", category: "Vêtements", price: 25000, stock: 150, sold: 31, imageEmoji: "🧢" },
-  { id: 3, name: "Programme officiel", category: "Imprimés", price: 5000, stock: 500, sold: 112, imageEmoji: "📖" },
-  { id: 4, name: "Affiche dédicacée", category: "Imprimés", price: 15000, stock: 100, sold: 23, imageEmoji: "🖼️" },
-  { id: 5, name: "Bon repas VIP", category: "Restauration", price: 50000, stock: 80, sold: 19, imageEmoji: "🍽️" },
-  { id: 6, name: "Pack souvenirs", category: "Souvenirs", price: 60000, stock: 60, sold: 8, imageEmoji: "🎁" },
-];
-
-type ShopItem = {
+/* ── Shop data model ── */
+type ShopProduct = {
   id: number;
   name: string;
   category: string;
   price: number;
-  stock: number;
+  emoji: string;
+  bg: string;
   sold: number;
-  imageEmoji: string;
+  description?: string;
 };
 
-const SHOP_CATEGORIES = ["Vêtements", "Imprimés", "Restauration", "Souvenirs", "Accessoires", "Boissons"];
-const SHOP_EMOJIS: Record<string, string> = {
-  "Vêtements": "👕",
-  "Imprimés": "📖",
-  "Restauration": "🍽️",
-  "Souvenirs": "🎁",
-  "Accessoires": "🎒",
-  "Boissons": "🥤",
+type ShopStore = { id: number; name: string; location: string };
+
+type StockLevel = { productId: number; storeId: number; qty: number };
+
+type StockMovement = {
+  id: number;
+  type: "entree" | "redressement" | "transfert";
+  productId: number;
+  fromStoreId?: number;
+  toStoreId: number;
+  qty: number;
+  date: string;
+  note?: string;
 };
+
+const SHOP_CATEGORIES_ACC = [
+  "Vêtements", "Couvre-chef", "Bijoux & Bracelets", "Sacs & Pochettes", "Accessoires divers",
+];
+
+const SHOP_PRODUCTS_INITIAL: ShopProduct[] = [
+  { id: 1, name: "T-Shirt Gala 2026", category: "Vêtements", price: 35000, emoji: "👕", bg: "#1a3a2a", sold: 47, description: "T-shirt coton 100%, logo événement" },
+  { id: 2, name: "Polo Prestige", category: "Vêtements", price: 55000, emoji: "👔", bg: "#1a2a3a", sold: 23, description: "Polo brodé, qualité premium" },
+  { id: 3, name: "Hoodie Collector", category: "Vêtements", price: 80000, emoji: "🧥", bg: "#2a1a3a", sold: 12, description: "Sweat à capuche édition limitée" },
+  { id: 4, name: "Casquette Officielle", category: "Couvre-chef", price: 25000, emoji: "🧢", bg: "#3a2a1a", sold: 38, description: "Casquette brodée, ajustable" },
+  { id: 5, name: "Chapeau Panama", category: "Couvre-chef", price: 45000, emoji: "🎩", bg: "#1a3a3a", sold: 15, description: "Chapeau élégant pour l'événement" },
+  { id: 6, name: "Bracelet Event", category: "Bijoux & Bracelets", price: 8000, emoji: "📿", bg: "#3a1a1a", sold: 89, description: "Bracelet tissu aux couleurs de l'événement" },
+  { id: 7, name: "Bracelet Cuir VIP", category: "Bijoux & Bracelets", price: 20000, emoji: "⌚", bg: "#2a3a1a", sold: 34, description: "Bracelet cuir gravé, édition VIP" },
+  { id: 8, name: "Tote Bag", category: "Sacs & Pochettes", price: 18000, emoji: "👜", bg: "#1a1a3a", sold: 56, description: "Sac en toile sérigraphié" },
+  { id: 9, name: "Écharpe Collector", category: "Accessoires divers", price: 22000, emoji: "🧣", bg: "#3a3a1a", sold: 19, description: "Écharpe aux couleurs de l'événement" },
+];
+
+const SHOP_STORES_INITIAL: ShopStore[] = [
+  { id: 1, name: "Stand Principal", location: "Entrée principale" },
+  { id: 2, name: "Stand VIP", location: "Salon VIP" },
+  { id: 3, name: "Stand Annexe", location: "Hall secondaire" },
+];
+
+const STOCK_INITIAL: StockLevel[] = [
+  // Stand Principal
+  { productId: 1, storeId: 1, qty: 80 }, { productId: 2, storeId: 1, qty: 40 },
+  { productId: 3, storeId: 1, qty: 25 }, { productId: 4, storeId: 1, qty: 60 },
+  { productId: 5, storeId: 1, qty: 30 }, { productId: 6, storeId: 1, qty: 120 },
+  { productId: 7, storeId: 1, qty: 45 }, { productId: 8, storeId: 1, qty: 70 },
+  { productId: 9, storeId: 1, qty: 35 },
+  // Stand VIP
+  { productId: 1, storeId: 2, qty: 20 }, { productId: 2, storeId: 2, qty: 15 },
+  { productId: 3, storeId: 2, qty: 8 },  { productId: 4, storeId: 2, qty: 25 },
+  { productId: 5, storeId: 2, qty: 12 }, { productId: 6, storeId: 2, qty: 30 },
+  { productId: 7, storeId: 2, qty: 18 }, { productId: 8, storeId: 2, qty: 20 },
+  { productId: 9, storeId: 2, qty: 10 },
+  // Stand Annexe
+  { productId: 1, storeId: 3, qty: 15 }, { productId: 2, storeId: 3, qty: 10 },
+  { productId: 3, storeId: 3, qty: 5 },  { productId: 4, storeId: 3, qty: 20 },
+  { productId: 5, storeId: 3, qty: 8 },  { productId: 6, storeId: 3, qty: 25 },
+  { productId: 7, storeId: 3, qty: 12 }, { productId: 8, storeId: 3, qty: 15 },
+  { productId: 9, storeId: 3, qty: 8 },
+];
+
+const MOVEMENTS_INITIAL: StockMovement[] = [
+  { id: 1, type: "entree", productId: 1, toStoreId: 1, qty: 100, date: "2026-03-10", note: "Réception commande fournisseur" },
+  { id: 2, type: "entree", productId: 6, toStoreId: 1, qty: 200, date: "2026-03-10" },
+  { id: 3, type: "transfert", productId: 1, fromStoreId: 1, toStoreId: 2, qty: 20, date: "2026-03-20", note: "Approvisionnement stand VIP" },
+  { id: 4, type: "redressement", productId: 4, toStoreId: 1, qty: 60, date: "2026-03-22", note: "Correction après inventaire" },
+  { id: 5, type: "transfert", productId: 8, fromStoreId: 1, toStoreId: 3, qty: 15, date: "2026-03-25" },
+];
 
 const methodColors: Record<string, string> = {
   orange_money: "#ff6600",
@@ -132,10 +181,17 @@ export default function AdminEventDetail() {
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
-  const [isAddShopOpen, setIsAddShopOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
-  const [shopItems, setShopItems] = useState<ShopItem[]>(SHOP_INITIAL);
-  const [editShopItem, setEditShopItem] = useState<ShopItem | null>(null);
+  const [shopProducts, setShopProducts] = useState<ShopProduct[]>(SHOP_PRODUCTS_INITIAL);
+  const [shopStores] = useState<ShopStore[]>(SHOP_STORES_INITIAL);
+  const [stockLevels, setStockLevels] = useState<StockLevel[]>(STOCK_INITIAL);
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>(MOVEMENTS_INITIAL);
+  const [editShopProduct, setEditShopProduct] = useState<ShopProduct | null>(null);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isStockOpOpen, setIsStockOpOpen] = useState<"entree" | "redressement" | "transfert" | null>(null);
+  const [stockOpProduct, setStockOpProduct] = useState<ShopProduct | null>(null);
+  const [shopView, setShopView] = useState<"catalogue" | "stock" | "mouvements">("catalogue");
+  const [shopCatFilter, setShopCatFilter] = useState<string>("all");
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
@@ -224,14 +280,20 @@ export default function AdminEventDetail() {
   ];
 
   /* ── Shop stats ── */
-  const shopRevenue = shopItems.reduce((s, i) => s + i.price * i.sold, 0);
-  const shopSoldTotal = shopItems.reduce((s, i) => s + i.sold, 0);
-  const shopCategoryData = SHOP_CATEGORIES.filter((c) => shopItems.some((i) => i.category === c)).map((cat) => {
-    const items = shopItems.filter((i) => i.category === cat);
+  const getStockQty = (productId: number, storeId?: number) =>
+    storeId
+      ? stockLevels.find((s) => s.productId === productId && s.storeId === storeId)?.qty ?? 0
+      : stockLevels.filter((s) => s.productId === productId).reduce((sum, s) => sum + s.qty, 0);
+
+  const shopRevenue = shopProducts.reduce((s, p) => s + p.price * p.sold, 0);
+  const shopSoldTotal = shopProducts.reduce((s, p) => s + p.sold, 0);
+  const shopTotalStock = stockLevels.reduce((s, l) => s + l.qty, 0);
+  const shopCategoryData = SHOP_CATEGORIES_ACC.filter((c) => shopProducts.some((p) => p.category === c)).map((cat) => {
+    const prods = shopProducts.filter((p) => p.category === cat);
     return {
       name: cat,
-      revenus: items.reduce((s, i) => s + i.price * i.sold, 0),
-      vendus: items.reduce((s, i) => s + i.sold, 0),
+      revenus: prods.reduce((s, p) => s + p.price * p.sold, 0),
+      vendus: prods.reduce((s, p) => s + p.sold, 0),
     };
   });
 
@@ -301,45 +363,84 @@ export default function AdminEventDetail() {
     }
   };
 
-  const handleAddShopItem = (e: React.FormEvent<HTMLFormElement>) => {
+  const CAT_EMOJIS: Record<string, string> = {
+    "Vêtements": "👕", "Couvre-chef": "🧢", "Bijoux & Bracelets": "📿",
+    "Sacs & Pochettes": "👜", "Accessoires divers": "🧣",
+  };
+  const CAT_BG: Record<string, string> = {
+    "Vêtements": "#1a3a2a", "Couvre-chef": "#3a2a1a", "Bijoux & Bracelets": "#3a1a1a",
+    "Sacs & Pochettes": "#1a1a3a", "Accessoires divers": "#3a3a1a",
+  };
+
+  const handleSaveProduct = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const cat = fd.get("category") as string;
-    if (editShopItem) {
-      setShopItems((prev) =>
-        prev.map((it) =>
-          it.id === editShopItem.id
-            ? {
-                ...it,
-                name: fd.get("name") as string,
-                category: cat,
-                price: Number(fd.get("price")),
-                stock: Number(fd.get("stock")),
-                imageEmoji: SHOP_EMOJIS[cat] ?? "🛍️",
-              }
-            : it
-        )
-      );
-      setEditShopItem(null);
+    if (editShopProduct) {
+      setShopProducts((prev) => prev.map((p) =>
+        p.id === editShopProduct.id
+          ? { ...p, name: fd.get("name") as string, category: cat, price: Number(fd.get("price")),
+              description: fd.get("description") as string, emoji: CAT_EMOJIS[cat] ?? "🛍️", bg: CAT_BG[cat] ?? "#1a1a1a" }
+          : p
+      ));
+      setEditShopProduct(null);
     } else {
-      const newItem: ShopItem = {
-        id: Date.now(),
-        name: fd.get("name") as string,
-        category: cat,
-        price: Number(fd.get("price")),
-        stock: Number(fd.get("stock")),
-        sold: 0,
-        imageEmoji: SHOP_EMOJIS[cat] ?? "🛍️",
+      const newProd: ShopProduct = {
+        id: Date.now(), name: fd.get("name") as string, category: cat,
+        price: Number(fd.get("price")), emoji: CAT_EMOJIS[cat] ?? "🛍️",
+        bg: CAT_BG[cat] ?? "#1a1a1a", sold: 0, description: fd.get("description") as string,
       };
-      setShopItems((prev) => [...prev, newItem]);
+      setShopProducts((prev) => [...prev, newProd]);
+      // init stock at 0 for all stores
+      setStockLevels((prev) => [
+        ...prev,
+        ...shopStores.map((s) => ({ productId: newProd.id, storeId: s.id, qty: 0 })),
+      ]);
     }
-    setIsAddShopOpen(false);
+    setIsAddProductOpen(false);
   };
 
-  const deleteShopItem = (itemId: number) => {
-    if (confirm("Supprimer cet article ?")) {
-      setShopItems((prev) => prev.filter((i) => i.id !== itemId));
+  const deleteProduct = (pid: number) => {
+    if (confirm("Supprimer ce produit ?")) {
+      setShopProducts((prev) => prev.filter((p) => p.id !== pid));
+      setStockLevels((prev) => prev.filter((s) => s.productId !== pid));
     }
+  };
+
+  const handleStockOperation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!stockOpProduct || !isStockOpOpen) return;
+    const fd = new FormData(e.currentTarget);
+    const qty = Number(fd.get("qty"));
+    const toStoreId = Number(fd.get("toStoreId"));
+    const fromStoreId = fd.get("fromStoreId") ? Number(fd.get("fromStoreId")) : undefined;
+    const note = fd.get("note") as string;
+
+    if (isStockOpOpen === "entree") {
+      setStockLevels((prev) => prev.map((s) =>
+        s.productId === stockOpProduct.id && s.storeId === toStoreId
+          ? { ...s, qty: s.qty + qty } : s
+      ));
+    } else if (isStockOpOpen === "redressement") {
+      setStockLevels((prev) => prev.map((s) =>
+        s.productId === stockOpProduct.id && s.storeId === toStoreId
+          ? { ...s, qty } : s
+      ));
+    } else if (isStockOpOpen === "transfert" && fromStoreId) {
+      setStockLevels((prev) => prev.map((s) => {
+        if (s.productId !== stockOpProduct.id) return s;
+        if (s.storeId === fromStoreId) return { ...s, qty: Math.max(0, s.qty - qty) };
+        if (s.storeId === toStoreId) return { ...s, qty: s.qty + qty };
+        return s;
+      }));
+    }
+
+    setStockMovements((prev) => [
+      { id: Date.now(), type: isStockOpOpen, productId: stockOpProduct.id, fromStoreId, toStoreId, qty, date: new Date().toISOString().slice(0, 10), note: note || undefined },
+      ...prev,
+    ]);
+    setIsStockOpOpen(null);
+    setStockOpProduct(null);
   };
 
   if (eventLoading) {
@@ -1221,14 +1322,15 @@ export default function AdminEventDetail() {
 
       {/* ─── TAB: SHOP ─── */}
       {activeTab === "shop" && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+
           {/* Shop KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Revenu boutique", value: formatMGA(shopRevenue), icon: <Store className="w-5 h-5" />, color: "text-orange-400" },
               { label: "Articles vendus", value: String(shopSoldTotal), icon: <ShoppingBag className="w-5 h-5" />, color: "text-emerald-400" },
-              { label: "Produits actifs", value: String(shopItems.length), icon: <Package className="w-5 h-5" />, color: "text-blue-400" },
-              { label: "Catégories", value: String(new Set(shopItems.map((i) => i.category)).size), icon: <Tag className="w-5 h-5" />, color: "text-violet-400" },
+              { label: "Produits actifs", value: String(shopProducts.length), icon: <Package className="w-5 h-5" />, color: "text-blue-400" },
+              { label: "Stock total", value: String(shopTotalStock), icon: <Tag className="w-5 h-5" />, color: "text-violet-400" },
             ].map((kpi) => (
               <Card key={kpi.label} className="p-5">
                 <div className={`${kpi.color} mb-3`}>{kpi.icon}</div>
@@ -1238,173 +1340,386 @@ export default function AdminEventDetail() {
             ))}
           </div>
 
-          {/* Revenue by category chart */}
-          <Card className="p-6">
-            <h3 className="font-bold font-display text-lg mb-6">Revenus boutique par catégorie</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <ComposedChart data={shopCategoryData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
-                <XAxis dataKey="name" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
-                <YAxis tickFormatter={formatArShort} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={CHART_TOOLTIP_STYLE}
-                  formatter={(v: number, n: string) => [
-                    n === "revenus" ? formatMGA(v) : `${v} articles`,
-                    n === "revenus" ? "Revenus" : "Articles vendus",
-                  ]}
-                />
-                <Legend wrapperStyle={{ fontSize: 12, color: "hsl(145 5% 65%)" }}
-                  formatter={(v) => v === "revenus" ? "Revenus" : "Articles vendus"} />
-                <Bar dataKey="revenus" fill="hsl(145 48% 22%)" name="revenus" radius={[4, 4, 0, 0]} />
-                <Line type="monotone" dataKey="vendus" stroke="#f97316" strokeWidth={2}
-                  dot={{ fill: "#f97316", r: 3 }} name="vendus" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </Card>
+          {/* Sub-nav */}
+          <div className="flex gap-1 p-1 bg-card rounded-xl border border-border w-fit">
+            {(["catalogue", "stock", "mouvements"] as const).map((v) => (
+              <button key={v} onClick={() => setShopView(v)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${
+                  shopView === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}>
+                {v === "catalogue" ? "🛍️ Catalogue" : v === "stock" ? "📦 Gestion stock" : "📋 Mouvements"}
+              </button>
+            ))}
+          </div>
 
-          {/* Product list */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold font-display text-lg">Catalogue boutique</h3>
-              <Button variant="accent" size="sm" onClick={() => { setEditShopItem(null); setIsAddShopOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> Ajouter un article
-              </Button>
-            </div>
+          {/* ── CATALOGUE (POS grid) ── */}
+          {shopView === "catalogue" && (
+            <div>
+              {/* Category filter + add button */}
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <button onClick={() => setShopCatFilter("all")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${shopCatFilter === "all" ? "bg-accent text-black border-accent" : "border-border text-muted-foreground hover:border-accent/50"}`}>
+                  Tous
+                </button>
+                {SHOP_CATEGORIES_ACC.map((c) => (
+                  <button key={c} onClick={() => setShopCatFilter(c)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${shopCatFilter === c ? "bg-accent text-black border-accent" : "border-border text-muted-foreground hover:border-accent/50"}`}>
+                    {c}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                <Button variant="accent" size="sm" onClick={() => { setEditShopProduct(null); setIsAddProductOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> Nouveau produit
+                </Button>
+              </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {shopItems.map((item) => {
-                const stockPct = item.stock > 0 ? Math.round((item.sold / (item.sold + item.stock)) * 100) : 100;
-                const itemRevenue = item.price * item.sold;
-                return (
-                  <Card key={item.id} className="p-5 relative overflow-hidden">
-                    <div
-                      className="absolute top-0 left-0 bottom-0 w-1 rounded-l"
-                      style={{ background: `hsl(${30 + item.id * 40} 70% 50%)` }}
-                    />
-                    <div className="pl-3">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="text-3xl shrink-0">{item.imageEmoji}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="font-bold truncate">{item.name}</div>
-                              <Badge variant="outline" className="text-xs mt-0.5">{item.category}</Badge>
-                            </div>
-                            <div className="flex gap-1 shrink-0">
-                              <Button
-                                variant="outline" size="sm" className="h-7 w-7 p-0"
-                                onClick={() => { setEditShopItem(item); setIsAddShopOpen(true); }}
-                              >
-                                <Edit className="w-3 h-3 text-blue-400" />
-                              </Button>
-                              <Button
-                                variant="outline" size="sm" className="h-7 w-7 p-0"
-                                onClick={() => deleteShopItem(item.id)}
-                              >
-                                <Trash2 className="w-3 h-3 text-destructive" />
-                              </Button>
-                            </div>
+              {/* POS grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {shopProducts
+                  .filter((p) => shopCatFilter === "all" || p.category === shopCatFilter)
+                  .map((product) => {
+                    const totalStock = getStockQty(product.id);
+                    const stockColor = totalStock === 0 ? "text-red-400" : totalStock <= 10 ? "text-orange-400" : "text-emerald-400";
+                    const stockBg = totalStock === 0 ? "bg-red-500/10 border-red-500/30" : totalStock <= 10 ? "bg-orange-500/10 border-orange-500/30" : "bg-emerald-500/10 border-emerald-500/30";
+                    return (
+                      <div key={product.id} className="rounded-2xl overflow-hidden border border-border bg-card hover:border-accent/40 transition-all group">
+                        {/* Product image area */}
+                        <div
+                          className="relative flex items-center justify-center"
+                          style={{ background: product.bg, height: 130 }}
+                        >
+                          <span className="text-6xl select-none">{product.emoji}</span>
+                          {/* Actions overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => { setEditShopProduct(product); setIsAddProductOpen(true); }}
+                              className="w-9 h-9 rounded-lg bg-blue-500/80 flex items-center justify-center hover:bg-blue-500"
+                            >
+                              <Edit className="w-4 h-4 text-white" />
+                            </button>
+                            <button
+                              onClick={() => { setStockOpProduct(product); setIsStockOpOpen("entree"); }}
+                              className="w-9 h-9 rounded-lg bg-emerald-600/80 flex items-center justify-center hover:bg-emerald-600"
+                              title="Entrée en stock"
+                            >
+                              <Plus className="w-4 h-4 text-white" />
+                            </button>
+                            <button
+                              onClick={() => deleteProduct(product.id)}
+                              className="w-9 h-9 rounded-lg bg-red-600/80 flex items-center justify-center hover:bg-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                          {/* Stock badge */}
+                          <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-lg text-xs font-bold border ${stockBg} ${stockColor}`}>
+                            {totalStock === 0 ? "Rupture" : `${totalStock} en stock`}
+                          </div>
+                        </div>
+
+                        {/* Product info */}
+                        <div className="p-3">
+                          <div className="text-xs text-muted-foreground mb-0.5">{product.category}</div>
+                          <div className="font-bold text-sm leading-tight mb-2 line-clamp-2">{product.name}</div>
+                          <div className="text-xl font-display font-bold text-accent mb-2">{formatMGA(product.price)}</div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{product.sold} vendus</span>
+                            <span className="text-emerald-400 font-semibold">{formatMGA(product.price * product.sold)}</span>
+                          </div>
+                          {/* Per-store mini stock */}
+                          <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                            {shopStores.map((store) => {
+                              const sq = getStockQty(product.id, store.id);
+                              return (
+                                <div key={store.id} className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground truncate max-w-[80px]">{store.name}</span>
+                                  <span className={sq === 0 ? "text-red-400 font-bold" : sq <= 5 ? "text-orange-400 font-semibold" : "text-foreground"}>{sq}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-3 gap-3 mb-3 text-center">
-                        <div>
-                          <div className="text-lg font-display font-bold text-accent">{formatMGA(item.price)}</div>
-                          <div className="text-xs text-muted-foreground">Prix unitaire</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-emerald-400">{item.sold}</div>
-                          <div className="text-xs text-muted-foreground">Vendus</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold">{item.stock}</div>
-                          <div className="text-xs text-muted-foreground">En stock</div>
-                        </div>
-                      </div>
-
-                      <div className="mb-2">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Taux d'écoulement</span>
-                          <span className="font-medium">{stockPct}%</span>
-                        </div>
-                        <div className="w-full bg-input rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${stockPct}%`,
-                              background: stockPct >= 90 ? "hsl(0 70% 50%)" : stockPct >= 60 ? "hsl(38 95% 50%)" : "hsl(145 60% 35%)",
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        Revenus générés : <span className="text-emerald-400 font-semibold">{formatMGA(itemRevenue)}</span>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Total recap */}
-          <Card className="p-6 border-orange-500/20 bg-gradient-to-r from-orange-950/20 to-transparent">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Revenu boutique total</div>
-                <div className="text-4xl font-display font-bold text-orange-400">{formatMGA(shopRevenue)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground mb-1">Articles vendus</div>
-                <div className="text-2xl font-bold">{shopSoldTotal}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground mb-1">Produits en catalogue</div>
-                <div className="text-2xl font-bold">{shopItems.length}</div>
+                    );
+                  })}
               </div>
             </div>
-          </Card>
+          )}
 
-          {/* Add/Edit shop item dialog */}
-          <Dialog
-            isOpen={isAddShopOpen}
-            onClose={() => { setIsAddShopOpen(false); setEditShopItem(null); }}
-            title={editShopItem ? "Modifier l'article" : "Ajouter un article"}
-          >
-            <form onSubmit={handleAddShopItem} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nom de l'article</Label>
-                <Input name="name" required placeholder="Ex: T-Shirt officiel" defaultValue={editShopItem?.name ?? ""} />
+          {/* ── STOCK MANAGEMENT (multi-store matrix) ── */}
+          {shopView === "stock" && (
+            <div className="space-y-6">
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Button variant="accent" size="sm"
+                  onClick={() => { setStockOpProduct(shopProducts[0]); setIsStockOpOpen("entree"); }}>
+                  <Plus className="w-4 h-4 mr-2" /> Entrée en stock
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => { setStockOpProduct(shopProducts[0]); setIsStockOpOpen("redressement"); }}>
+                  ⚖️ Redressement
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => { setStockOpProduct(shopProducts[0]); setIsStockOpOpen("transfert"); }}>
+                  🔀 Transfert
+                </Button>
               </div>
+
+              {/* Stock matrix table */}
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left p-4 font-semibold text-muted-foreground w-48">Produit</th>
+                        <th className="text-center p-4 font-semibold text-muted-foreground text-xs">Total</th>
+                        {shopStores.map((store) => (
+                          <th key={store.id} className="text-center p-4 font-semibold text-muted-foreground text-xs min-w-[110px]">
+                            <div>{store.name}</div>
+                            <div className="text-muted-foreground/60 font-normal">{store.location}</div>
+                          </th>
+                        ))}
+                        <th className="p-4 w-28">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shopProducts.map((product, idx) => {
+                        const total = getStockQty(product.id);
+                        return (
+                          <tr key={product.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${idx % 2 === 0 ? "" : "bg-muted/10"}`}>
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: product.bg }}>
+                                  {product.emoji}
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-sm">{product.name}</div>
+                                  <div className="text-xs text-muted-foreground">{product.category}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`text-lg font-display font-bold ${total === 0 ? "text-red-400" : total <= 15 ? "text-orange-400" : "text-foreground"}`}>{total}</span>
+                            </td>
+                            {shopStores.map((store) => {
+                              const sq = getStockQty(product.id, store.id);
+                              return (
+                                <td key={store.id} className="p-4 text-center">
+                                  <div className={`inline-flex items-center justify-center w-12 h-8 rounded-lg font-bold text-sm ${
+                                    sq === 0 ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                                    : sq <= 5 ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                                    : "bg-muted text-foreground border border-border/50"
+                                  }`}>
+                                    {sq}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                            <td className="p-4">
+                              <div className="flex gap-1 justify-center">
+                                <button
+                                  onClick={() => { setStockOpProduct(product); setIsStockOpOpen("entree"); }}
+                                  className="w-7 h-7 rounded-md bg-emerald-600/20 border border-emerald-600/30 flex items-center justify-center hover:bg-emerald-600/40 transition-colors"
+                                  title="Entrée"
+                                >
+                                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                                </button>
+                                <button
+                                  onClick={() => { setStockOpProduct(product); setIsStockOpOpen("redressement"); }}
+                                  className="w-7 h-7 rounded-md bg-blue-600/20 border border-blue-600/30 flex items-center justify-center hover:bg-blue-600/40 transition-colors"
+                                  title="Redressement"
+                                >
+                                  <Minus className="w-3.5 h-3.5 text-blue-400" />
+                                </button>
+                                <button
+                                  onClick={() => { setStockOpProduct(product); setIsStockOpOpen("transfert"); }}
+                                  className="w-7 h-7 rounded-md bg-violet-600/20 border border-violet-600/30 flex items-center justify-center hover:bg-violet-600/40 transition-colors"
+                                  title="Transfert"
+                                >
+                                  <ArrowUpCircle className="w-3.5 h-3.5 text-violet-400" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/30 border-t border-border">
+                        <td className="p-4 font-bold text-sm">TOTAL GÉNÉRAL</td>
+                        <td className="p-4 text-center font-display font-bold text-accent text-lg">
+                          {stockLevels.reduce((s, l) => s + l.qty, 0)}
+                        </td>
+                        {shopStores.map((store) => (
+                          <td key={store.id} className="p-4 text-center font-bold text-accent">
+                            {stockLevels.filter((l) => l.storeId === store.id).reduce((s, l) => s + l.qty, 0)}
+                          </td>
+                        ))}
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* ── MOUVEMENTS ── */}
+          {shopView === "mouvements" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold font-display text-lg">Historique des mouvements ({stockMovements.length})</h3>
+              </div>
+              {stockMovements.length === 0 ? (
+                <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border text-muted-foreground">
+                  Aucun mouvement enregistré
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stockMovements.map((mv) => {
+                    const prod = shopProducts.find((p) => p.id === mv.productId);
+                    const toStore = shopStores.find((s) => s.id === mv.toStoreId);
+                    const fromStore = shopStores.find((s) => s.id === mv.fromStoreId);
+                    const typeConfig = {
+                      entree: { label: "Entrée en stock", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30", icon: "📥" },
+                      redressement: { label: "Redressement", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30", icon: "⚖️" },
+                      transfert: { label: "Transfert", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/30", icon: "🔀" },
+                    }[mv.type];
+                    return (
+                      <Card key={mv.id} className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-lg shrink-0 ${typeConfig.bg}`}>
+                            {typeConfig.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${typeConfig.bg} ${typeConfig.color}`}>
+                                {typeConfig.label}
+                              </span>
+                              <span className="font-semibold text-sm">{prod?.emoji} {prod?.name ?? "—"}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-3">
+                              {mv.type === "transfert" ? (
+                                <span>{fromStore?.name} → {toStore?.name}</span>
+                              ) : (
+                                <span>Vers : {toStore?.name}</span>
+                              )}
+                              <span>{format(new Date(mv.date), "d MMM yyyy", { locale: fr })}</span>
+                              {mv.note && <span className="italic">"{mv.note}"</span>}
+                            </div>
+                          </div>
+                          <div className={`text-xl font-display font-bold shrink-0 ${typeConfig.color}`}>
+                            {mv.type === "redressement" ? "" : "+"}{mv.qty} unités
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Add/Edit Product Dialog ── */}
+          <Dialog isOpen={isAddProductOpen} onClose={() => { setIsAddProductOpen(false); setEditShopProduct(null); }}
+            title={editShopProduct ? "Modifier le produit" : "Nouveau produit"}>
+            <form onSubmit={handleSaveProduct} className="space-y-4">
               <div className="space-y-2">
-                <Label>Catégorie</Label>
-                <Select name="category" required defaultValue={editShopItem?.category ?? "Vêtements"}>
-                  {SHOP_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{SHOP_EMOJIS[c]} {c}</option>
-                  ))}
-                </Select>
+                <Label>Nom du produit</Label>
+                <Input name="name" required placeholder="Ex: T-Shirt Gala 2026" defaultValue={editShopProduct?.name ?? ""} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Prix (Ar)</Label>
-                  <Input name="price" type="number" required min="0" placeholder="Ex: 35000" defaultValue={editShopItem?.price ?? ""} />
+                  <Label>Catégorie</Label>
+                  <Select name="category" required defaultValue={editShopProduct?.category ?? "Vêtements"}>
+                    {SHOP_CATEGORIES_ACC.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Quantité en stock</Label>
-                  <Input name="stock" type="number" required min="0" placeholder="Ex: 100" defaultValue={editShopItem?.stock ?? ""} />
+                  <Label>Prix de vente (Ar)</Label>
+                  <Input name="price" type="number" required min="0" placeholder="Ex: 35000" defaultValue={editShopProduct?.price ?? ""} />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea name="description" placeholder="Description du produit..." defaultValue={editShopProduct?.description ?? ""} />
+              </div>
               <div className="pt-4 flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => { setIsAddShopOpen(false); setEditShopItem(null); }}>
-                  Annuler
-                </Button>
-                <Button type="submit" variant="accent">
-                  {editShopItem ? "Enregistrer" : "Ajouter l'article"}
-                </Button>
+                <Button type="button" variant="outline" onClick={() => { setIsAddProductOpen(false); setEditShopProduct(null); }}>Annuler</Button>
+                <Button type="submit" variant="accent">{editShopProduct ? "Enregistrer" : "Créer le produit"}</Button>
               </div>
             </form>
+          </Dialog>
+
+          {/* ── Stock Operation Dialog ── */}
+          <Dialog
+            isOpen={!!isStockOpOpen}
+            onClose={() => { setIsStockOpOpen(null); setStockOpProduct(null); }}
+            title={
+              isStockOpOpen === "entree" ? "📥 Entrée en stock"
+              : isStockOpOpen === "redressement" ? "⚖️ Redressement de stock"
+              : "🔀 Transfert de stock"
+            }
+          >
+            {isStockOpOpen && (
+              <form onSubmit={handleStockOperation} className="space-y-4">
+                {/* Product selector */}
+                <div className="space-y-2">
+                  <Label>Produit</Label>
+                  <Select name="productId" required
+                    defaultValue={stockOpProduct?.id ?? shopProducts[0]?.id}
+                    onChange={(e) => {
+                      const p = shopProducts.find((p) => p.id === Number((e.target as HTMLSelectElement).value));
+                      setStockOpProduct(p ?? null);
+                    }}>
+                    {shopProducts.map((p) => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
+                  </Select>
+                </div>
+
+                {/* From store (transfert only) */}
+                {isStockOpOpen === "transfert" && (
+                  <div className="space-y-2">
+                    <Label>Stand source</Label>
+                    <Select name="fromStoreId" required defaultValue={shopStores[0]?.id}>
+                      {shopStores.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name} — {s.location} ({stockOpProduct ? getStockQty(stockOpProduct.id, s.id) : "?"} en stock)</option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+
+                {/* To store */}
+                <div className="space-y-2">
+                  <Label>{isStockOpOpen === "transfert" ? "Stand destination" : "Stand"}</Label>
+                  <Select name="toStoreId" required defaultValue={isStockOpOpen === "transfert" ? shopStores[1]?.id : shopStores[0]?.id}>
+                    {shopStores.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} — {s.location} ({stockOpProduct ? getStockQty(stockOpProduct.id, s.id) : "?"} en stock)</option>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Quantity */}
+                <div className="space-y-2">
+                  <Label>{isStockOpOpen === "redressement" ? "Nouvelle quantité" : "Quantité"}</Label>
+                  <Input name="qty" type="number" required min="0" placeholder={isStockOpOpen === "redressement" ? "Quantité réelle en stock" : "Nombre d'unités"} />
+                </div>
+
+                {/* Note */}
+                <div className="space-y-2">
+                  <Label>Motif / note (optionnel)</Label>
+                  <Textarea name="note" placeholder="Ex: Réception commande fournisseur..." />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => { setIsStockOpOpen(null); setStockOpProduct(null); }}>Annuler</Button>
+                  <Button type="submit" variant="accent">
+                    {isStockOpOpen === "entree" ? "Valider l'entrée"
+                    : isStockOpOpen === "redressement" ? "Valider le redressement"
+                    : "Valider le transfert"}
+                  </Button>
+                </div>
+              </form>
+            )}
           </Dialog>
         </div>
       )}
