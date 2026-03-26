@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import {
   ChevronLeft, TrendingUp, Ticket, Users, CreditCard, ShoppingCart,
   Plus, Edit, Trash2, Phone, Mail, UserCircle, Calendar, MapPin,
-  CheckCircle, XCircle, Clock, UserCheck, Settings,
+  CheckCircle, XCircle, Clock, UserCheck, Settings, Store,
+  Package, Tag, ShoppingBag, BarChart2,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, eachDayOfInterval, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, AreaChart, Area,
+} from "recharts";
 import { AdminLayout } from "@/components/layout";
 import { Card, Button, Badge, Dialog, Input, Label, Select, Textarea,
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui";
@@ -17,7 +22,7 @@ import {
   useCreateTicketType, useDeleteEvent,
 } from "@workspace/api-client-react";
 
-type Tab = "overview" | "tickets" | "orders" | "staff";
+type Tab = "overview" | "finance" | "tickets" | "orders" | "shop" | "staff";
 
 const STAFF_ROLES = [
   { id: 1, name: "Rakoto Jean", role: "Responsable billetterie", phone: "032 12 345 67", status: "confirmed" },
@@ -27,18 +32,212 @@ const STAFF_ROLES = [
   { id: 5, name: "Hery Luc", role: "Coordinateur général", phone: "034 44 556 66", status: "pending" },
 ];
 
+const SHOP_INITIAL: ShopItem[] = [
+  { id: 1, name: "T-Shirt officiel", category: "Vêtements", price: 35000, stock: 200, sold: 47, imageEmoji: "👕" },
+  { id: 2, name: "Casquette événement", category: "Vêtements", price: 25000, stock: 150, sold: 31, imageEmoji: "🧢" },
+  { id: 3, name: "Programme officiel", category: "Imprimés", price: 5000, stock: 500, sold: 112, imageEmoji: "📖" },
+  { id: 4, name: "Affiche dédicacée", category: "Imprimés", price: 15000, stock: 100, sold: 23, imageEmoji: "🖼️" },
+  { id: 5, name: "Bon repas VIP", category: "Restauration", price: 50000, stock: 80, sold: 19, imageEmoji: "🍽️" },
+  { id: 6, name: "Pack souvenirs", category: "Souvenirs", price: 60000, stock: 60, sold: 8, imageEmoji: "🎁" },
+];
+
+type ShopItem = {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  sold: number;
+  imageEmoji: string;
+};
+
+const SHOP_CATEGORIES = ["Vêtements", "Imprimés", "Restauration", "Souvenirs", "Accessoires", "Boissons"];
+const SHOP_EMOJIS: Record<string, string> = {
+  "Vêtements": "👕",
+  "Imprimés": "📖",
+  "Restauration": "🍽️",
+  "Souvenirs": "🎁",
+  "Accessoires": "🎒",
+  "Boissons": "🥤",
+};
+
+const methodColors: Record<string, string> = {
+  orange_money: "#ff6600",
+  mvola: "#e02020",
+  mastercard: "#3b82f6",
+};
+const methodLabels: Record<string, string> = {
+  orange_money: "Orange Money",
+  mvola: "MVola",
+  mastercard: "Mastercard",
+};
+const methodIcons: Record<string, string> = {
+  orange_money: "OM",
+  mvola: "M",
+  mastercard: "💳",
+};
+
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: "hsl(150 10% 6%)",
+  border: "1px solid hsl(145 48% 20% / 0.5)",
+  borderRadius: "8px",
+  color: "#fff",
+  fontSize: "12px",
+};
+
+function formatArShort(v: number) {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M Ar`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k Ar`;
+  return `${v} Ar`;
+}
+
 export default function AdminEventDetail() {
   const { id } = useParams<{ id: string }>();
   const eventId = Number(id);
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
+  const [isAddShopOpen, setIsAddShopOpen] = useState(false);
+  const [shopItems, setShopItems] = useState<ShopItem[]>(SHOP_INITIAL);
+  const [editShopItem, setEditShopItem] = useState<ShopItem | null>(null);
 
   const { data: event, isLoading: eventLoading } = useGetEvent(eventId);
   const { data: orders, isLoading: ordersLoading } = useListOrders({ eventId });
   const { data: ticketTypes, isLoading: ticketsLoading } = useListTicketTypes({ eventId });
 
   const createTicketType = useCreateTicketType();
+
+  const confirmedOrders = useMemo(() => orders?.filter((o) => o.status === "confirmed") ?? [], [orders]);
+  const totalRevenue = useMemo(() => confirmedOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0), [confirmedOrders]);
+  const totalTickets = useMemo(() => confirmedOrders.reduce((s, o) => s + o.quantity, 0), [confirmedOrders]);
+
+  /* ── Finance chart data ── */
+  const financeData = useMemo(() => {
+    if (!confirmedOrders.length) return [];
+    const sorted = [...confirmedOrders].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    const first = new Date(sorted[0].createdAt);
+    const last = new Date(sorted[sorted.length - 1].createdAt);
+    const days = eachDayOfInterval({ start: first, end: last });
+
+    let cumulative = 0;
+    return days.map((day) => {
+      const dayStr = format(day, "yyyy-MM-dd");
+      const dayOrders = confirmedOrders.filter((o) =>
+        format(new Date(o.createdAt), "yyyy-MM-dd") === dayStr
+      );
+      const daily = dayOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0);
+      cumulative += daily;
+      const byMethod: Record<string, number> = {};
+      for (const o of dayOrders) {
+        const m = o.payment?.method ?? "other";
+        byMethod[m] = (byMethod[m] ?? 0) + parseFloat(o.totalAmount);
+      }
+      return {
+        date: format(day, "d MMM", { locale: fr }),
+        daily,
+        cumul: cumulative,
+        orange_money: byMethod.orange_money ?? 0,
+        mvola: byMethod.mvola ?? 0,
+        mastercard: byMethod.mastercard ?? 0,
+        orders: dayOrders.length,
+      };
+    });
+  }, [confirmedOrders]);
+
+  const ticketSalesData = useMemo(() => {
+    return (ticketTypes ?? []).map((tt) => ({
+      name: tt.name,
+      vendus: tt.soldCount ?? 0,
+      restants: tt.quantity - (tt.soldCount ?? 0),
+      revenus: (tt.soldCount ?? 0) * parseFloat(String(tt.price)),
+    }));
+  }, [ticketTypes]);
+
+  const revenueByMethod = useMemo(() =>
+    ["orange_money", "mvola", "mastercard"].map((method) => {
+      const methodOrders = confirmedOrders.filter((o) => o.payment?.method === method);
+      const amount = methodOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0);
+      return { method, amount, count: methodOrders.length };
+    }),
+  [confirmedOrders]);
+
+  /* ── Shop stats ── */
+  const shopRevenue = shopItems.reduce((s, i) => s + i.price * i.sold, 0);
+  const shopSoldTotal = shopItems.reduce((s, i) => s + i.sold, 0);
+  const shopCategoryData = SHOP_CATEGORIES.filter((c) => shopItems.some((i) => i.category === c)).map((cat) => {
+    const items = shopItems.filter((i) => i.category === cat);
+    return {
+      name: cat,
+      revenus: items.reduce((s, i) => s + i.price * i.sold, 0),
+      vendus: items.reduce((s, i) => s + i.sold, 0),
+    };
+  });
+
+  const fillPct = event && event.totalCapacity > 0
+    ? Math.round((event.soldTickets / event.totalCapacity) * 100) : 0;
+
+  const handleAddTicket = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    try {
+      await createTicketType.mutateAsync({
+        data: {
+          eventId,
+          name: fd.get("name") as string,
+          description: fd.get("description") as string,
+          price: fd.get("price") as string,
+          quantity: Number(fd.get("quantity")),
+          currency: "MGA",
+        },
+      });
+      setIsAddTicketOpen(false);
+    } catch {
+      alert("Erreur lors de la création du billet");
+    }
+  };
+
+  const handleAddShopItem = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const cat = fd.get("category") as string;
+    if (editShopItem) {
+      setShopItems((prev) =>
+        prev.map((it) =>
+          it.id === editShopItem.id
+            ? {
+                ...it,
+                name: fd.get("name") as string,
+                category: cat,
+                price: Number(fd.get("price")),
+                stock: Number(fd.get("stock")),
+                imageEmoji: SHOP_EMOJIS[cat] ?? "🛍️",
+              }
+            : it
+        )
+      );
+      setEditShopItem(null);
+    } else {
+      const newItem: ShopItem = {
+        id: Date.now(),
+        name: fd.get("name") as string,
+        category: cat,
+        price: Number(fd.get("price")),
+        stock: Number(fd.get("stock")),
+        sold: 0,
+        imageEmoji: SHOP_EMOJIS[cat] ?? "🛍️",
+      };
+      setShopItems((prev) => [...prev, newItem]);
+    }
+    setIsAddShopOpen(false);
+  };
+
+  const deleteShopItem = (itemId: number) => {
+    if (confirm("Supprimer cet article ?")) {
+      setShopItems((prev) => prev.filter((i) => i.id !== itemId));
+    }
+  };
 
   if (eventLoading) {
     return (
@@ -61,60 +260,14 @@ export default function AdminEventDetail() {
     );
   }
 
-  const confirmedOrders = orders?.filter((o) => o.status === "confirmed") ?? [];
-
-  const totalRevenue = confirmedOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0);
-  const totalTickets = confirmedOrders.reduce((s, o) => s + o.quantity, 0);
-  const fillPct = event.totalCapacity > 0 ? Math.round((event.soldTickets / event.totalCapacity) * 100) : 0;
-
-  const revenueByMethod = ["orange_money", "mvola", "mastercard"].map((method) => {
-    const methodOrders = confirmedOrders.filter((o) => o.payment?.method === method);
-    const amount = methodOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0);
-    return { method, amount, count: methodOrders.length };
-  });
-
-  const methodColors: Record<string, string> = {
-    orange_money: "#ff6600",
-    mvola: "#e02020",
-    mastercard: "#3b82f6",
-  };
-  const methodLabels: Record<string, string> = {
-    orange_money: "Orange Money",
-    mvola: "MVola",
-    mastercard: "Mastercard",
-  };
-  const methodIcons: Record<string, string> = {
-    orange_money: "OM",
-    mvola: "M",
-    mastercard: "💳",
-  };
-
-  const handleAddTicket = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    try {
-      await createTicketType.mutateAsync({
-        data: {
-          eventId,
-          name: fd.get("name") as string,
-          description: fd.get("description") as string,
-          price: fd.get("price") as string,
-          quantity: Number(fd.get("quantity")),
-          currency: "MGA",
-        },
-      });
-      setIsAddTicketOpen(false);
-    } catch (err) {
-      alert("Erreur lors de la création du billet");
-    }
-  };
-
   const imageSrc = event.imageUrl || getCategoryImage(event.category);
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "overview", label: "Vue d'ensemble", icon: <TrendingUp className="w-4 h-4" /> },
+    { key: "finance", label: "Finances", icon: <BarChart2 className="w-4 h-4" /> },
     { key: "tickets", label: "Billets", icon: <Ticket className="w-4 h-4" /> },
-    { key: "orders", label: "Commandes & Paiements", icon: <ShoppingCart className="w-4 h-4" /> },
+    { key: "orders", label: "Commandes", icon: <ShoppingCart className="w-4 h-4" /> },
+    { key: "shop", label: "Shop", icon: <Store className="w-4 h-4" /> },
     { key: "staff", label: "Staff", icon: <Users className="w-4 h-4" /> },
   ];
 
@@ -231,10 +384,7 @@ export default function AdminEventDetail() {
             <div className="grid md:grid-cols-3 gap-4">
               {revenueByMethod.map(({ method, amount, count }) => (
                 <Card key={method} className="p-6 relative overflow-hidden">
-                  <div
-                    className="absolute top-0 left-0 right-0 h-1"
-                    style={{ background: methodColors[method] }}
-                  />
+                  <div className="absolute top-0 left-0 right-0 h-1" style={{ background: methodColors[method] }} />
                   <div className="flex items-center gap-3 mb-4">
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm text-white"
@@ -260,7 +410,7 @@ export default function AdminEventDetail() {
 
           {/* Revenue total recap */}
           <Card className="p-6 border-accent/20 bg-gradient-to-r from-primary/10 to-transparent">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Chiffre d'affaires total</div>
                 <div className="text-4xl font-display font-bold text-accent">{formatMGA(totalRevenue)}</div>
@@ -274,6 +424,170 @@ export default function AdminEventDetail() {
                 <div className="text-2xl font-bold">{totalTickets}</div>
               </div>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── TAB: FINANCE ─── */}
+      {activeTab === "finance" && (
+        <div className="space-y-8">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Revenu total", value: formatMGA(totalRevenue), color: "text-emerald-400", sub: `${confirmedOrders.length} commandes` },
+              { label: "Revenu moyen/commande", value: confirmedOrders.length ? formatMGA(totalRevenue / confirmedOrders.length) : "—", color: "text-blue-400", sub: "par commande" },
+              { label: "Revenu moyen/billet", value: totalTickets ? formatMGA(totalRevenue / totalTickets) : "—", color: "text-violet-400", sub: "par billet" },
+              { label: "Revenu shop", value: formatMGA(shopRevenue), color: "text-orange-400", sub: `${shopSoldTotal} articles` },
+            ].map((k) => (
+              <Card key={k.label} className="p-5">
+                <div className={`text-2xl font-bold font-display ${k.color} mb-1`}>{k.value}</div>
+                <div className="text-xs text-muted-foreground">{k.label}</div>
+                <div className="text-xs text-muted-foreground/60 mt-0.5">{k.sub}</div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Revenue over time */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Évolution du chiffre d'affaires</h3>
+            {financeData.length === 0 ? (
+              <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+                Aucune donnée disponible
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={financeData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                  <defs>
+                    <linearGradient id="cumulGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(145 60% 35%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(145 60% 35%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <YAxis tickFormatter={formatArShort} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    formatter={(value: number, name: string) => [
+                      formatMGA(value),
+                      name === "daily" ? "Ventes du jour" : name === "cumul" ? "Cumul" : name,
+                    ]}
+                    labelStyle={{ color: "hsl(145 5% 75%)", marginBottom: 4 }}
+                  />
+                  <Legend
+                    formatter={(v) => v === "daily" ? "Ventes du jour" : v === "cumul" ? "Cumul cumulatif" : v}
+                    wrapperStyle={{ fontSize: 12, color: "hsl(145 5% 65%)" }}
+                  />
+                  <Bar dataKey="daily" fill="hsl(145 48% 20%)" radius={[4, 4, 0, 0]} name="daily" />
+                  <Line
+                    type="monotone"
+                    dataKey="cumul"
+                    stroke="hsl(145 60% 45%)"
+                    strokeWidth={2.5}
+                    dot={{ fill: "hsl(145 60% 45%)", r: 3 }}
+                    activeDot={{ r: 5 }}
+                    name="cumul"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+
+          {/* Revenue by payment method – stacked bar */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Revenus par mode de paiement (par jour)</h3>
+            {financeData.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+                Aucune donnée disponible
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <ComposedChart data={financeData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <YAxis tickFormatter={formatArShort} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    formatter={(value: number, name: string) => [
+                      formatMGA(value),
+                      methodLabels[name] ?? name,
+                    ]}
+                    labelStyle={{ color: "hsl(145 5% 75%)", marginBottom: 4 }}
+                  />
+                  <Legend
+                    formatter={(v) => methodLabels[v] ?? v}
+                    wrapperStyle={{ fontSize: 12, color: "hsl(145 5% 65%)" }}
+                  />
+                  <Bar dataKey="orange_money" stackId="a" fill="#ff6600" name="orange_money" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="mvola" stackId="a" fill="#e02020" name="mvola" />
+                  <Bar dataKey="mastercard" stackId="a" fill="#3b82f6" name="mastercard" radius={[4, 4, 0, 0]} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+
+          {/* Ticket type revenue chart */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Ventes par type de billet</h3>
+            {ticketSalesData.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+                Aucun type de billet configuré
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <ComposedChart data={ticketSalesData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} width={90} />
+                  <Tooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    formatter={(v: number, n: string) => [
+                      n === "revenus" ? formatMGA(v) : `${v} billets`,
+                      n === "vendus" ? "Vendus" : n === "restants" ? "Restants" : "Revenus",
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "hsl(145 5% 65%)" }}
+                    formatter={(v) => v === "vendus" ? "Vendus" : v === "restants" ? "Restants" : "Revenus"} />
+                  <Bar dataKey="vendus" stackId="b" fill="hsl(145 60% 35%)" name="vendus" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="restants" stackId="b" fill="hsl(145 20% 18%)" name="restants" radius={[0, 4, 4, 0]} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+
+          {/* Orders count over time */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Nombre de commandes par jour</h3>
+            {financeData.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Aucune donnée</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={financeData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                  <defs>
+                    <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                  <Tooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    formatter={(v: number) => [`${v} commande${v > 1 ? "s" : ""}`, "Commandes"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="orders"
+                    stroke="#3b82f6"
+                    fill="url(#ordersGradient)"
+                    strokeWidth={2}
+                    dot={{ fill: "#3b82f6", r: 3 }}
+                    name="orders"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </Card>
         </div>
       )}
@@ -308,7 +622,6 @@ export default function AdminEventDetail() {
                 const ticketRevenue = ticketOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0);
                 const sold = tt.soldCount ?? 0;
                 const fillPctTt = tt.quantity > 0 ? Math.round((sold / tt.quantity) * 100) : 0;
-
                 return (
                   <Card key={tt.id} className="p-6">
                     <div className="flex flex-col md:flex-row gap-6">
@@ -360,7 +673,6 @@ export default function AdminEventDetail() {
             </div>
           )}
 
-          {/* Add ticket dialog */}
           <Dialog isOpen={isAddTicketOpen} onClose={() => setIsAddTicketOpen(false)} title="Nouveau type de billet">
             <form onSubmit={handleAddTicket} className="space-y-4">
               <div className="space-y-2">
@@ -393,7 +705,6 @@ export default function AdminEventDetail() {
       {/* ─── TAB: ORDERS & PAYMENTS ─── */}
       {activeTab === "orders" && (
         <div className="space-y-6">
-          {/* Summary bar */}
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: "Total commandes", value: orders?.length ?? 0, color: "text-foreground" },
@@ -502,6 +813,196 @@ export default function AdminEventDetail() {
               </div>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* ─── TAB: SHOP ─── */}
+      {activeTab === "shop" && (
+        <div className="space-y-8">
+          {/* Shop KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Revenu boutique", value: formatMGA(shopRevenue), icon: <Store className="w-5 h-5" />, color: "text-orange-400" },
+              { label: "Articles vendus", value: String(shopSoldTotal), icon: <ShoppingBag className="w-5 h-5" />, color: "text-emerald-400" },
+              { label: "Produits actifs", value: String(shopItems.length), icon: <Package className="w-5 h-5" />, color: "text-blue-400" },
+              { label: "Catégories", value: String(new Set(shopItems.map((i) => i.category)).size), icon: <Tag className="w-5 h-5" />, color: "text-violet-400" },
+            ].map((kpi) => (
+              <Card key={kpi.label} className="p-5">
+                <div className={`${kpi.color} mb-3`}>{kpi.icon}</div>
+                <div className="text-2xl font-bold font-display mb-1">{kpi.value}</div>
+                <div className="text-xs text-muted-foreground">{kpi.label}</div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Revenue by category chart */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Revenus boutique par catégorie</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <ComposedChart data={shopCategoryData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
+                <XAxis dataKey="name" tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                <YAxis tickFormatter={formatArShort} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  formatter={(v: number, n: string) => [
+                    n === "revenus" ? formatMGA(v) : `${v} articles`,
+                    n === "revenus" ? "Revenus" : "Articles vendus",
+                  ]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12, color: "hsl(145 5% 65%)" }}
+                  formatter={(v) => v === "revenus" ? "Revenus" : "Articles vendus"} />
+                <Bar dataKey="revenus" fill="hsl(145 48% 22%)" name="revenus" radius={[4, 4, 0, 0]} />
+                <Line type="monotone" dataKey="vendus" stroke="#f97316" strokeWidth={2}
+                  dot={{ fill: "#f97316", r: 3 }} name="vendus" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Product list */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold font-display text-lg">Catalogue boutique</h3>
+              <Button variant="accent" size="sm" onClick={() => { setEditShopItem(null); setIsAddShopOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" /> Ajouter un article
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {shopItems.map((item) => {
+                const stockPct = item.stock > 0 ? Math.round((item.sold / (item.sold + item.stock)) * 100) : 100;
+                const itemRevenue = item.price * item.sold;
+                return (
+                  <Card key={item.id} className="p-5 relative overflow-hidden">
+                    <div
+                      className="absolute top-0 left-0 bottom-0 w-1 rounded-l"
+                      style={{ background: `hsl(${30 + item.id * 40} 70% 50%)` }}
+                    />
+                    <div className="pl-3">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="text-3xl shrink-0">{item.imageEmoji}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="font-bold truncate">{item.name}</div>
+                              <Badge variant="outline" className="text-xs mt-0.5">{item.category}</Badge>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                variant="outline" size="sm" className="h-7 w-7 p-0"
+                                onClick={() => { setEditShopItem(item); setIsAddShopOpen(true); }}
+                              >
+                                <Edit className="w-3 h-3 text-blue-400" />
+                              </Button>
+                              <Button
+                                variant="outline" size="sm" className="h-7 w-7 p-0"
+                                onClick={() => deleteShopItem(item.id)}
+                              >
+                                <Trash2 className="w-3 h-3 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-3 text-center">
+                        <div>
+                          <div className="text-lg font-display font-bold text-accent">{formatMGA(item.price)}</div>
+                          <div className="text-xs text-muted-foreground">Prix unitaire</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-emerald-400">{item.sold}</div>
+                          <div className="text-xs text-muted-foreground">Vendus</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold">{item.stock}</div>
+                          <div className="text-xs text-muted-foreground">En stock</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>Taux d'écoulement</span>
+                          <span className="font-medium">{stockPct}%</span>
+                        </div>
+                        <div className="w-full bg-input rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${stockPct}%`,
+                              background: stockPct >= 90 ? "hsl(0 70% 50%)" : stockPct >= 60 ? "hsl(38 95% 50%)" : "hsl(145 60% 35%)",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Revenus générés : <span className="text-emerald-400 font-semibold">{formatMGA(itemRevenue)}</span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Total recap */}
+          <Card className="p-6 border-orange-500/20 bg-gradient-to-r from-orange-950/20 to-transparent">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Revenu boutique total</div>
+                <div className="text-4xl font-display font-bold text-orange-400">{formatMGA(shopRevenue)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground mb-1">Articles vendus</div>
+                <div className="text-2xl font-bold">{shopSoldTotal}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground mb-1">Produits en catalogue</div>
+                <div className="text-2xl font-bold">{shopItems.length}</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Add/Edit shop item dialog */}
+          <Dialog
+            isOpen={isAddShopOpen}
+            onClose={() => { setIsAddShopOpen(false); setEditShopItem(null); }}
+            title={editShopItem ? "Modifier l'article" : "Ajouter un article"}
+          >
+            <form onSubmit={handleAddShopItem} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Nom de l'article</Label>
+                <Input name="name" required placeholder="Ex: T-Shirt officiel" defaultValue={editShopItem?.name ?? ""} />
+              </div>
+              <div className="space-y-2">
+                <Label>Catégorie</Label>
+                <Select name="category" required defaultValue={editShopItem?.category ?? "Vêtements"}>
+                  {SHOP_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{SHOP_EMOJIS[c]} {c}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Prix (Ar)</Label>
+                  <Input name="price" type="number" required min="0" placeholder="Ex: 35000" defaultValue={editShopItem?.price ?? ""} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantité en stock</Label>
+                  <Input name="stock" type="number" required min="0" placeholder="Ex: 100" defaultValue={editShopItem?.stock ?? ""} />
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => { setIsAddShopOpen(false); setEditShopItem(null); }}>
+                  Annuler
+                </Button>
+                <Button type="submit" variant="accent">
+                  {editShopItem ? "Enregistrer" : "Ajouter l'article"}
+                </Button>
+              </div>
+            </form>
+          </Dialog>
         </div>
       )}
 
