@@ -4,13 +4,14 @@ import {
   ChevronLeft, TrendingUp, Ticket, Users, CreditCard, ShoppingCart,
   Plus, Edit, Trash2, Phone, Mail, UserCircle, Calendar, MapPin,
   CheckCircle, XCircle, Clock, UserCheck, Settings, Store,
-  Package, Tag, ShoppingBag, BarChart2,
+  Package, Tag, ShoppingBag, BarChart2, Receipt, Wallet,
+  ArrowUpCircle, ArrowDownCircle, Minus,
 } from "lucide-react";
-import { format, parseISO, eachDayOfInterval, subDays } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, AreaChart, Area,
+  ResponsiveContainer, Legend, AreaChart, Area, ReferenceLine, Cell,
 } from "recharts";
 import { AdminLayout } from "@/components/layout";
 import { Card, Button, Badge, Dialog, Input, Label, Select, Textarea,
@@ -22,7 +23,41 @@ import {
   useCreateTicketType, useDeleteEvent,
 } from "@workspace/api-client-react";
 
-type Tab = "overview" | "finance" | "tickets" | "orders" | "shop" | "staff";
+type Tab = "overview" | "finance" | "depenses" | "tickets" | "orders" | "shop" | "staff";
+
+type Expense = {
+  id: number;
+  label: string;
+  category: string;
+  amount: number;
+  date: string;
+  note?: string;
+  status: "paid" | "pending";
+};
+
+const EXPENSE_CATEGORIES = [
+  { name: "Location salle", emoji: "🏛️" },
+  { name: "Artistes / Prestataires", emoji: "🎵" },
+  { name: "Son & Lumière", emoji: "🔊" },
+  { name: "Traiteur", emoji: "🍽️" },
+  { name: "Marketing / Communication", emoji: "📣" },
+  { name: "Transport / Logistique", emoji: "🚗" },
+  { name: "Staff / Personnel", emoji: "👔" },
+  { name: "Impression / Décoration", emoji: "🖨️" },
+  { name: "Matériel technique", emoji: "🔧" },
+  { name: "Autres", emoji: "💡" },
+];
+
+const EXPENSES_INITIAL: Expense[] = [
+  { id: 1, label: "Location Hôtel Colbert – Salle Panorama", category: "Location salle", amount: 180000, date: "2026-03-10", status: "paid", note: "Acompte 50% versé" },
+  { id: 2, label: "Groupe Jazz & Orchestre", category: "Artistes / Prestataires", amount: 120000, date: "2026-03-15", status: "paid" },
+  { id: 3, label: "Régie son, lumière & écrans LED", category: "Son & Lumière", amount: 75000, date: "2026-03-18", status: "paid" },
+  { id: 4, label: "Traiteur dîner gala – 300 couverts", category: "Traiteur", amount: 150000, date: "2026-03-20", status: "pending", note: "Solde à régler le jour J" },
+  { id: 5, label: "Campagne réseaux sociaux & affiches", category: "Marketing / Communication", amount: 45000, date: "2026-02-28", status: "paid" },
+  { id: 6, label: "Transport artistes & matériel", category: "Transport / Logistique", amount: 20000, date: "2026-04-14", status: "pending" },
+  { id: 7, label: "Staff d'accueil & sécurité (5 pers.)", category: "Staff / Personnel", amount: 30000, date: "2026-04-15", status: "pending" },
+  { id: 8, label: "Impression programmes & banderoles", category: "Impression / Décoration", amount: 18000, date: "2026-03-25", status: "paid" },
+];
 
 const STAFF_ROLES = [
   { id: 1, name: "Rakoto Jean", role: "Responsable billetterie", phone: "032 12 345 67", status: "confirmed" },
@@ -98,8 +133,11 @@ export default function AdminEventDetail() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
   const [isAddShopOpen, setIsAddShopOpen] = useState(false);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [shopItems, setShopItems] = useState<ShopItem[]>(SHOP_INITIAL);
   const [editShopItem, setEditShopItem] = useState<ShopItem | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
   const { data: event, isLoading: eventLoading } = useGetEvent(eventId);
   const { data: orders, isLoading: ordersLoading } = useListOrders({ eventId });
@@ -163,6 +201,28 @@ export default function AdminEventDetail() {
     }),
   [confirmedOrders]);
 
+  /* ── Expense stats ── */
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const paidExpenses = expenses.filter((e) => e.status === "paid").reduce((s, e) => s + e.amount, 0);
+  const pendingExpenses = expenses.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
+  const benefice = totalRevenue - totalExpenses;
+  const beneficePct = totalRevenue > 0 ? Math.round((benefice / totalRevenue) * 100) : 0;
+
+  const expenseByCat = EXPENSE_CATEGORIES
+    .filter((c) => expenses.some((e) => e.category === c.name))
+    .map((c) => {
+      const items = expenses.filter((e) => e.category === c.name);
+      return { name: c.name, emoji: c.emoji, amount: items.reduce((s, e) => s + e.amount, 0), count: items.length };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  /* ── Finance P&L comparison chart data ── */
+  const plData = [
+    { label: "Revenus", value: totalRevenue, color: "hsl(145 60% 35%)" },
+    { label: "Dépenses", value: totalExpenses, color: "hsl(0 65% 50%)" },
+    { label: "Bénéfice", value: benefice, color: benefice >= 0 ? "hsl(145 60% 45%)" : "hsl(0 65% 50%)" },
+  ];
+
   /* ── Shop stats ── */
   const shopRevenue = shopItems.reduce((s, i) => s + i.price * i.sold, 0);
   const shopSoldTotal = shopItems.reduce((s, i) => s + i.sold, 0);
@@ -195,6 +255,49 @@ export default function AdminEventDetail() {
       setIsAddTicketOpen(false);
     } catch {
       alert("Erreur lors de la création du billet");
+    }
+  };
+
+  const handleAddExpense = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    if (editExpense) {
+      setExpenses((prev) =>
+        prev.map((ex) =>
+          ex.id === editExpense.id
+            ? {
+                ...ex,
+                label: fd.get("label") as string,
+                category: fd.get("category") as string,
+                amount: Number(fd.get("amount")),
+                date: fd.get("date") as string,
+                note: fd.get("note") as string || undefined,
+                status: fd.get("status") as "paid" | "pending",
+              }
+            : ex
+        )
+      );
+      setEditExpense(null);
+    } else {
+      setExpenses((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          label: fd.get("label") as string,
+          category: fd.get("category") as string,
+          amount: Number(fd.get("amount")),
+          date: fd.get("date") as string,
+          note: fd.get("note") as string || undefined,
+          status: fd.get("status") as "paid" | "pending",
+        },
+      ]);
+    }
+    setIsAddExpenseOpen(false);
+  };
+
+  const deleteExpense = (expId: number) => {
+    if (confirm("Supprimer cette dépense ?")) {
+      setExpenses((prev) => prev.filter((e) => e.id !== expId));
     }
   };
 
@@ -265,6 +368,7 @@ export default function AdminEventDetail() {
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "overview", label: "Vue d'ensemble", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "finance", label: "Finances", icon: <BarChart2 className="w-4 h-4" /> },
+    { key: "depenses", label: "Dépenses", icon: <Receipt className="w-4 h-4" /> },
     { key: "tickets", label: "Billets", icon: <Ticket className="w-4 h-4" /> },
     { key: "orders", label: "Commandes", icon: <ShoppingCart className="w-4 h-4" /> },
     { key: "shop", label: "Shop", icon: <Store className="w-4 h-4" /> },
@@ -431,6 +535,116 @@ export default function AdminEventDetail() {
       {/* ─── TAB: FINANCE ─── */}
       {activeTab === "finance" && (
         <div className="space-y-8">
+
+          {/* P&L Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-6 border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 to-transparent">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <ArrowUpCircle className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="text-sm text-muted-foreground">Chiffre d'affaires</div>
+              </div>
+              <div className="text-3xl font-display font-bold text-emerald-400">{formatMGA(totalRevenue)}</div>
+              <div className="text-xs text-muted-foreground mt-1">{confirmedOrders.length} commandes confirmées</div>
+            </Card>
+
+            <Card className="p-6 border-red-500/20 bg-gradient-to-br from-red-950/30 to-transparent">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <ArrowDownCircle className="w-5 h-5 text-red-400" />
+                </div>
+                <div className="text-sm text-muted-foreground">Total dépenses</div>
+              </div>
+              <div className="text-3xl font-display font-bold text-red-400">{formatMGA(totalExpenses)}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatMGA(paidExpenses)} payé · {formatMGA(pendingExpenses)} en attente
+              </div>
+            </Card>
+
+            <Card className={`p-6 ${benefice >= 0 ? "border-accent/30 bg-gradient-to-br from-primary/20 to-transparent" : "border-red-500/30 bg-gradient-to-br from-red-950/20 to-transparent"}`}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${benefice >= 0 ? "bg-accent/20" : "bg-red-500/20"}`}>
+                  <Wallet className={`w-5 h-5 ${benefice >= 0 ? "text-accent" : "text-red-400"}`} />
+                </div>
+                <div className="text-sm text-muted-foreground">Bénéfice net</div>
+              </div>
+              <div className={`text-3xl font-display font-bold ${benefice >= 0 ? "text-accent" : "text-red-400"}`}>
+                {benefice >= 0 ? "+" : ""}{formatMGA(benefice)}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 bg-input rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(Math.abs(beneficePct), 100)}%`,
+                      background: benefice >= 0 ? "hsl(145 60% 35%)" : "hsl(0 65% 50%)",
+                    }}
+                  />
+                </div>
+                <span className={`text-xs font-bold ${benefice >= 0 ? "text-accent" : "text-red-400"}`}>
+                  {beneficePct >= 0 ? "+" : ""}{beneficePct}% marge
+                </span>
+              </div>
+            </Card>
+          </div>
+
+          {/* Revenue vs Expenses comparison bar chart */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-6">Revenus · Dépenses · Bénéfice</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <ComposedChart data={plData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(145 10% 12%)" />
+                <XAxis dataKey="label" tick={{ fill: "hsl(145 5% 65%)", fontSize: 13, fontWeight: 600 }} />
+                <YAxis tickFormatter={formatArShort} tick={{ fill: "hsl(145 5% 55%)", fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  formatter={(v: number) => [formatMGA(v)]}
+                  labelStyle={{ color: "hsl(145 5% 75%)", marginBottom: 4 }}
+                />
+                <ReferenceLine y={0} stroke="hsl(145 10% 25%)" strokeWidth={1} />
+                <Bar
+                  dataKey="value"
+                  radius={[6, 6, 0, 0]}
+                  label={{ position: "top", formatter: (v: number) => formatArShort(Math.abs(v)), fill: "hsl(145 5% 65%)", fontSize: 11 }}
+                >
+                  {plData.map((entry) => (
+                    <Cell key={entry.label} fill={entry.color} />
+                  ))}
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </Card>
+
+          {/* Expense breakdown by category */}
+          <Card className="p-6">
+            <h3 className="font-bold font-display text-lg mb-4">Répartition des dépenses par catégorie</h3>
+            {expenseByCat.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">Aucune dépense enregistrée</div>
+            ) : (
+              <div className="space-y-3">
+                {expenseByCat.map((cat) => {
+                  const pct = totalExpenses > 0 ? Math.round((cat.amount / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={cat.name}>
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <span className="flex items-center gap-2">
+                          <span>{cat.emoji}</span>
+                          <span className="font-medium">{cat.name}</span>
+                          <span className="text-xs text-muted-foreground">({cat.count})</span>
+                        </span>
+                        <span className="font-bold">{formatMGA(cat.amount)} <span className="text-xs text-muted-foreground font-normal">({pct}%)</span></span>
+                      </div>
+                      <div className="w-full bg-input rounded-full h-2 overflow-hidden">
+                        <div className="h-full rounded-full bg-red-500/70" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -589,6 +803,195 @@ export default function AdminEventDetail() {
               </ResponsiveContainer>
             )}
           </Card>
+        </div>
+      )}
+
+      {/* ─── TAB: DÉPENSES ─── */}
+      {activeTab === "depenses" && (
+        <div className="space-y-8">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Total dépenses", value: formatMGA(totalExpenses), icon: <Receipt className="w-5 h-5" />, color: "text-red-400" },
+              { label: "Réglées", value: formatMGA(paidExpenses), icon: <CheckCircle className="w-5 h-5" />, color: "text-emerald-400" },
+              { label: "En attente", value: formatMGA(pendingExpenses), icon: <Clock className="w-5 h-5" />, color: "text-orange-400" },
+              { label: "Bénéfice estimé", value: (benefice >= 0 ? "+" : "") + formatMGA(benefice), icon: <Wallet className="w-5 h-5" />, color: benefice >= 0 ? "text-accent" : "text-red-400" },
+            ].map((kpi) => (
+              <Card key={kpi.label} className="p-5">
+                <div className={`${kpi.color} mb-3`}>{kpi.icon}</div>
+                <div className={`text-2xl font-bold font-display mb-1 ${kpi.color}`}>{kpi.value}</div>
+                <div className="text-xs text-muted-foreground">{kpi.label}</div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Expense list */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold font-display text-lg">Registre des dépenses ({expenses.length})</h3>
+              <Button variant="accent" size="sm" onClick={() => { setEditExpense(null); setIsAddExpenseOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" /> Nouvelle dépense
+              </Button>
+            </div>
+
+            {expenses.length === 0 ? (
+              <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
+                <Receipt className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h4 className="font-bold mb-2">Aucune dépense enregistrée</h4>
+                <Button variant="accent" size="sm" onClick={() => setIsAddExpenseOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Ajouter une dépense
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {expenses
+                  .slice()
+                  .sort((a, b) => b.amount - a.amount)
+                  .map((exp) => {
+                    const cat = EXPENSE_CATEGORIES.find((c) => c.name === exp.category);
+                    return (
+                      <Card key={exp.id} className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-2xl shrink-0">
+                            {cat?.emoji ?? "💡"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="font-semibold truncate">{exp.label}</div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs text-muted-foreground">{exp.category}</span>
+                                  <span className="text-muted-foreground/40">·</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(exp.date), "d MMM yyyy", { locale: fr })}
+                                  </span>
+                                  {exp.note && (
+                                    <>
+                                      <span className="text-muted-foreground/40">·</span>
+                                      <span className="text-xs text-muted-foreground italic truncate max-w-[180px]">{exp.note}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="shrink-0 flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="font-bold text-red-400">{formatMGA(exp.amount)}</div>
+                                  <Badge variant={exp.status === "paid" ? "success" : "warning"} className="text-xs">
+                                    {exp.status === "paid" ? (
+                                      <span className="flex items-center gap-1"><CheckCircle className="w-2.5 h-2.5" /> Réglée</span>
+                                    ) : (
+                                      <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> En attente</span>
+                                    )}
+                                  </Badge>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="outline" size="sm" className="h-8 w-8 p-0"
+                                    onClick={() => { setEditExpense(exp); setIsAddExpenseOpen(true); }}
+                                  >
+                                    <Edit className="w-3.5 h-3.5 text-blue-400" />
+                                  </Button>
+                                  <Button
+                                    variant="outline" size="sm" className="h-8 w-8 p-0"
+                                    onClick={() => deleteExpense(exp.id)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
+          {/* Category breakdown */}
+          {expenseByCat.length > 0 && (
+            <Card className="p-6">
+              <h3 className="font-bold font-display text-lg mb-4">Répartition par catégorie</h3>
+              <div className="space-y-3">
+                {expenseByCat.map((cat) => {
+                  const pct = totalExpenses > 0 ? Math.round((cat.amount / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={cat.name}>
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <span className="flex items-center gap-2">
+                          <span>{cat.emoji}</span>
+                          <span className="font-medium">{cat.name}</span>
+                          <span className="text-xs text-muted-foreground">{cat.count} poste{cat.count > 1 ? "s" : ""}</span>
+                        </span>
+                        <span className="font-bold text-red-400">
+                          {formatMGA(cat.amount)} <span className="text-muted-foreground font-normal text-xs">({pct}%)</span>
+                        </span>
+                      </div>
+                      <div className="w-full bg-input rounded-full h-2 overflow-hidden">
+                        <div className="h-full rounded-full bg-red-500/60" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">
+                <span className="font-bold">Total toutes catégories</span>
+                <span className="font-bold text-xl text-red-400">{formatMGA(totalExpenses)}</span>
+              </div>
+            </Card>
+          )}
+
+          {/* Add/Edit expense dialog */}
+          <Dialog
+            isOpen={isAddExpenseOpen}
+            onClose={() => { setIsAddExpenseOpen(false); setEditExpense(null); }}
+            title={editExpense ? "Modifier la dépense" : "Nouvelle dépense"}
+          >
+            <form onSubmit={handleAddExpense} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Intitulé</Label>
+                <Input name="label" required placeholder="Ex: Location salle des fêtes" defaultValue={editExpense?.label ?? ""} />
+              </div>
+              <div className="space-y-2">
+                <Label>Catégorie</Label>
+                <Select name="category" required defaultValue={editExpense?.category ?? "Location salle"}>
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Montant (Ar)</Label>
+                  <Input name="amount" type="number" required min="0" placeholder="Ex: 50000" defaultValue={editExpense?.amount ?? ""} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input name="date" type="date" required defaultValue={editExpense?.date ?? new Date().toISOString().slice(0, 10)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Statut</Label>
+                <Select name="status" defaultValue={editExpense?.status ?? "pending"}>
+                  <option value="paid">✅ Réglée</option>
+                  <option value="pending">⏳ En attente</option>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Note (optionnel)</Label>
+                <Textarea name="note" placeholder="Informations complémentaires..." defaultValue={editExpense?.note ?? ""} />
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => { setIsAddExpenseOpen(false); setEditExpense(null); }}>
+                  Annuler
+                </Button>
+                <Button type="submit" variant="accent">
+                  {editExpense ? "Enregistrer" : "Ajouter"}
+                </Button>
+              </div>
+            </form>
+          </Dialog>
         </div>
       )}
 
