@@ -228,9 +228,9 @@ export default function AdminEvents() {
                       ) : (
                         <span className="text-xs text-muted-foreground italic">Pas de billets</span>
                       )}
-                      <Link href={`/events/${event.id}`}>
+                      <Link href={`/admin/events/${event.id}`}>
                         <Button variant="outline" size="sm" className="h-8 text-xs">
-                          Voir →
+                          Gérer →
                         </Button>
                       </Link>
                     </div>
