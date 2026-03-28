@@ -8,6 +8,7 @@ import Events from "@/pages/Events";
 import EventDetail from "@/pages/EventDetail";
 import Checkout from "@/pages/Checkout";
 import OrderConfirmation from "@/pages/OrderConfirmation";
+import MesBillets from "@/pages/MesBillets";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminEvents from "@/pages/admin/AdminEvents";
 import AdminEventDetail from "@/pages/admin/AdminEventDetail";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/events/:id" component={EventDetail} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/orders/:id" component={OrderConfirmation} />
+      <Route path="/mes-billets" component={MesBillets} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
