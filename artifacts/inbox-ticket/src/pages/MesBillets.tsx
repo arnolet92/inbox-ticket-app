@@ -12,6 +12,7 @@ import { PublicLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
 import { useListOrders } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
 
 /* ── Loyalty tiers ── */
 function getLoyaltyTier(count: number) {
@@ -218,15 +219,22 @@ function LoginForm({ onLogin }: { onLogin: (phone: string, name: string) => void
 
 /* ── Main page ── */
 export default function MesBillets() {
+  const { user } = useAuth();
+
+  /* Local auth state (fallback when not logged in via AuthContext) */
   const [searchPhone, setSearchPhone] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<"tous" | "avenir" | "passes">("tous");
 
+  /* If the user is logged in via AuthContext, use their phone directly */
+  const effectivePhone = user ? (user.phone ?? "") : searchPhone;
+  const isGloballyAuthenticated = !!user || isAuthenticated;
+
   const { data: allOrders, isLoading } = useListOrders(
-    { customerPhone: searchPhone } as any,
-    { query: { enabled: !!searchPhone } }
+    { customerPhone: effectivePhone } as any,
+    { query: { enabled: !!effectivePhone } }
   );
 
   const orders = useMemo(() => allOrders ?? [], [allOrders]);
@@ -238,15 +246,17 @@ export default function MesBillets() {
     setIsAuthenticated(false);
   }
 
-  /* Validate password once orders are loaded */
+  /* Validate password once orders are loaded (only for local login, not AuthContext) */
   const isValidated = useMemo(() => {
+    if (user) return true; // already authenticated globally
     if (!searchPhone || isLoading || orders.length === 0) return null;
     const nameMatch = orders[0]?.customerName?.trim().toLowerCase();
     const attempt = passwordInput.trim().toLowerCase();
     return nameMatch === attempt || nameMatch?.startsWith(attempt) || attempt?.startsWith(nameMatch);
-  }, [orders, passwordInput, searchPhone, isLoading]);
+  }, [user, orders, passwordInput, searchPhone, isLoading]);
 
   React.useEffect(() => {
+    if (user) return; // managed by AuthContext
     if (isValidated === true) {
       setIsAuthenticated(true);
       setAuthError("");
@@ -257,7 +267,7 @@ export default function MesBillets() {
       setAuthError("Aucun compte trouvé avec ce numéro.");
       setIsAuthenticated(false);
     }
-  }, [isValidated, searchPhone, isLoading, orders.length]);
+  }, [user, isValidated, searchPhone, isLoading, orders.length]);
 
   function handleLogout() {
     setSearchPhone("");
@@ -302,16 +312,16 @@ export default function MesBillets() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-        {/* Loading state after submit */}
-        {searchPhone && isLoading && (
+        {/* Loading state */}
+        {effectivePhone && isLoading && (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent" />
-            <p className="text-muted-foreground text-sm">Vérification en cours...</p>
+            <p className="text-muted-foreground text-sm">Chargement de vos billets...</p>
           </div>
         )}
 
-        {/* Error on auth fail */}
-        {searchPhone && !isLoading && !isAuthenticated && authError && (
+        {/* Error on local auth fail (only when not globally logged in) */}
+        {!user && searchPhone && !isLoading && !isAuthenticated && authError && (
           <div className="max-w-md mx-auto">
             <div className="mb-6 flex items-center gap-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 fade-in">
               <AlertCircle className="w-5 h-5 shrink-0" />
@@ -324,26 +334,26 @@ export default function MesBillets() {
           </div>
         )}
 
-        {/* Not yet searched */}
-        {!searchPhone && !isLoading && (
+        {/* Not yet searched (and not globally logged in) */}
+        {!user && !searchPhone && !isLoading && (
           <LoginForm onLogin={handleLogin} error={authError} />
         )}
 
         {/* Authenticated view */}
-        {isAuthenticated && !isLoading && (
+        {isGloballyAuthenticated && !isLoading && (
           <>
             {/* Profile header */}
             <div className="flex items-center justify-between mb-8 fade-in flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-emerald-700 flex items-center justify-center text-2xl font-bold text-white shrink-0">
-                  {customerName.charAt(0).toUpperCase()}
+                  {(user?.name ?? customerName).charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Bienvenue</p>
-                  <h1 className="text-2xl font-bold font-display">{customerName}</h1>
+                  <h1 className="text-2xl font-bold font-display">{user?.name ?? customerName}</h1>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Phone className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{searchPhone}</span>
+                    <span className="text-sm text-muted-foreground">{effectivePhone}</span>
                   </div>
                 </div>
               </div>
@@ -355,9 +365,11 @@ export default function MesBillets() {
                     <div className="font-bold text-xs" style={{ color: tier.color }}>{tier.label}</div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={handleLogout}>
-                  <LogOut className="w-3.5 h-3.5" /> Déconnexion
-                </Button>
+                {!user && (
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={handleLogout}>
+                    <LogOut className="w-3.5 h-3.5" /> Déconnexion
+                  </Button>
+                )}
               </div>
             </div>
 

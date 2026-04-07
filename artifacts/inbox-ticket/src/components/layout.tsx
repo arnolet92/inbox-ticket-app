@@ -33,9 +33,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors">Accueil</Link>
             <Link href="/events" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors">Événements</Link>
-            <Link href="/mes-billets" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors flex items-center gap-1.5">
-              <Ticket className="w-4 h-4" /> Mes Billets
-            </Link>
+            {user && (
+              <Link href="/mes-billets" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors flex items-center gap-1.5">
+                <Ticket className="w-4 h-4" /> Mes Billets
+              </Link>
+            )}
             <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
               Admin
             </Link>
@@ -72,9 +74,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <div className="md:hidden absolute top-20 left-0 w-full glass-panel border-t border-border/50 py-4 px-4 flex flex-col gap-4">
             <Link href="/" className="text-lg font-semibold" onClick={() => setIsMobileMenuOpen(false)}>Accueil</Link>
             <Link href="/events" className="text-lg font-semibold" onClick={() => setIsMobileMenuOpen(false)}>Événements</Link>
-            <Link href="/mes-billets" className="text-lg font-semibold flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-              <Ticket className="w-5 h-5 text-accent" /> Mes Billets
-            </Link>
+            {user && (
+              <Link href="/mes-billets" className="text-lg font-semibold flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                <Ticket className="w-5 h-5 text-accent" /> Mes Billets
+              </Link>
+            )}
             {user ? (
               <>
                 <div className="flex items-center gap-2 text-lg font-semibold text-accent">
