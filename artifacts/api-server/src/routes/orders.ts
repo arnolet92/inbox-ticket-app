@@ -16,11 +16,12 @@ const createOrderSchema = z.object({
 
 router.get("/orders", async (req, res) => {
   try {
-    const { status, eventId, customerEmail } = req.query as Record<string, string>;
+    const { status, eventId, customerEmail, customerPhone } = req.query as Record<string, string>;
     let orders = await db.select().from(ordersTable);
     if (status) orders = orders.filter(o => o.status === status);
     if (eventId) orders = orders.filter(o => o.eventId === parseInt(eventId));
     if (customerEmail) orders = orders.filter(o => o.customerEmail.toLowerCase() === customerEmail.toLowerCase());
+    if (customerPhone) orders = orders.filter(o => o.customerPhone?.replace(/\s/g, "") === customerPhone.replace(/\s/g, ""));
 
     const enriched = await Promise.all(orders.map(async (order) => {
       const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, order.eventId));
