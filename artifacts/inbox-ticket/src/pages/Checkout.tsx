@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { useLocation, useSearch } from "wouter";
-import { CreditCard, Smartphone, CheckCircle2, ChevronLeft } from "lucide-react";
+import { CreditCard, Smartphone, CheckCircle2, ChevronLeft, User } from "lucide-react";
 import { PublicLayout } from "@/components/layout";
 import { Button, Input, Label, Card } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
 import { PaymentProcessing } from "@/components/PaymentProcessing";
 import { useGetEvent, useCreateOrder, useCreatePayment, type CreateOrderInputPaymentMethod } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
+  const { user } = useAuth();
   
   const eventId = Number(searchParams.get("eventId"));
   const ticketTypeId = Number(searchParams.get("ticketTypeId"));
@@ -99,14 +101,20 @@ export default function Checkout() {
             <div className="lg:col-span-2 space-y-8">
               {/* User Info */}
               <Card className="p-6 md:p-8">
-                <h2 className="text-xl font-bold font-display mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-bold font-display mb-2 flex items-center gap-2">
                   <span className="bg-primary/20 text-accent w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
                   Vos coordonnées
                 </h2>
+                {user && (
+                  <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 mb-5">
+                    <User className="w-4 h-4 shrink-0" />
+                    Connecté en tant que <span className="font-semibold">{user.name}</span>
+                  </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet</Label>
-                    <Input id="name" name="name" required placeholder="Jean Dupont" />
+                    <Input id="name" name="name" required placeholder="Jean Dupont" defaultValue={user?.name || ""} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Adresse email</Label>
@@ -114,7 +122,7 @@ export default function Checkout() {
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="phone">Numéro de téléphone</Label>
-                    <Input id="phone" name="phone" required placeholder="034 00 000 00" />
+                    <Input id="phone" name="phone" required placeholder="034 00 000 00" defaultValue={user?.phone || ""} />
                   </div>
                 </div>
               </Card>

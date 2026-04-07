@@ -9,11 +9,13 @@ import { Button, Card, Badge } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
 import { getCategoryEmoji, getCategoryImage } from "@/components/EventCard";
 import { useGetEvent } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function EventDetail() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { data: event, isLoading } = useGetEvent(Number(id));
+  const { user } = useAuth();
 
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
@@ -45,9 +47,12 @@ export default function EventDetail() {
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
     const firstItem = cartItems[0];
-    setLocation(
-      `/checkout?eventId=${event!.id}&ticketTypeId=${firstItem.ticket.id}&qty=${firstItem.qty}`
-    );
+    const checkoutUrl = `/checkout?eventId=${event!.id}&ticketTypeId=${firstItem.ticket.id}&qty=${firstItem.qty}`;
+    if (!user) {
+      setLocation(`/auth?redirect=${encodeURIComponent(checkoutUrl)}`);
+      return;
+    }
+    setLocation(checkoutUrl);
   };
 
   if (isLoading) {

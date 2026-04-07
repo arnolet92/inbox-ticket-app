@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket } from "lucide-react";
+import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 export function Logo() {
@@ -21,6 +22,7 @@ export function Logo() {
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -28,7 +30,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Logo />
           
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors">Accueil</Link>
             <Link href="/events" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors">Événements</Link>
             <Link href="/mes-billets" className="text-sm font-semibold text-foreground/80 hover:text-accent transition-colors flex items-center gap-1.5">
@@ -37,6 +39,27 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
               Admin
             </Link>
+            {user ? (
+              <div className="flex items-center gap-3 pl-2 border-l border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent text-sm font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-foreground/80">{user.name.split(" ")[0]}</span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  title="Déconnexion"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link href="/auth" className="text-sm font-semibold px-4 py-2 rounded-lg bg-accent text-black hover:bg-accent/90 transition-all flex items-center gap-1.5">
+                <User className="w-4 h-4" /> Connexion
+              </Link>
+            )}
           </nav>
 
           <button className="md:hidden text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -52,7 +75,22 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <Link href="/mes-billets" className="text-lg font-semibold flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
               <Ticket className="w-5 h-5 text-accent" /> Mes Billets
             </Link>
-            <Link href="/admin" className="text-lg font-semibold text-accent" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 text-lg font-semibold text-accent">
+                  <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold">{user.name.charAt(0).toUpperCase()}</div>
+                  {user.name}
+                </div>
+                <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="text-left text-destructive font-semibold flex items-center gap-2">
+                  <LogOut className="w-5 h-5" /> Déconnexion
+                </button>
+              </>
+            ) : (
+              <Link href="/auth" className="text-lg font-semibold text-accent flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                <User className="w-5 h-5" /> Connexion / S'inscrire
+              </Link>
+            )}
+            <Link href="/admin" className="text-lg font-semibold text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
           </div>
         )}
       </header>
