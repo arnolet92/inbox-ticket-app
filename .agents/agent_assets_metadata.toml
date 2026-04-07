@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "MPIaamdQcehC-fiEY493y"
+uri = "file://inbox-ticket.tar.gz"
+type = "unspecified"
+title = "Code source — Inbox Ticket"
