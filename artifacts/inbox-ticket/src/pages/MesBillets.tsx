@@ -226,7 +226,7 @@ export default function MesBillets() {
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tous" | "avenir" | "passes">("tous");
+  const [activeTab, setActiveTab] = useState<"tous" | "avenir" | "passes">("avenir");
 
   /* If the user is logged in via AuthContext, use their phone directly */
   const effectivePhone = user ? (user.phone ?? "") : searchPhone;

@@ -47,9 +47,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <Ticket className="w-4 h-4" /> Mes Billets
               </Link>
             )}
-            <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
-              Admin
-            </Link>
+            {!user && (
+              <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
+                Admin
+              </Link>
+            )}
             {user ? (
               <div className="flex items-center gap-3 pl-2 border-l border-border">
                 <div className="flex items-center gap-2">
@@ -115,7 +117,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <User className="w-5 h-5" /> Connexion / S'inscrire
               </Link>
             )}
-            <Link href="/admin" className="text-lg font-semibold text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
+            {!user && (
+              <Link href="/admin" className="text-lg font-semibold text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
+            )}
           </div>
         )}
       </header>
