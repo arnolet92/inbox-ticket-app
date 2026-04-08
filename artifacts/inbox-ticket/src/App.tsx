@@ -16,6 +16,7 @@ import AdminEvents from "@/pages/admin/AdminEvents";
 import AdminEventDetail from "@/pages/admin/AdminEventDetail";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminPayments from "@/pages/admin/AdminPayments";
+import BilletPublic from "@/pages/BilletPublic";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/orders/:id" component={OrderConfirmation} />
       <Route path="/mes-billets" component={MesBillets} />
       <Route path="/auth" component={Auth} />
+      <Route path="/billet" component={BilletPublic} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />

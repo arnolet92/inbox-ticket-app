@@ -101,67 +101,51 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
     win.document.close();
   };
 
+  /* Public shareable URL — opens /billet?code=... showing the QR */
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const shareUrl = `${window.location.origin}${base}/billet?code=${encodeURIComponent(qrValue)}`;
+  const shareMessage = encodeURIComponent(
+    `🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}\n${shareUrl}`
+  );
+
   const SOCIAL = [
-    { label: "WhatsApp",  color: "#25D366", icon: "https://cdn.simpleicons.org/whatsapp/ffffff",  appScheme: "whatsapp://", storeUrl: "https://wa.me/" },
-    { label: "Messenger", color: "#0099FF", icon: "https://cdn.simpleicons.org/messenger/ffffff", appScheme: "fb-messenger://", storeUrl: "https://www.messenger.com/" },
-    { label: "Instagram", color: "#E1306C", icon: "https://cdn.simpleicons.org/instagram/ffffff", appScheme: "instagram://", storeUrl: "https://www.instagram.com/" },
-    { label: "TikTok",   color: "#010101", icon: "https://cdn.simpleicons.org/tiktok/ffffff",   appScheme: "tiktok://", storeUrl: "https://www.tiktok.com/" },
+    {
+      label: "WhatsApp",
+      color: "#25D366",
+      icon: "https://cdn.simpleicons.org/whatsapp/ffffff",
+      shareLink: `https://wa.me/?text=${shareMessage}`,
+    },
+    {
+      label: "Messenger",
+      color: "#0099FF",
+      icon: "https://cdn.simpleicons.org/messenger/ffffff",
+      shareLink: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(shareUrl)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(shareUrl)}`,
+    },
+    {
+      label: "Instagram",
+      color: "#E1306C",
+      icon: "https://cdn.simpleicons.org/instagram/ffffff",
+      shareLink: null,
+    },
+    {
+      label: "TikTok",
+      color: "#010101",
+      icon: "https://cdn.simpleicons.org/tiktok/ffffff",
+      shareLink: null,
+    },
   ];
 
-  /* Generate QR as PNG Blob for file sharing */
-  const qrToPngFile = (): Promise<File | null> => {
-    return new Promise((resolve) => {
-      const svg = modalQrRef.current?.querySelector("svg");
-      if (!svg) { resolve(null); return; }
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const canvas = document.createElement("canvas");
-      canvas.width = 400; canvas.height = 400;
-      const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 400, 400);
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, 400, 400);
-        canvas.toBlob((blob) => {
-          if (!blob) { resolve(null); return; }
-          resolve(new File([blob], `billet-inbox-${orderId}.png`, { type: "image/png" }));
-        }, "image/png");
-      };
-      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
-    });
-  };
+  const [copied, setCopied] = React.useState<string | null>(null);
 
-  /* Download QR as PNG and then open the app */
   const handleSocial = async (s: typeof SOCIAL[0]) => {
-    const file = await qrToPngFile();
-
-    /* On mobile: try native share with the QR image file */
-    if (file && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: `Billet ${order.event?.title ?? ""}`,
-          text: `🎫 Mon billet Inbox Ticket — Commande #${orderId}`,
-        });
-        return;
-      } catch {
-        /* user cancelled or platform error — fall through */
-      }
+    if (s.shareLink) {
+      window.open(s.shareLink, "_blank", "noopener");
+    } else {
+      /* Instagram / TikTok: copy the link, they'll paste it in their app */
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(s.label);
+      setTimeout(() => setCopied(null), 2500);
     }
-
-    /* Desktop / fallback: download the QR image then open the app */
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    /* Brief delay so download starts before navigation */
-    await new Promise((r) => setTimeout(r, 400));
-    window.open(s.storeUrl, "_blank", "noopener");
   };
 
   return (
@@ -221,22 +205,34 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
 
         {/* Social share */}
         <div className="px-6 pb-6">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Partager via</p>
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Partager le lien du billet via</p>
           <div className="grid grid-cols-4 gap-2">
-            {SOCIAL.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => handleSocial(s)}
-                className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
-                style={{ background: `${s.color}22`, border: `1px solid ${s.color}44` }}
-              >
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: s.color }}>
-                  <img src={s.icon} alt={s.label} className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-medium">{s.label}</span>
-              </button>
-            ))}
+            {SOCIAL.map((s) => {
+              const isCopied = copied === s.label;
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => handleSocial(s)}
+                  className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
+                  style={{ background: isCopied ? "#16a34a22" : `${s.color}22`, border: `1px solid ${isCopied ? "#16a34a88" : s.color + "44"}` }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white transition-colors"
+                    style={{ background: isCopied ? "#16a34a" : s.color }}>
+                    {isCopied ? "✓" : <img src={s.icon} alt={s.label} className="w-4 h-4" />}
+                  </div>
+                  <span className="text-[10px] font-medium transition-colors" style={{ color: isCopied ? "#16a34a" : undefined }}>
+                    {isCopied ? "Copié !" : s.shareLink ? s.label : `${s.label} ↗`}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+          {/* Hint for copy-based platforms */}
+          {copied && (
+            <p className="text-[10px] text-accent text-center mt-2 animate-pulse">
+              Lien copié — collez-le dans {copied}
+            </p>
+          )}
         </div>
       </div>
     </div>
