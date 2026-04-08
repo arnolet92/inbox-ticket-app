@@ -6,7 +6,7 @@ import {
   Plus, Edit, Trash2, Phone, Mail, UserCircle, Calendar, MapPin,
   CheckCircle, XCircle, Clock, UserCheck, Settings, Store,
   Package, Tag, ShoppingBag, BarChart2, Receipt, Wallet,
-  ArrowUpCircle, ArrowDownCircle, Minus,
+  ArrowUpCircle, ArrowDownCircle, Minus, Search, X, Filter, ScanLine,
 } from "lucide-react";
 import { format, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -204,6 +204,22 @@ export default function AdminEventDetail() {
     setUsedTickets(getUsedTickets());
   };
 
+  /* ── Orders tab filters ── */
+  const [ordSearch,    setOrdSearch]    = useState("");
+  const [ordKey,       setOrdKey]       = useState("");
+  const [ordCode,      setOrdCode]      = useState("");
+  const [ordTicketSt,  setOrdTicketSt]  = useState<"all" | "used" | "unused">("all");
+  const [ordPaySt,     setOrdPaySt]     = useState<"all" | "confirmed" | "pending" | "cancelled">("all");
+  const [ordDateFrom,  setOrdDateFrom]  = useState("");
+  const [ordDateTo,    setOrdDateTo]    = useState("");
+
+  const clearOrdFilters = () => {
+    setOrdSearch(""); setOrdKey(""); setOrdCode("");
+    setOrdTicketSt("all"); setOrdPaySt("all");
+    setOrdDateFrom(""); setOrdDateTo("");
+  };
+  const hasOrdFilters = ordSearch || ordKey || ordCode || ordTicketSt !== "all" || ordPaySt !== "all" || ordDateFrom || ordDateTo;
+
   const { data: event, isLoading: eventLoading } = useGetEvent(eventId);
   const { data: orders, isLoading: ordersLoading } = useListOrders({ eventId });
   const { data: ticketTypes, isLoading: ticketsLoading } = useListTicketTypes({ eventId });
@@ -213,6 +229,51 @@ export default function AdminEventDetail() {
   const confirmedOrders = useMemo(() => orders?.filter((o) => o.status === "confirmed") ?? [], [orders]);
   const totalRevenue = useMemo(() => confirmedOrders.reduce((s, o) => s + parseFloat(o.totalAmount), 0), [confirmedOrders]);
   const totalTickets = useMemo(() => confirmedOrders.reduce((s, o) => s + o.quantity, 0), [confirmedOrders]);
+
+  /* ── Orders tab — filtered per-ticket rows ── */
+  const filteredOrderRows = useMemo(() => {
+    if (!orders) return [];
+    const sq = ordSearch.toLowerCase().trim();
+    const sk = ordKey.toLowerCase().trim();
+    const sc = ordCode.toUpperCase().trim();
+    const fromMs = ordDateFrom ? new Date(ordDateFrom).setHours(0, 0, 0, 0) : null;
+    const toMs   = ordDateTo   ? new Date(ordDateTo).setHours(23, 59, 59, 999) : null;
+
+    const rows: Array<{ order: typeof orders[0]; unitIndex: number; codes: ReturnType<typeof getBilletCodesForUnit>; ticketId: string }> = [];
+
+    for (const order of orders) {
+      /* payment/order status filter */
+      if (ordPaySt !== "all" && order.status !== ordPaySt) continue;
+
+      /* date range filter */
+      const orderMs = new Date(order.createdAt).getTime();
+      if (fromMs && orderMs < fromMs) continue;
+      if (toMs   && orderMs > toMs)   continue;
+
+      /* general search on name / phone / order number */
+      if (sq) {
+        const hay = `${order.customerName} ${order.customerPhone ?? ""} ${order.customerEmail ?? ""} ${String(order.id).padStart(5, "0")}`.toLowerCase();
+        if (!hay.includes(sq)) continue;
+      }
+
+      for (let i = 0; i < order.quantity; i++) {
+        const codes    = getBilletCodesForUnit(order.id, i);
+        const ticketId = makeTicketId(order.id, i);
+        const isUsed   = usedTickets.has(ticketId);
+
+        /* ticket key filter */
+        if (sk && !codes.ticketKey.includes(sk)) continue;
+        /* confirm code filter */
+        if (sc && !codes.confirmCode.includes(sc)) continue;
+        /* ticket used/unused filter */
+        if (ordTicketSt === "used"   && !isUsed) continue;
+        if (ordTicketSt === "unused" && isUsed)  continue;
+
+        rows.push({ order, unitIndex: i, codes, ticketId });
+      }
+    }
+    return rows;
+  }, [orders, ordSearch, ordKey, ordCode, ordTicketSt, ordPaySt, ordDateFrom, ordDateTo, usedTickets]);
 
   /* ── Finance chart data ── */
   const financeData = useMemo(() => {
@@ -1212,13 +1273,13 @@ export default function AdminEventDetail() {
 
       {/* ─── TAB: ORDERS & PAYMENTS ─── */}
       {activeTab === "orders" && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Total commandes", value: orders?.length ?? 0, color: "text-foreground" },
               { label: "Billets émis", value: (orders ?? []).reduce((s, o) => s + o.quantity, 0), color: "text-accent" },
-              { label: "Confirmées", value: confirmedOrders.length, color: "text-emerald-400" },
+              { label: "Paiements confirmés", value: confirmedOrders.length, color: "text-emerald-400" },
               { label: "En attente", value: orders?.filter((o) => o.status === "pending").length ?? 0, color: "text-orange-400" },
             ].map((s) => (
               <Card key={s.label} className="p-4 text-center">
@@ -1228,6 +1289,119 @@ export default function AdminEventDetail() {
             ))}
           </div>
 
+          {/* ── Filter bar ── */}
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-accent" />
+              <span className="text-sm font-semibold">Filtres</span>
+              {hasOrdFilters && (
+                <button
+                  onClick={clearOrdFilters}
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-0.5 transition-colors"
+                >
+                  <X className="w-3 h-3" /> Effacer les filtres
+                </button>
+              )}
+            </div>
+
+            {/* Row 1 — text searches */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  value={ordSearch}
+                  onChange={(e) => setOrdSearch(e.target.value)}
+                  placeholder="Nom, tél, e-mail, n° commande…"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+              </div>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px] font-mono font-bold">CLÉ</span>
+                <input
+                  value={ordKey}
+                  onChange={(e) => setOrdKey(e.target.value.toLowerCase())}
+                  placeholder="clé de billet…"
+                  maxLength={6}
+                  className="w-full pl-9 pr-3 py-1.5 text-sm font-mono bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+              </div>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px] font-mono font-bold">CODE</span>
+                <input
+                  value={ordCode}
+                  onChange={(e) => setOrdCode(e.target.value.toUpperCase())}
+                  placeholder="CODE CONFIRMATION…"
+                  maxLength={6}
+                  className="w-full pl-12 pr-3 py-1.5 text-sm font-mono bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+              </div>
+            </div>
+
+            {/* Row 2 — selects + date range */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Statut billet */}
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 block">Statut billet</label>
+                <select
+                  value={ordTicketSt}
+                  onChange={(e) => setOrdTicketSt(e.target.value as typeof ordTicketSt)}
+                  className="w-full px-2.5 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                >
+                  <option value="all">Tous</option>
+                  <option value="unused">Non utilisé</option>
+                  <option value="used">Utilisé</option>
+                </select>
+              </div>
+
+              {/* Statut paiement */}
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 block">Statut paiement</label>
+                <select
+                  value={ordPaySt}
+                  onChange={(e) => setOrdPaySt(e.target.value as typeof ordPaySt)}
+                  className="w-full px-2.5 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                >
+                  <option value="all">Tous</option>
+                  <option value="confirmed">Succès</option>
+                  <option value="pending">En attente</option>
+                  <option value="cancelled">Annulé</option>
+                </select>
+              </div>
+
+              {/* Date from */}
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 block">Du</label>
+                <input
+                  type="date"
+                  value={ordDateFrom}
+                  onChange={(e) => setOrdDateFrom(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+              </div>
+
+              {/* Date to */}
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 block">Au</label>
+                <input
+                  type="date"
+                  value={ordDateTo}
+                  onChange={(e) => setOrdDateTo(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                />
+              </div>
+            </div>
+
+            {/* Results count */}
+            {hasOrdFilters && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {filteredOrderRows.length === 0
+                  ? "Aucun résultat."
+                  : `${filteredOrderRows.length} billet${filteredOrderRows.length > 1 ? "s" : ""} trouvé${filteredOrderRows.length > 1 ? "s" : ""}`}
+              </p>
+            )}
+          </Card>
+
+          {/* ── Table ── */}
           {ordersLoading ? (
             <div className="h-48 bg-card rounded-xl animate-pulse" />
           ) : orders?.length === 0 ? (
@@ -1235,136 +1409,146 @@ export default function AdminEventDetail() {
               <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">Aucune commande pour cet événement.</p>
             </div>
+          ) : filteredOrderRows.length === 0 ? (
+            <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
+              <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">Aucun billet ne correspond aux filtres.</p>
+            </div>
           ) : (
             <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap">N° Billet</TableHead>
+                      <TableHead className="whitespace-nowrap">N° / Unité</TableHead>
                       <TableHead>Client</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="whitespace-nowrap">Clé de billet</TableHead>
                       <TableHead className="whitespace-nowrap">Code confirmation</TableHead>
                       <TableHead className="whitespace-nowrap">N° série</TableHead>
-                      <TableHead>Paiement</TableHead>
+                      <TableHead>Mode paiement</TableHead>
+                      <TableHead className="whitespace-nowrap">Statut paiement</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Statut billet</TableHead>
+                      <TableHead className="whitespace-nowrap">Statut billet</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(orders ?? []).flatMap((order) =>
-                      Array.from({ length: order.quantity }, (_, i) => {
-                        const codes = getBilletCodesForUnit(order.id, i);
-                        const ticketId = makeTicketId(order.id, i);
-                        const isUsed = usedTickets.has(ticketId);
-                        const isFirst = i === 0;
-                        return (
-                          <TableRow
-                            key={ticketId}
-                            className={`${isUsed ? "opacity-60" : ""} ${isFirst ? "" : "border-t-0 bg-card/30"}`}
-                          >
-                            {/* N° billet — affiché uniquement sur la 1ère ligne de la commande */}
-                            <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
-                              {isFirst && (
-                                <span className="text-foreground font-semibold text-xs">
-                                  #{String(order.id).padStart(5, "0")}
-                                </span>
-                              )}
-                              <span className="block text-muted-foreground">
-                                unité {i + 1}/{order.quantity}
+                    {filteredOrderRows.map(({ order, unitIndex, codes, ticketId }) => {
+                      const isUsed  = usedTickets.has(ticketId);
+                      const isFirst = unitIndex === 0;
+                      return (
+                        <TableRow
+                          key={ticketId}
+                          className={`${isUsed ? "opacity-60" : ""} ${isFirst ? "" : "bg-card/30"}`}
+                        >
+                          {/* N° + unité */}
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {isFirst && (
+                              <span className="text-foreground font-semibold block">
+                                #{String(order.id).padStart(5, "0")}
                               </span>
-                            </TableCell>
+                            )}
+                            <span className="text-muted-foreground">
+                              unité {unitIndex + 1}/{order.quantity}
+                            </span>
+                          </TableCell>
 
-                            {/* Client — affiché uniquement sur la 1ère ligne */}
-                            <TableCell>
-                              {isFirst ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-accent font-bold text-xs shrink-0">
-                                    {order.customerName.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div>
-                                    <div className="font-semibold text-sm">{order.customerName}</div>
-                                    <div className="text-xs text-muted-foreground">{order.customerPhone || order.customerEmail}</div>
-                                  </div>
+                          {/* Client */}
+                          <TableCell>
+                            {isFirst ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-accent font-bold text-xs shrink-0">
+                                  {order.customerName.charAt(0).toUpperCase()}
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground text-xs pl-10">↳</span>
-                              )}
-                            </TableCell>
-
-                            {/* Type de billet */}
-                            <TableCell>
-                              <div className="text-xs font-medium text-foreground/80 whitespace-nowrap">
-                                {order.ticketType?.name ?? "—"}
+                                <div>
+                                  <div className="font-semibold text-sm whitespace-nowrap">{order.customerName}</div>
+                                  <div className="text-xs text-muted-foreground whitespace-nowrap">{order.customerPhone || order.customerEmail}</div>
+                                </div>
                               </div>
-                            </TableCell>
+                            ) : (
+                              <span className="text-muted-foreground text-xs pl-9">↳</span>
+                            )}
+                          </TableCell>
 
-                            {/* Clé de billet */}
-                            <TableCell>
-                              <span className="font-mono text-xs bg-card border border-border rounded px-2 py-0.5 text-foreground/70">
-                                {codes.ticketKey}
+                          {/* Type */}
+                          <TableCell>
+                            <span className="text-xs font-medium whitespace-nowrap">{order.ticketType?.name ?? "—"}</span>
+                          </TableCell>
+
+                          {/* Clé */}
+                          <TableCell>
+                            <span className="font-mono text-xs bg-card border border-border rounded px-2 py-0.5 text-foreground/70">
+                              {codes.ticketKey}
+                            </span>
+                          </TableCell>
+
+                          {/* Code confirmation */}
+                          <TableCell>
+                            <span className="font-mono text-xs font-bold text-accent bg-accent/10 border border-accent/20 rounded px-2 py-0.5">
+                              {codes.confirmCode}
+                            </span>
+                          </TableCell>
+
+                          {/* N° série */}
+                          <TableCell>
+                            <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                              {codes.ticketNumber}
+                            </span>
+                          </TableCell>
+
+                          {/* Mode paiement */}
+                          <TableCell>
+                            {isFirst ? (
+                              order.payment ? (
+                                <PaymentBadge method={order.payment.method} size="sm" />
+                              ) : (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              )
+                            ) : null}
+                          </TableCell>
+
+                          {/* Statut paiement */}
+                          <TableCell>
+                            {isFirst ? (
+                              <span className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-0.5 border ${
+                                order.status === "confirmed"
+                                  ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30"
+                                  : order.status === "pending"
+                                  ? "bg-orange-950/40 text-orange-400 border-orange-500/30"
+                                  : order.status === "cancelled"
+                                  ? "bg-red-950/40 text-red-400 border-red-500/30"
+                                  : "bg-muted text-muted-foreground border-border"
+                              }`}>
+                                {order.status === "confirmed" ? <><CheckCircle className="w-3 h-3" /> Succès</> :
+                                 order.status === "pending"   ? <><Clock className="w-3 h-3" /> En attente</> :
+                                 order.status === "cancelled" ? <><XCircle className="w-3 h-3" /> Annulé</> :
+                                 <><ScanLine className="w-3 h-3" /> Remboursé</>}
                               </span>
-                            </TableCell>
+                            ) : null}
+                          </TableCell>
 
-                            {/* Code de confirmation */}
-                            <TableCell>
-                              <span className="font-mono text-xs font-bold text-accent bg-accent/10 border border-accent/20 rounded px-2 py-0.5">
-                                {codes.confirmCode}
-                              </span>
-                            </TableCell>
+                          {/* Date */}
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {isFirst ? format(new Date(order.createdAt), "dd MMM yy", { locale: fr }) : null}
+                          </TableCell>
 
-                            {/* N° de série */}
-                            <TableCell>
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {codes.ticketNumber}
-                              </span>
-                            </TableCell>
-
-                            {/* Paiement — 1ère ligne seulement */}
-                            <TableCell>
-                              {isFirst ? (
-                                order.payment ? (
-                                  <PaymentBadge method={order.payment.method} size="sm" />
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                )
-                              ) : null}
-                            </TableCell>
-
-                            {/* Date — 1ère ligne seulement */}
-                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                              {isFirst ? format(new Date(order.createdAt), "dd MMM yy", { locale: fr }) : null}
-                            </TableCell>
-
-                            {/* Statut d'utilisation du billet */}
-                            <TableCell>
-                              <button
-                                onClick={() => handleToggleUsed(ticketId)}
-                                className={`flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1 border transition-all ${
-                                  isUsed
-                                    ? "bg-red-950/40 text-red-400 border-red-500/30 hover:bg-red-950/60"
-                                    : "bg-emerald-950/40 text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/60"
-                                }`}
-                                title={isUsed ? "Cliquer pour marquer comme non utilisé" : "Cliquer pour marquer comme utilisé"}
-                              >
-                                {isUsed ? (
-                                  <>
-                                    <XCircle className="w-3 h-3" />
-                                    Utilisé
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-3 h-3" />
-                                    Non utilisé
-                                  </>
-                                )}
-                              </button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
+                          {/* Statut billet */}
+                          <TableCell>
+                            <button
+                              onClick={() => handleToggleUsed(ticketId)}
+                              className={`flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1 border transition-all whitespace-nowrap ${
+                                isUsed
+                                  ? "bg-red-950/40 text-red-400 border-red-500/30 hover:bg-red-950/60"
+                                  : "bg-emerald-950/40 text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/60"
+                              }`}
+                              title={isUsed ? "Cliquer pour marquer comme non utilisé" : "Cliquer pour marquer comme utilisé"}
+                            >
+                              {isUsed ? <><XCircle className="w-3 h-3" /> Utilisé</> : <><CheckCircle className="w-3 h-3" /> Non utilisé</>}
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
