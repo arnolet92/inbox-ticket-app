@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
+import { PaymentBadge, getPaymentColor } from "@/components/PaymentBadge";
 import {
   ChevronLeft, TrendingUp, Ticket, Users, CreditCard, ShoppingCart,
   Plus, Edit, Trash2, Phone, Mail, UserCircle, Calendar, MapPin,
@@ -147,8 +148,8 @@ const MOVEMENTS_INITIAL: StockMovement[] = [
 
 const methodColors: Record<string, string> = {
   orange_money: "#ff6600",
-  mvola: "#e02020",
-  mastercard: "#3b82f6",
+  mvola: "#16a34a",
+  mastercard: "#2563eb",
 };
 const methodLabels: Record<string, string> = {
   orange_money: "Orange Money",
@@ -589,14 +590,9 @@ export default function AdminEventDetail() {
             <div className="grid md:grid-cols-3 gap-4">
               {revenueByMethod.map(({ method, amount, count }) => (
                 <Card key={method} className="p-6 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1" style={{ background: methodColors[method] }} />
+                  <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ background: methodColors[method] }} />
                   <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm text-white"
-                      style={{ background: methodColors[method] }}
-                    >
-                      {methodIcons[method]}
-                    </div>
+                    <PaymentBadge method={method} size="lg" showLabel={false} />
                     <div>
                       <div className="font-bold">{methodLabels[method]}</div>
                       <div className="text-xs text-muted-foreground">{count} paiement{count > 1 ? "s" : ""}</div>
@@ -1274,15 +1270,7 @@ export default function AdminEventDetail() {
                         </TableCell>
                         <TableCell>
                           {order.payment ? (
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black text-white"
-                                style={{ background: methodColors[order.payment.method] ?? "#888" }}
-                              >
-                                {methodIcons[order.payment.method] ?? "?"}
-                              </div>
-                              <span className="text-sm">{methodLabels[order.payment.method] ?? order.payment.method}</span>
-                            </div>
+                            <PaymentBadge method={order.payment.method} size="sm" />
                           ) : (
                             <span className="text-muted-foreground text-sm">—</span>
                           )}

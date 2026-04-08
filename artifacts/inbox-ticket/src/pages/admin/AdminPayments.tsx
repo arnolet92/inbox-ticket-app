@@ -5,18 +5,10 @@ import { AdminLayout } from "@/components/layout";
 import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
 import { useListPayments } from "@workspace/api-client-react";
+import { PaymentBadge } from "@/components/PaymentBadge";
 
 export default function AdminPayments() {
   const { data: payments, isLoading } = useListPayments();
-
-  const getMethodBadge = (method: string) => {
-    switch(method) {
-      case "orange_money": return <span className="inline-flex items-center gap-1.5 font-medium text-[#ff6600]"><div className="w-2 h-2 rounded-full bg-[#ff6600]"></div> Orange Money</span>;
-      case "mvola": return <span className="inline-flex items-center gap-1.5 font-medium text-[#00b050]"><div className="w-2 h-2 rounded-full bg-[#00b050]"></div> MVola</span>;
-      case "mastercard": return <span className="inline-flex items-center gap-1.5 font-medium text-blue-500"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Mastercard</span>;
-      default: return method;
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -60,7 +52,7 @@ export default function AdminPayments() {
                   <a href={`/admin/orders`} className="hover:text-accent underline underline-offset-2">#{payment.orderId.toString().padStart(6, '0')}</a>
                 </TableCell>
                 <TableCell>
-                  {getMethodBadge(payment.method)}
+                  <PaymentBadge method={payment.method} size="sm" />
                 </TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {payment.phoneNumber || (payment.cardLast4 ? `**** **** **** ${payment.cardLast4}` : 'N/A')}
