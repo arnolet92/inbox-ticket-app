@@ -25,12 +25,27 @@ const STATUS_BADGE: Record<string, React.ReactNode> = {
   refunded:  <Badge variant="outline">Remboursé</Badge>,
 };
 
+function hl(text: string, q: string) {
+  if (!q || !text) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-primary/30 text-primary rounded px-0.5">{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
 export default function AdminOrders() {
   const { data: orders, isLoading } = useListOrders();
-  const [search, setSearch] = useState("");
+  const [search, setSearch]           = useState(""); // name / phone / order# / email / event
+  const [keySearch, setKeySearch]     = useState(""); // clé de billet
+  const [codeSearch, setCodeSearch]   = useState(""); // code de confirmation
+  const [bilSearch, setBilSearch]     = useState(""); // N° billet BIL-XXXXXX
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  // Pre-compute codes for all orders so we can search them
   const ordersWithCodes = useMemo(() => {
     return (orders ?? []).map((order) => ({
       ...order,
@@ -41,44 +56,37 @@ export default function AdminOrders() {
   const filtered = useMemo(() => {
     let list = ordersWithCodes;
 
-    // Status filter
     if (statusFilter !== "all") list = list.filter((o) => o.status === statusFilter);
 
-    // Search
-    const q = search.trim().toLowerCase().replace(/^#/, "");
-    if (!q) return list;
+    const q    = search.trim().toLowerCase().replace(/^#/, "");
+    const qKey = keySearch.trim().toLowerCase();
+    const qCode= codeSearch.trim().toUpperCase();
+    const qBil = bilSearch.trim().toUpperCase();
 
     return list.filter((o) => {
       const orderNum = o.id.toString().padStart(6, "0");
-      return (
+
+      const matchGeneral = !q || (
         orderNum.includes(q) ||
         (o.customerName ?? "").toLowerCase().includes(q) ||
         (o.customerPhone ?? "").replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
         (o.customerEmail ?? "").toLowerCase().includes(q) ||
-        (o.event?.title ?? "").toLowerCase().includes(q) ||
-        o.codes.ticketKey.toLowerCase().includes(q) ||
-        o.codes.confirmCode.toLowerCase().includes(q) ||
-        o.codes.ticketNumber.toLowerCase().includes(q)
+        (o.event?.title ?? "").toLowerCase().includes(q)
       );
+
+      const matchKey  = !qKey  || o.codes.ticketKey.includes(qKey);
+      const matchCode = !qCode || o.codes.confirmCode.includes(qCode);
+      const matchBil  = !qBil  || o.codes.ticketNumber.includes(qBil);
+
+      return matchGeneral && matchKey && matchCode && matchBil;
     });
-  }, [ordersWithCodes, search, statusFilter]);
+  }, [ordersWithCodes, search, keySearch, codeSearch, bilSearch, statusFilter]);
 
-  // Highlight match: wrap matching text in green
-  const highlight = (text: string) => {
-    if (!search.trim() || !text) return text;
-    const q = search.trim().replace(/^#/, "");
-    const idx = text.toLowerCase().indexOf(q.toLowerCase());
-    if (idx === -1) return text;
-    return (
-      <>
-        {text.slice(0, idx)}
-        <mark className="bg-primary/30 text-primary rounded px-0.5">{text.slice(idx, idx + q.length)}</mark>
-        {text.slice(idx + q.length)}
-      </>
-    );
-  };
+  const isSearching = [search, keySearch, codeSearch, bilSearch].some((v) => v.trim());
 
-  const isSearching = search.trim().length > 0;
+  function clearAll() {
+    setSearch(""); setKeySearch(""); setCodeSearch(""); setBilSearch("");
+  }
 
   return (
     <AdminLayout>
@@ -87,39 +95,91 @@ export default function AdminOrders() {
         <p className="text-muted-foreground">Recherchez et vérifiez les billets par tous les critères.</p>
       </div>
 
-      {/* Search bar */}
-      <div className="mb-4 relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher par nom, téléphone, N° commande, clé de billet, code de confirmation, N° BIL…"
-          className="w-full pl-12 pr-12 py-3 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+      {/* Search fields */}
+      <Card className="p-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          {/* General search */}
+          <div className="sm:col-span-2 xl:col-span-1">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" /> Nom / Tél. / N° commande / Email
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Ex : Rakoto, 034…, #000001"
+                className="w-full px-3 pr-8 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+              />
+              {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+            </div>
+          </div>
 
-      {/* Search hint pills */}
-      {!isSearching && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {[
-            { icon: Hash,       label: "#000042 — N° commande" },
-            { icon: Key,        label: "dhmnqs — Clé de billet" },
-            { icon: ShieldCheck,label: "N58FA9 — Code confirmation" },
-            { icon: ScanLine,   label: "BIL-000042 — N° billet" },
-          ].map(({ icon: Icon, label }) => (
-            <span key={label} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5">
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </span>
-          ))}
+          {/* Ticket key */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+              <Key className="h-3.5 w-3.5" /> Clé de billet
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={keySearch}
+                onChange={(e) => setKeySearch(e.target.value.toLowerCase())}
+                placeholder="Ex : dhmnqs"
+                maxLength={6}
+                className="w-full px-3 pr-8 py-2.5 rounded-xl border border-border bg-muted/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground placeholder:font-sans"
+              />
+              {keySearch && <button onClick={() => setKeySearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+            </div>
+          </div>
+
+          {/* Confirm code */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent" /> Code de confirmation
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={codeSearch}
+                onChange={(e) => setCodeSearch(e.target.value.toUpperCase())}
+                placeholder="Ex : N58FA9"
+                maxLength={6}
+                className="w-full px-3 pr-8 py-2.5 rounded-xl border border-accent/30 bg-accent/5 text-sm font-mono text-accent focus:outline-none focus:ring-2 focus:ring-accent/40 placeholder:text-muted-foreground placeholder:font-sans"
+              />
+              {codeSearch && <button onClick={() => setCodeSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+            </div>
+          </div>
+
+          {/* Billet number */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+              <ScanLine className="h-3.5 w-3.5" /> N° de billet
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={bilSearch}
+                onChange={(e) => setBilSearch(e.target.value.toUpperCase())}
+                placeholder="Ex : BIL-000042"
+                className="w-full px-3 pr-8 py-2.5 rounded-xl border border-border bg-muted/40 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground placeholder:font-sans"
+              />
+              {bilSearch && <button onClick={() => setBilSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+            </div>
+          </div>
         </div>
-      )}
+
+        {isSearching && (
+          <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{filtered.length}</span> résultat{filtered.length !== 1 ? "s" : ""}
+            </p>
+            <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              <X className="h-3.5 w-3.5" /> Tout effacer
+            </button>
+          </div>
+        )}
+      </Card>
 
       {/* Status filter tabs */}
       <div className="flex items-center gap-1 bg-muted/40 border border-border rounded-xl p-1 mb-4 w-fit">
@@ -142,15 +202,6 @@ export default function AdminOrders() {
           </button>
         ))}
       </div>
-
-      {/* Results count when searching */}
-      {isSearching && (
-        <p className="text-sm text-muted-foreground mb-3">
-          {filtered.length === 0
-            ? "Aucun résultat."
-            : `${filtered.length} commande${filtered.length > 1 ? "s" : ""} trouvée${filtered.length > 1 ? "s" : ""}`}
-        </p>
-      )}
 
       {/* Table */}
       <Card className="overflow-hidden">
@@ -183,19 +234,19 @@ export default function AdminOrders() {
             ) : filtered.map((order) => (
               <TableRow key={order.id} className={order.status === "confirmed" ? "hover:bg-primary/5" : ""}>
                 <TableCell className="font-mono text-sm font-bold">
-                  {highlight(`#${order.id.toString().padStart(6, "0")}`)}
+                  {hl(`#${order.id.toString().padStart(6, "0")}`, search.replace(/^#/, ""))}
                 </TableCell>
                 <TableCell>
-                  <div className="font-semibold text-sm">{highlight(order.customerName ?? "")}</div>
+                  <div className="font-semibold text-sm">{hl(order.customerName ?? "", search)}</div>
                   {order.customerPhone && (
-                    <div className="text-xs text-muted-foreground">{highlight(order.customerPhone)}</div>
+                    <div className="text-xs text-muted-foreground">{hl(order.customerPhone, search)}</div>
                   )}
                   {order.customerEmail && (
-                    <div className="text-xs text-muted-foreground">{highlight(order.customerEmail)}</div>
+                    <div className="text-xs text-muted-foreground">{hl(order.customerEmail, search)}</div>
                   )}
                 </TableCell>
                 <TableCell className="max-w-[160px]">
-                  <div className="truncate text-sm">{highlight(order.event?.title ?? "")}</div>
+                  <div className="truncate text-sm">{hl(order.event?.title ?? "", search)}</div>
                 </TableCell>
                 <TableCell className="text-sm">
                   {order.quantity}x{" "}
@@ -206,19 +257,19 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-1.5">
                       <Key className="h-3 w-3 text-muted-foreground shrink-0" />
                       <span className="font-mono text-xs text-foreground/80">
-                        {highlight(order.codes.ticketKey)}
+                        {hl(order.codes.ticketKey, keySearch)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <ShieldCheck className="h-3 w-3 text-muted-foreground shrink-0" />
                       <span className="font-mono text-xs font-semibold text-accent">
-                        {highlight(order.codes.confirmCode)}
+                        {hl(order.codes.confirmCode, codeSearch)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <ScanLine className="h-3 w-3 text-muted-foreground shrink-0" />
                       <span className="font-mono text-xs text-muted-foreground">
-                        {highlight(order.codes.ticketNumber)}
+                        {hl(order.codes.ticketNumber, bilSearch)}
                       </span>
                     </div>
                   </div>
