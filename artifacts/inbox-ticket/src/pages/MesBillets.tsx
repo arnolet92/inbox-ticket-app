@@ -11,6 +11,7 @@ import {
 import { PublicLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
+import { getBilletCodes } from "@/lib/billetCodes";
 import { useListOrders } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -46,6 +47,7 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
   const modalQrRef = React.useRef<HTMLDivElement>(null);
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const orderId = String(order.id).padStart(6, "0");
+  const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
   const shareText = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}`);
 
   const svgToPng = (size = 400): Promise<string> => {
@@ -79,23 +81,45 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
     const svgHtml = svg.outerHTML;
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><title>Billet #${orderId}</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>Billet ${ticketNumber}</title>
       <style>
+        *{box-sizing:border-box;}
         body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff;color:#000;}
-        .logo{font-size:22px;font-weight:900;letter-spacing:.1em;margin-bottom:6px;color:#15803d;}
-        .title{font-size:20px;font-weight:700;margin-bottom:4px;}
-        .sub{font-size:13px;color:#555;margin-bottom:16px;}
-        .qr{border:3px solid #15803d;border-radius:16px;padding:16px;background:#fff;}
-        .info{margin-top:16px;font-size:13px;color:#333;text-align:center;}
-        .code{margin-top:8px;font-size:11px;color:#888;font-family:monospace;}
+        .logo{font-size:20px;font-weight:900;letter-spacing:.15em;margin-bottom:4px;color:#15803d;}
+        .title{font-size:18px;font-weight:700;margin-bottom:2px;}
+        .sub{font-size:12px;color:#555;margin-bottom:14px;}
+        .qr{border:3px solid #15803d;border-radius:16px;padding:16px;background:#fff;margin-bottom:14px;}
+        .info{font-size:12px;color:#333;text-align:center;margin-bottom:14px;line-height:1.6;}
+        .codes{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;}
+        .code-box{border:1.5px solid #d1d5db;border-radius:10px;padding:8px 14px;text-align:center;}
+        .code-label{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+        .code-val{font-size:14px;font-weight:700;font-family:monospace;color:#111;letter-spacing:.15em;}
+        .secure{font-size:10px;color:#9ca3af;margin-top:8px;}
         @media print{button{display:none;}}
       </style></head><body>
       <div class="logo">INBOX TICKET</div>
       <div class="title">${order.event?.title ?? "Événement"}</div>
       <div class="sub">${order.ticketType?.name ?? ""} · ×${order.quantity}</div>
       <div class="qr">${svgHtml}</div>
-      <div class="info">${eventDate ? format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }) : ""}<br/>${order.event?.location ?? ""}</div>
-      <div class="code">Commande #${orderId} · ${qrValue}</div>
+      <div class="info">
+        ${eventDate ? format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }) : ""}
+        ${order.event?.location ? `<br/>${order.event.location}` : ""}
+      </div>
+      <div class="codes">
+        <div class="code-box">
+          <div class="code-label">Clé de sécurité</div>
+          <div class="code-val">${ticketKey}</div>
+        </div>
+        <div class="code-box">
+          <div class="code-label">Code de confirmation</div>
+          <div class="code-val">${confirmCode}</div>
+        </div>
+        <div class="code-box">
+          <div class="code-label">N° de billet</div>
+          <div class="code-val">${ticketNumber}</div>
+        </div>
+      </div>
+      <div class="secure">🔒 Billet sécurisé — Inbox Ticket</div>
       <script>window.onload=()=>window.print();<\/script>
     </body></html>`);
     win.document.close();
@@ -206,14 +230,29 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
               <QRCodeSVG value={qrValue} size={200} level="H" fgColor="#14532d" />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-3 font-mono tracking-wider">
-            #{String(order.id).padStart(6, "0")}
-          </p>
           {eventDate && (
-            <p className="text-xs text-muted-foreground text-center mt-1">
+            <p className="text-xs text-muted-foreground text-center mt-3">
               {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
             </p>
           )}
+
+          {/* Three security codes */}
+          <div className="flex gap-2 mt-3 w-full">
+            {[
+              { label: "Clé de sécurité", value: ticketKey },
+              { label: "Confirmation", value: confirmCode },
+              { label: "N° billet", value: ticketNumber },
+            ].map((c) => (
+              <div
+                key={c.label}
+                className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 px-1"
+                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
+              >
+                <span className="text-[9px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                <span className="font-mono font-bold text-sm tracking-widest text-white">{c.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Action buttons row */}
@@ -300,6 +339,7 @@ function TicketCard({ order }: { order: any }) {
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const isComing = eventDate ? isFuture(eventDate) : false;
   const qrValue = `INBOXTICKET-ORD-${order.id}-${order.customerPhone ?? order.customerEmail}`;
+  const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -393,6 +433,19 @@ function TicketCard({ order }: { order: any }) {
               <p className="text-xs text-muted-foreground text-center leading-tight max-w-[110px]">
                 Scanner à l'entrée
               </p>
+              {/* Mini codes under small QR */}
+              <div className="flex flex-col gap-0.5 mt-1 w-full max-w-[116px]">
+                {[
+                  { label: "Clé", value: ticketKey },
+                  { label: "Conf.", value: confirmCode },
+                  { label: "N°", value: ticketNumber },
+                ].map((c) => (
+                  <div key={c.label} className="flex items-center justify-between gap-1 px-1">
+                    <span className="text-[9px] text-muted-foreground/60 shrink-0">{c.label}</span>
+                    <span className="font-mono text-[10px] font-bold text-muted-foreground tracking-wider truncate">{c.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : (

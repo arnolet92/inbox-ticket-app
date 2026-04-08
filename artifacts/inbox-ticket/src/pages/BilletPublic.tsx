@@ -2,6 +2,7 @@ import React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
 import { Ticket, Calendar, MapPin, ShieldCheck } from "lucide-react";
+import { getBilletCodes } from "@/lib/billetCodes";
 
 export default function BilletPublic() {
   const params = new URLSearchParams(window.location.search);
@@ -9,7 +10,9 @@ export default function BilletPublic() {
 
   /* Parse info from code: INBOXTICKET-ORD-{id}-{phone} */
   const parts = code.split("-");
-  const orderId = parts[2] ? String(parts[2]).padStart(6, "0") : "—";
+  const rawId = parseInt(parts[2] ?? "0") || 0;
+  const orderId = rawId ? String(rawId).padStart(6, "0") : "—";
+  const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(rawId);
 
   if (!code) {
     return (
@@ -80,8 +83,26 @@ export default function BilletPublic() {
             Présentez ce QR code à l'entrée de l'événement pour être admis.
           </p>
 
+          {/* Three security codes */}
+          <div className="flex gap-2 w-full mb-5">
+            {[
+              { label: "Clé de sécurité", value: ticketKey },
+              { label: "Confirmation", value: confirmCode },
+              { label: "N° billet", value: ticketNumber },
+            ].map((c) => (
+              <div
+                key={c.label}
+                className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2.5 px-1"
+                style={{ background: "hsl(145 20% 10%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
+              >
+                <span className="text-[9px] text-muted-foreground uppercase tracking-wider leading-none mb-0.5">{c.label}</span>
+                <span className="font-mono font-bold text-sm tracking-widest text-white">{c.value}</span>
+              </div>
+            ))}
+          </div>
+
           {/* Dashed separator */}
-          <div className="w-full border-t border-dashed border-accent/20 mb-5" />
+          <div className="w-full border-t border-dashed border-accent/20 mb-4" />
 
           {/* Security badge */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
