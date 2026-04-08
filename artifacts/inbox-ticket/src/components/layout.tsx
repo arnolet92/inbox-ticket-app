@@ -22,7 +22,16 @@ export function Logo() {
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      logout();
+      setIsLoggingOut(false);
+    }, 900);
+  };
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -50,11 +59,15 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   <span className="text-sm font-medium text-foreground/80">{user.name.split(" ")[0]}</span>
                 </div>
                 <button
-                  onClick={logout}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
                   title="Déconnexion"
                 >
-                  <LogOut className="w-4 h-4" />
+                  {isLoggingOut
+                    ? <span className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin inline-block" />
+                    : <LogOut className="w-4 h-4" />
+                  }
                 </button>
               </div>
             ) : (
@@ -85,8 +98,16 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold">{user.name.charAt(0).toUpperCase()}</div>
                   {user.name}
                 </div>
-                <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="text-left text-destructive font-semibold flex items-center gap-2">
-                  <LogOut className="w-5 h-5" /> Déconnexion
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  disabled={isLoggingOut}
+                  className="text-left text-destructive font-semibold flex items-center gap-2 disabled:opacity-60"
+                >
+                  {isLoggingOut
+                    ? <span className="w-5 h-5 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin inline-block" />
+                    : <LogOut className="w-5 h-5" />
+                  }
+                  {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
                 </button>
               </>
             ) : (
