@@ -19,6 +19,7 @@ import { Card, Button, Badge, Dialog, Input, Label, Select, Textarea,
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui";
 import { formatMGA, formatPaymentMethod } from "@/lib/utils";
 import { getCategoryImage } from "@/components/EventCard";
+import { getBilletCodesForUnit, getUsedTickets, toggleTicketUsed, makeTicketId } from "@/lib/billetCodes";
 import {
   useGetEvent, useListOrders, useListTicketTypes,
   useCreateTicketType, useDeleteEvent,
@@ -195,6 +196,13 @@ export default function AdminEventDetail() {
   const [shopCatFilter, setShopCatFilter] = useState<string>("all");
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+
+  const [usedTickets, setUsedTickets] = useState<Set<string>>(() => getUsedTickets());
+
+  const handleToggleUsed = (ticketId: string) => {
+    toggleTicketUsed(ticketId);
+    setUsedTickets(getUsedTickets());
+  };
 
   const { data: event, isLoading: eventLoading } = useGetEvent(eventId);
   const { data: orders, isLoading: ordersLoading } = useListOrders({ eventId });
@@ -1205,9 +1213,11 @@ export default function AdminEventDetail() {
       {/* ─── TAB: ORDERS & PAYMENTS ─── */}
       {activeTab === "orders" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Total commandes", value: orders?.length ?? 0, color: "text-foreground" },
+              { label: "Billets émis", value: (orders ?? []).reduce((s, o) => s + o.quantity, 0), color: "text-accent" },
               { label: "Confirmées", value: confirmedOrders.length, color: "text-emerald-400" },
               { label: "En attente", value: orders?.filter((o) => o.status === "pending").length ?? 0, color: "text-orange-400" },
             ].map((s) => (
@@ -1231,75 +1241,130 @@ export default function AdminEventDetail() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>#</TableHead>
+                      <TableHead className="whitespace-nowrap">N° Billet</TableHead>
                       <TableHead>Client</TableHead>
-                      <TableHead>Billet</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="whitespace-nowrap">Clé de billet</TableHead>
+                      <TableHead className="whitespace-nowrap">Code confirmation</TableHead>
+                      <TableHead className="whitespace-nowrap">N° série</TableHead>
                       <TableHead>Paiement</TableHead>
-                      <TableHead>Montant</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Statut</TableHead>
+                      <TableHead>Statut billet</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders?.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="text-muted-foreground text-sm font-mono">
-                          #{String(order.id).padStart(5, "0")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-accent font-bold text-sm shrink-0">
-                              {order.customerName.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm">{order.customerName}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Mail className="w-3 h-3" /> {order.customerEmail}
-                              </div>
-                              {order.customerPhone && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Phone className="w-3 h-3" /> {order.customerPhone}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium">{order.ticketType?.name ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground">x{order.quantity}</div>
-                        </TableCell>
-                        <TableCell>
-                          {order.payment ? (
-                            <PaymentBadge method={order.payment.method} size="sm" />
-                          ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-bold text-accent">{formatMGA(order.totalAmount)}</span>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(order.createdAt), "dd MMM yy", { locale: fr })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              order.status === "confirmed" ? "success"
-                              : order.status === "cancelled" ? "destructive"
-                              : "warning"
-                            }
+                    {(orders ?? []).flatMap((order) =>
+                      Array.from({ length: order.quantity }, (_, i) => {
+                        const codes = getBilletCodesForUnit(order.id, i);
+                        const ticketId = makeTicketId(order.id, i);
+                        const isUsed = usedTickets.has(ticketId);
+                        const isFirst = i === 0;
+                        return (
+                          <TableRow
+                            key={ticketId}
+                            className={`${isUsed ? "opacity-60" : ""} ${isFirst ? "" : "border-t-0 bg-card/30"}`}
                           >
-                            {order.status === "confirmed" ? (
-                              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Confirmé</span>
-                            ) : order.status === "cancelled" ? (
-                              <span className="flex items-center gap-1"><XCircle className="w-3 h-3" /> Annulé</span>
-                            ) : (
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> En attente</span>
-                            )}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            {/* N° billet — affiché uniquement sur la 1ère ligne de la commande */}
+                            <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                              {isFirst && (
+                                <span className="text-foreground font-semibold text-xs">
+                                  #{String(order.id).padStart(5, "0")}
+                                </span>
+                              )}
+                              <span className="block text-muted-foreground">
+                                unité {i + 1}/{order.quantity}
+                              </span>
+                            </TableCell>
+
+                            {/* Client — affiché uniquement sur la 1ère ligne */}
+                            <TableCell>
+                              {isFirst ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-accent font-bold text-xs shrink-0">
+                                    {order.customerName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-sm">{order.customerName}</div>
+                                    <div className="text-xs text-muted-foreground">{order.customerPhone || order.customerEmail}</div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs pl-10">↳</span>
+                              )}
+                            </TableCell>
+
+                            {/* Type de billet */}
+                            <TableCell>
+                              <div className="text-xs font-medium text-foreground/80 whitespace-nowrap">
+                                {order.ticketType?.name ?? "—"}
+                              </div>
+                            </TableCell>
+
+                            {/* Clé de billet */}
+                            <TableCell>
+                              <span className="font-mono text-xs bg-card border border-border rounded px-2 py-0.5 text-foreground/70">
+                                {codes.ticketKey}
+                              </span>
+                            </TableCell>
+
+                            {/* Code de confirmation */}
+                            <TableCell>
+                              <span className="font-mono text-xs font-bold text-accent bg-accent/10 border border-accent/20 rounded px-2 py-0.5">
+                                {codes.confirmCode}
+                              </span>
+                            </TableCell>
+
+                            {/* N° de série */}
+                            <TableCell>
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {codes.ticketNumber}
+                              </span>
+                            </TableCell>
+
+                            {/* Paiement — 1ère ligne seulement */}
+                            <TableCell>
+                              {isFirst ? (
+                                order.payment ? (
+                                  <PaymentBadge method={order.payment.method} size="sm" />
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )
+                              ) : null}
+                            </TableCell>
+
+                            {/* Date — 1ère ligne seulement */}
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {isFirst ? format(new Date(order.createdAt), "dd MMM yy", { locale: fr }) : null}
+                            </TableCell>
+
+                            {/* Statut d'utilisation du billet */}
+                            <TableCell>
+                              <button
+                                onClick={() => handleToggleUsed(ticketId)}
+                                className={`flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1 border transition-all ${
+                                  isUsed
+                                    ? "bg-red-950/40 text-red-400 border-red-500/30 hover:bg-red-950/60"
+                                    : "bg-emerald-950/40 text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/60"
+                                }`}
+                                title={isUsed ? "Cliquer pour marquer comme non utilisé" : "Cliquer pour marquer comme utilisé"}
+                              >
+                                {isUsed ? (
+                                  <>
+                                    <XCircle className="w-3 h-3" />
+                                    Utilisé
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-3 h-3" />
+                                    Non utilisé
+                                  </>
+                                )}
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>

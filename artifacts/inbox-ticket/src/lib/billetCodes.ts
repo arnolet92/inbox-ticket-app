@@ -37,3 +37,42 @@ export function getBilletCodes(orderId: number) {
     ticketNumber: generateTicketNumber(orderId),
   };
 }
+
+/**
+ * Generates deterministic per-unit codes for a given order and unit index (0-based).
+ * Each unit within the same order gets unique codes.
+ */
+export function getBilletCodesForUnit(orderId: number, unitIndex: number) {
+  const seed = orderId * 1000 + unitIndex + 1;
+  return {
+    ticketKey: generateTicketKey(seed),
+    confirmCode: generateConfirmCode(seed),
+    ticketNumber: `BIL-${String(orderId).padStart(5, "0")}-${String(unitIndex + 1).padStart(2, "0")}`,
+  };
+}
+
+const USED_KEY = "inbox_ticket_used_tickets";
+
+export function getUsedTickets(): Set<string> {
+  try {
+    const raw = localStorage.getItem(USED_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+export function toggleTicketUsed(ticketId: string): boolean {
+  const used = getUsedTickets();
+  if (used.has(ticketId)) {
+    used.delete(ticketId);
+  } else {
+    used.add(ticketId);
+  }
+  localStorage.setItem(USED_KEY, JSON.stringify([...used]));
+  return used.has(ticketId);
+}
+
+export function makeTicketId(orderId: number, unitIndex: number): string {
+  return `${orderId}-${unitIndex}`;
+}
