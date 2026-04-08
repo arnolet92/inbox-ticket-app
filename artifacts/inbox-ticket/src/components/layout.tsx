@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, Users, LogOut } from "lucide-react";
+import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, Users, Building2, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -155,6 +155,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/orders", label: "Commandes", icon: ShoppingCart },
     { href: "/admin/payments", label: "Paiements", icon: CreditCard },
     { href: "/admin/users", label: "Utilisateurs", icon: Users },
+    { href: "/admin/organizers", label: "Organisateurs", icon: Building2 },
   ];
 
   return (

@@ -17,6 +17,7 @@ import AdminEventDetail from "@/pages/admin/AdminEventDetail";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminOrganizers from "@/pages/admin/AdminOrganizers";
 import BilletPublic from "@/pages/BilletPublic";
 import NotFound from "@/pages/not-found";
 
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/payments" component={AdminPayments} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/organizers" component={AdminOrganizers} />
 
       {/* 404 */}
       <Route component={NotFound} />
