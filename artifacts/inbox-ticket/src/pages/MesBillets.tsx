@@ -136,16 +136,39 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
   ];
 
   const [copied, setCopied] = React.useState<string | null>(null);
+  const [showLinkFor, setShowLinkFor] = React.useState<string | null>(null);
+  const linkInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSocial = async (s: typeof SOCIAL[0]) => {
+  const copyToClipboard = (text: string) => {
+    /* Try modern clipboard API first */
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+    /* Always also use execCommand fallback */
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  };
+
+  const handleSocial = (s: typeof SOCIAL[0]) => {
     if (s.shareLink) {
       window.open(s.shareLink, "_blank", "noopener");
     } else {
-      /* Instagram / TikTok: copy the link, they'll paste it in their app */
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(s.label);
-      setTimeout(() => setCopied(null), 2500);
+      /* Show link panel for Instagram / TikTok */
+      setShowLinkFor(s.label);
+      setTimeout(() => linkInputRef.current?.select(), 50);
     }
+  };
+
+  const handleCopyLink = () => {
+    copyToClipboard(shareUrl);
+    setCopied(showLinkFor);
+    setTimeout(() => setCopied(null), 2500);
   };
 
   return (
@@ -206,32 +229,63 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
         {/* Social share */}
         <div className="px-6 pb-6">
           <p className="text-xs text-muted-foreground mb-2 font-medium">Partager le lien du billet via</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2 mb-3">
             {SOCIAL.map((s) => {
-              const isCopied = copied === s.label;
+              const isActive = showLinkFor === s.label;
               return (
                 <button
                   key={s.label}
                   onClick={() => handleSocial(s)}
                   className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
-                  style={{ background: isCopied ? "#16a34a22" : `${s.color}22`, border: `1px solid ${isCopied ? "#16a34a88" : s.color + "44"}` }}
+                  style={{
+                    background: isActive ? `${s.color}30` : `${s.color}18`,
+                    border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}`,
+                  }}
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white transition-colors"
-                    style={{ background: isCopied ? "#16a34a" : s.color }}>
-                    {isCopied ? "✓" : <img src={s.icon} alt={s.label} className="w-4 h-4" />}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: s.color }}>
+                    <img src={s.icon} alt={s.label} className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-medium transition-colors" style={{ color: isCopied ? "#16a34a" : undefined }}>
-                    {isCopied ? "Copié !" : s.shareLink ? s.label : `${s.label} ↗`}
-                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">{s.label}</span>
                 </button>
               );
             })}
           </div>
-          {/* Hint for copy-based platforms */}
-          {copied && (
-            <p className="text-[10px] text-accent text-center mt-2 animate-pulse">
-              Lien copié — collez-le dans {copied}
-            </p>
+
+          {/* Link panel for Instagram / TikTok */}
+          {showLinkFor && (
+            <div
+              className="rounded-xl p-3 mb-1"
+              style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}
+            >
+              <p className="text-xs text-muted-foreground mb-2">
+                Copiez ce lien et partagez-le dans <span className="text-white font-semibold">{showLinkFor}</span> :
+              </p>
+              <div className="flex gap-2 items-center">
+                <input
+                  ref={linkInputRef}
+                  readOnly
+                  value={shareUrl}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none focus:border-accent/50 cursor-text"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                  style={{
+                    background: copied ? "#16a34a" : "hsl(145 60% 30%)",
+                    color: "white",
+                  }}
+                >
+                  {copied ? "✓ Copié" : "Copier"}
+                </button>
+              </div>
+              {copied && (
+                <p className="text-[10px] text-accent mt-1.5">
+                  Lien copié ! Ouvrez {showLinkFor} et collez-le dans un message.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
