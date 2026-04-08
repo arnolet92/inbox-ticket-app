@@ -50,29 +50,134 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
   const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
   const shareText = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}`);
 
-  const svgToPng = (size = 400): Promise<string> => {
-    return new Promise((resolve) => {
-      const svg = modalQrRef.current?.querySelector("svg");
-      if (!svg) { resolve(""); return; }
-      const svgData = new XMLSerializer().serializeToString(svg);
+  const handleDownload = () => {
+    const svg = modalQrRef.current?.querySelector("svg");
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const qrImg = new Image();
+    qrImg.onload = () => {
+      /* Canvas dimensions */
+      const W = 560, PAD = 36;
+      const QR = 240;
+      const H = 760;
       const canvas = document.createElement("canvas");
-      canvas.width = size; canvas.height = size;
+      canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, size, size);
-      const img = new Image();
-      img.onload = () => { ctx.drawImage(img, 0, 0, size, size); resolve(canvas.toDataURL("image/png")); };
-      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
-    });
-  };
 
-  const handleDownload = async () => {
-    const png = await svgToPng();
-    if (!png) return;
-    const a = document.createElement("a");
-    a.download = `billet-inbox-${orderId}.png`;
-    a.href = png;
-    a.click();
+      /* Background */
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
+      /* Top green stripe */
+      ctx.fillStyle = "#15803d";
+      ctx.fillRect(0, 0, W, 8);
+
+      /* Header */
+      ctx.fillStyle = "#15803d";
+      ctx.font = "bold 22px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("INBOX TICKET", W / 2, 50);
+
+      /* Event title */
+      ctx.fillStyle = "#111827";
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText(order.event?.title ?? "Événement", W / 2, 84);
+
+      /* Ticket type */
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "13px sans-serif";
+      ctx.fillText(`${order.ticketType?.name ?? ""} · ×${order.quantity}`, W / 2, 106);
+
+      /* Dashed separator */
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = "#d1d5db";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(PAD, 122); ctx.lineTo(W - PAD, 122);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      /* QR code */
+      const qrX = (W - QR) / 2;
+      const qrY = 140;
+      /* White QR background with border */
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#15803d";
+      ctx.lineWidth = 3;
+      const r = 16;
+      ctx.beginPath();
+      ctx.roundRect(qrX - 16, qrY - 16, QR + 32, QR + 32, r);
+      ctx.fill(); ctx.stroke();
+      ctx.drawImage(qrImg, qrX, qrY, QR, QR);
+
+      /* Event date */
+      const dateY = qrY + QR + 56;
+      if (eventDate) {
+        ctx.fillStyle = "#374151";
+        ctx.font = "13px sans-serif";
+        ctx.fillText(format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }), W / 2, dateY);
+      }
+      if (order.event?.location) {
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px sans-serif";
+        ctx.fillText(`${order.event.location}${order.event.city ? ", " + order.event.city : ""}`, W / 2, dateY + 20);
+      }
+
+      /* Second dashed separator */
+      const sep2Y = dateY + 46;
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = "#d1d5db";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(PAD, sep2Y); ctx.lineTo(W - PAD, sep2Y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      /* Three code boxes */
+      const boxY = sep2Y + 18;
+      const boxW = (W - PAD * 2 - 16) / 3;
+      const codes = [
+        { label: "Clé de sécurité", value: ticketKey },
+        { label: "Confirmation", value: confirmCode },
+        { label: "N° de billet", value: ticketNumber },
+      ];
+      codes.forEach((c, i) => {
+        const bx = PAD + i * (boxW + 8);
+        /* Box */
+        ctx.fillStyle = "#f9fafb";
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bx, boxY, boxW, 68, 10);
+        ctx.fill(); ctx.stroke();
+        /* Label */
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(c.label, bx + boxW / 2, boxY + 20);
+        /* Value */
+        ctx.fillStyle = "#111827";
+        ctx.font = "bold 16px monospace";
+        ctx.fillText(c.value, bx + boxW / 2, boxY + 48);
+      });
+
+      /* Footer */
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("🔒 Billet sécurisé — Inbox Ticket", W / 2, H - 22);
+
+      /* Bottom green stripe */
+      ctx.fillStyle = "#15803d";
+      ctx.fillRect(0, H - 8, W, 8);
+
+      /* Download */
+      const a = document.createElement("a");
+      a.download = `billet-inbox-${orderId}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    };
+    qrImg.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
   };
 
   const handlePrint = () => {
