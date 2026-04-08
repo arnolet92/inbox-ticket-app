@@ -102,39 +102,66 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
   };
 
   const SOCIAL = [
-    {
-      label: "WhatsApp",
-      color: "#25D366",
-      icon: "https://cdn.simpleicons.org/whatsapp/ffffff",
-      url: `https://wa.me/?text=${shareText}`,
-    },
-    {
-      label: "Messenger",
-      color: "#0099FF",
-      icon: "https://cdn.simpleicons.org/messenger/ffffff",
-      url: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`,
-    },
-    {
-      label: "Instagram",
-      color: "#E1306C",
-      icon: "https://cdn.simpleicons.org/instagram/ffffff",
-      url: null,
-    },
-    {
-      label: "TikTok",
-      color: "#010101",
-      icon: "https://cdn.simpleicons.org/tiktok/ffffff",
-      url: null,
-    },
+    { label: "WhatsApp",  color: "#25D366", icon: "https://cdn.simpleicons.org/whatsapp/ffffff",  appScheme: "whatsapp://", storeUrl: "https://wa.me/" },
+    { label: "Messenger", color: "#0099FF", icon: "https://cdn.simpleicons.org/messenger/ffffff", appScheme: "fb-messenger://", storeUrl: "https://www.messenger.com/" },
+    { label: "Instagram", color: "#E1306C", icon: "https://cdn.simpleicons.org/instagram/ffffff", appScheme: "instagram://", storeUrl: "https://www.instagram.com/" },
+    { label: "TikTok",   color: "#010101", icon: "https://cdn.simpleicons.org/tiktok/ffffff",   appScheme: "tiktok://", storeUrl: "https://www.tiktok.com/" },
   ];
 
+  /* Generate QR as PNG Blob for file sharing */
+  const qrToPngFile = (): Promise<File | null> => {
+    return new Promise((resolve) => {
+      const svg = modalQrRef.current?.querySelector("svg");
+      if (!svg) { resolve(null); return; }
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      canvas.width = 400; canvas.height = 400;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 400, 400);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, 400, 400);
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(null); return; }
+          resolve(new File([blob], `billet-inbox-${orderId}.png`, { type: "image/png" }));
+        }, "image/png");
+      };
+      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+    });
+  };
+
+  /* Download QR as PNG and then open the app */
   const handleSocial = async (s: typeof SOCIAL[0]) => {
-    if (s.url) {
-      window.open(s.url, "_blank", "noopener");
-    } else {
-      await navigator.clipboard.writeText(decodeURIComponent(shareText));
-      alert(`Texte copié ! Collez-le dans ${s.label}.`);
+    const file = await qrToPngFile();
+
+    /* On mobile: try native share with the QR image file */
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `Billet ${order.event?.title ?? ""}`,
+          text: `🎫 Mon billet Inbox Ticket — Commande #${orderId}`,
+        });
+        return;
+      } catch {
+        /* user cancelled or platform error — fall through */
+      }
     }
+
+    /* Desktop / fallback: download the QR image then open the app */
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* Brief delay so download starts before navigation */
+    await new Promise((r) => setTimeout(r, 400));
+    window.open(s.storeUrl, "_blank", "noopener");
   };
 
   return (
