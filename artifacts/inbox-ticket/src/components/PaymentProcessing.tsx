@@ -24,26 +24,32 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
     };
   }, []);
 
-  const methodColor =
-    paymentMethod === "orange_money"
-      ? "#ff6600"
-      : paymentMethod === "mvola"
-      ? "#e02020"
-      : "#3b82f6";
+  const BASE = import.meta.env.BASE_URL;
 
-  const methodLabel =
-    paymentMethod === "orange_money"
-      ? "Orange Money"
-      : paymentMethod === "mvola"
-      ? "MVola"
-      : "Mastercard";
+  const METHOD_CONFIG: Record<string, { color: string; label: string; logo: string; logoBg: string }> = {
+    orange_money: {
+      color: "#ff6600",
+      label: "Orange Money",
+      logo: `${BASE}images/om_logo.png`,
+      logoBg: "#1a0d00",
+    },
+    mvola: {
+      color: "#16a34a",
+      label: "MVola",
+      logo: `${BASE}images/mvola_logo.jpg`,
+      logoBg: "#0a1f0a",
+    },
+    mastercard: {
+      color: "#2563eb",
+      label: "Visa / Mastercard",
+      logo: `${BASE}images/visa_mastercard_logo.jpg`,
+      logoBg: "#ffffff",
+    },
+  };
 
-  const methodIcon =
-    paymentMethod === "orange_money"
-      ? "OM"
-      : paymentMethod === "mvola"
-      ? "M"
-      : "💳";
+  const method = METHOD_CONFIG[paymentMethod] ?? METHOD_CONFIG["mastercard"];
+  const methodColor = method.color;
+  const methodLabel = method.label;
 
   return (
     <div
@@ -162,22 +168,33 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
         />
       </div>
 
-      {/* Payment method badge */}
+      {/* Payment method badge — style matching checkout cards */}
       <div
-        className="mb-8 px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2"
+        className="mb-8 flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-bold"
         style={{
-          background: `${methodColor}18`,
-          border: `1.5px solid ${methodColor}55`,
+          background: `${methodColor}12`,
+          border: `2px solid ${methodColor}50`,
           color: methodColor,
         }}
       >
-        <span
-          className="flex items-center justify-center text-xs font-black rounded-md w-6 h-6"
-          style={{ background: methodColor, color: "white" }}
+        <div
+          className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0"
+          style={{ background: method.logoBg }}
         >
-          {methodIcon}
-        </span>
-        Paiement via {methodLabel}
+          <img
+            src={method.logo}
+            alt={methodLabel}
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <div>
+          <div className="text-xs font-medium opacity-70" style={{ color: methodColor }}>Paiement via</div>
+          <div className="font-bold text-base text-white">{methodLabel}</div>
+        </div>
+        <div
+          className="w-2 h-2 rounded-full ml-1 animate-pulse"
+          style={{ background: methodColor, boxShadow: `0 0 8px ${methodColor}` }}
+        />
       </div>
 
       {/* Progress bar */}
