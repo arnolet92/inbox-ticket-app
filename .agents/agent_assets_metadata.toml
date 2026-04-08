@@ -1,5 +1,16 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "x5I_gSsHEjGRwMZLV8PrH"
+uri = "file://artifacts/inbox-mobile/assets/images/icon.png"
+type = "image"
+title = "inbox-ticket-mobile-icon"
+
+[[generated]]
+id = "jQMjcmUni0Yraj71rcp-u"
+uri = "file://artifacts/inbox-mobile/assets/images/splash-icon.png"
+type = "image"
+title = "inbox-ticket-splash"
 
 [[outputs]]
 id = "MPIaamdQcehC-fiEY493y"

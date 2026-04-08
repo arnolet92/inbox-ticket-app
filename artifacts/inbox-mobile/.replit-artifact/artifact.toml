@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/inbox-mobile/"
+title = "Inbox Mobile"
+version = "1.0.0"
+id = "artifacts/inbox-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/inbox-mobile/" ]
+localPort = 22401
+
+[services.development]
+run = "pnpm --filter @workspace/inbox-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/inbox-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/inbox-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "22401"
+BASE_PATH = "/inbox-mobile/"
