@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, Users, LogOut } from "lucide-react";
+import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, Users, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
