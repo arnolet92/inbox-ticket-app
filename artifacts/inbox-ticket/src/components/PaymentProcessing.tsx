@@ -61,13 +61,6 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
         }}
       />
 
-      {/* Top kente stripe */}
-      <div
-        className="absolute top-0 left-0 right-0 h-1.5"
-        style={{
-          background: `repeating-linear-gradient(90deg, hsl(145 60% 35%) 0px, hsl(145 60% 35%) 28px, ${methodColor} 28px, ${methodColor} 48px, hsl(0 0% 100% / 0.08) 48px, hsl(0 0% 100% / 0.08) 58px, hsl(145 48% 20%) 58px, hsl(145 48% 20%) 88px)`,
-        }}
-      />
 
       {/* Pulsing rings behind logo */}
       <div className="relative flex items-center justify-center mb-10">
@@ -244,13 +237,6 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
         ))}
       </div>
 
-      {/* Bottom kente stripe */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-1.5"
-        style={{
-          background: `repeating-linear-gradient(90deg, hsl(145 48% 20%) 0px, hsl(145 48% 20%) 28px, ${methodColor} 28px, ${methodColor} 48px, hsl(145 60% 35%) 48px, hsl(145 60% 35%) 68px, hsl(0 0% 100% / 0.06) 68px, hsl(0 0% 100% / 0.06) 78px)`,
-        }}
-      />
 
       <style>{`
         @keyframes pulse-logo {

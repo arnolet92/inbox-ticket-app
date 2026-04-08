@@ -107,8 +107,8 @@ function BrandPanel() {
       </div>
 
       {/* Kente stripe bottom */}
-      <div className="relative z-10 h-2 rounded-full overflow-hidden flex mt-8">
-        {["#22c55e","#f59e0b","#fff","#f97316","#22c55e","#f59e0b","#fff","#f97316","#22c55e","#f59e0b"].map((c, i) => (
+      <div className="hidden">
+        {[""].map((c, i) => (
           <div key={i} className="flex-1" style={{ background: c }} />
         ))}
       </div>

@@ -212,12 +212,6 @@ export default function OrderConfirmation() {
           </div>
         </div>
 
-        {/* Kente stripe */}
-        <div className="card-slide mb-8 h-2 rounded-full overflow-hidden flex">
-          {["#22c55e","#f59e0b","#ffffff","#f97316","#22c55e","#f59e0b","#ffffff","#f97316"].map((c, i) => (
-            <div key={i} className="flex-1" style={{ background: c }} />
-          ))}
-        </div>
 
         <div className="grid md:grid-cols-5 gap-8 items-start">
 
