@@ -143,6 +143,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  const initials = user?.name
+    ? user.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "AD";
 
   const links = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -189,10 +194,41 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         
-        <div className="p-4 border-t border-border/50">
-          <Link href="/" className="flex items-center justify-center w-full py-3 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors">
+        {/* User menu at bottom of sidebar */}
+        <div className="p-4 border-t border-border/50 space-y-2">
+          {/* User info card */}
+          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/40 border border-border/60">
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold font-display text-sm shrink-0 shadow-md shadow-primary/20">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold truncate text-foreground">
+                {user?.name ?? "Administrateur"}
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {user?.phone ?? "Admin"}
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <Link
+            href="/"
+            className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+          >
+            <Ticket className="h-4 w-4 shrink-0" />
             Retour au site
           </Link>
+
+          {user && (
+            <button
+              onClick={() => { logout(); window.location.href = "/"; }}
+              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Se déconnecter
+            </button>
+          )}
         </div>
       </aside>
 
@@ -203,8 +239,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="ml-auto flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold font-display">
-              AD
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold font-display text-sm shadow-md shadow-primary/20">
+              {initials}
             </div>
           </div>
         </header>
