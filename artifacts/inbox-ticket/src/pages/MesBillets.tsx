@@ -5,7 +5,7 @@ import { format, isFuture, isPast } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Ticket, Phone, Lock, Eye, EyeOff, Search, Calendar, MapPin,
-  Download, Share2, Clock, CheckCircle2, XCircle, AlertCircle,
+  Download, Share2, Printer, Clock, CheckCircle2, XCircle, AlertCircle,
   Award, ChevronRight, Sparkles, TrendingUp, LogOut, ShieldCheck,
 } from "lucide-react";
 import { PublicLayout } from "@/components/layout";
@@ -41,9 +41,185 @@ function TimingBadge({ dateStr }: { dateStr: string }) {
   return <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Passé</span>;
 }
 
+/* ── QR Modal ── */
+function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onClose: () => void }) {
+  const modalQrRef = React.useRef<HTMLDivElement>(null);
+  const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
+  const orderId = String(order.id).padStart(6, "0");
+  const shareText = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}`);
+
+  const svgToPng = (size = 400): Promise<string> => {
+    return new Promise((resolve) => {
+      const svg = modalQrRef.current?.querySelector("svg");
+      if (!svg) { resolve(""); return; }
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      const img = new Image();
+      img.onload = () => { ctx.drawImage(img, 0, 0, size, size); resolve(canvas.toDataURL("image/png")); };
+      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+    });
+  };
+
+  const handleDownload = async () => {
+    const png = await svgToPng();
+    if (!png) return;
+    const a = document.createElement("a");
+    a.download = `billet-inbox-${orderId}.png`;
+    a.href = png;
+    a.click();
+  };
+
+  const handlePrint = () => {
+    const svg = modalQrRef.current?.querySelector("svg");
+    if (!svg) return;
+    const svgHtml = svg.outerHTML;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>Billet #${orderId}</title>
+      <style>
+        body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff;color:#000;}
+        .logo{font-size:22px;font-weight:900;letter-spacing:.1em;margin-bottom:6px;color:#15803d;}
+        .title{font-size:20px;font-weight:700;margin-bottom:4px;}
+        .sub{font-size:13px;color:#555;margin-bottom:16px;}
+        .qr{border:3px solid #15803d;border-radius:16px;padding:16px;background:#fff;}
+        .info{margin-top:16px;font-size:13px;color:#333;text-align:center;}
+        .code{margin-top:8px;font-size:11px;color:#888;font-family:monospace;}
+        @media print{button{display:none;}}
+      </style></head><body>
+      <div class="logo">INBOX TICKET</div>
+      <div class="title">${order.event?.title ?? "Événement"}</div>
+      <div class="sub">${order.ticketType?.name ?? ""} · ×${order.quantity}</div>
+      <div class="qr">${svgHtml}</div>
+      <div class="info">${eventDate ? format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }) : ""}<br/>${order.event?.location ?? ""}</div>
+      <div class="code">Commande #${orderId} · ${qrValue}</div>
+      <script>window.onload=()=>window.print();<\/script>
+    </body></html>`);
+    win.document.close();
+  };
+
+  const SOCIAL = [
+    {
+      label: "WhatsApp",
+      color: "#25D366",
+      icon: "https://cdn.simpleicons.org/whatsapp/ffffff",
+      url: `https://wa.me/?text=${shareText}`,
+    },
+    {
+      label: "Messenger",
+      color: "#0099FF",
+      icon: "https://cdn.simpleicons.org/messenger/ffffff",
+      url: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(window.location.href)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(window.location.href)}`,
+    },
+    {
+      label: "Instagram",
+      color: "#E1306C",
+      icon: "https://cdn.simpleicons.org/instagram/ffffff",
+      url: null,
+    },
+    {
+      label: "TikTok",
+      color: "#010101",
+      icon: "https://cdn.simpleicons.org/tiktok/ffffff",
+      url: null,
+    },
+  ];
+
+  const handleSocial = async (s: typeof SOCIAL[0]) => {
+    if (s.url) {
+      window.open(s.url, "_blank", "noopener");
+    } else {
+      await navigator.clipboard.writeText(decodeURIComponent(shareText));
+      alert(`Texte copié ! Collez-le dans ${s.label}.`);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+        style={{ background: "hsl(150 15% 6%)", border: "1.5px solid hsl(145 60% 25% / 0.5)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top bar */}
+        <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-1">Billet électronique</p>
+            <h2 className="font-bold font-display text-lg leading-tight">{order.event?.title ?? "Événement"}</h2>
+            <p className="text-sm text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xl leading-none"
+          >×</button>
+        </div>
+
+        {/* Dashed separator */}
+        <div className="mx-6 border-t border-dashed border-accent/20 mb-5" />
+
+        {/* Large QR */}
+        <div className="flex flex-col items-center px-6 mb-5" ref={modalQrRef}>
+          <div className="relative">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+            <div className="relative p-4 bg-white rounded-2xl shadow-xl">
+              <QRCodeSVG value={qrValue} size={200} level="H" fgColor="#14532d" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-3 font-mono tracking-wider">
+            #{String(order.id).padStart(6, "0")}
+          </p>
+          {eventDate && (
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
+            </p>
+          )}
+        </div>
+
+        {/* Action buttons row */}
+        <div className="flex gap-2 px-6 mb-4">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
+            <Download className="w-3.5 h-3.5" /> Télécharger
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
+            <Printer className="w-3.5 h-3.5" /> Imprimer
+          </Button>
+        </div>
+
+        {/* Social share */}
+        <div className="px-6 pb-6">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Partager via</p>
+          <div className="grid grid-cols-4 gap-2">
+            {SOCIAL.map((s) => (
+              <button
+                key={s.label}
+                onClick={() => handleSocial(s)}
+                className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
+                style={{ background: `${s.color}22`, border: `1px solid ${s.color}44` }}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: s.color }}>
+                  <img src={s.icon} alt={s.label} className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] text-muted-foreground font-medium">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Ticket card ── */
 function TicketCard({ order }: { order: any }) {
   const qrRef = React.useRef<HTMLDivElement>(null);
+  const [showModal, setShowModal] = React.useState(false);
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const isComing = eventDate ? isFuture(eventDate) : false;
   const qrValue = `INBOXTICKET-ORD-${order.id}-${order.customerPhone ?? order.customerEmail}`;
@@ -54,8 +230,7 @@ function TicketCard({ order }: { order: any }) {
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const size = 300;
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size, size);
@@ -70,114 +245,116 @@ function TicketCard({ order }: { order: any }) {
     img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
   };
 
-  const handleShare = async () => {
-    const text = `🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${String(order.id).padStart(6, "0")}`;
-    if (navigator.share) {
-      await navigator.share({ title: "Mon billet Inbox Ticket", text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert("Infos copiées dans le presse-papier !");
-    }
-  };
-
   return (
-    <Card className={`overflow-hidden border transition-all duration-300 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 ${isComing ? "border-primary/30" : "border-border/40 opacity-75"}`}>
-      <div className={`h-1 w-full ${isComing ? "bg-gradient-to-r from-emerald-500 to-emerald-700" : "bg-muted"}`} />
+    <>
+      {showModal && (
+        <QRModal order={order} qrValue={qrValue} onClose={() => setShowModal(false)} />
+      )}
 
-      {order.status === "confirmed" ? (
-        /* ── Confirmed: two-column layout with QR always visible ── */
-        <div className="p-5 flex gap-5 items-start">
+      <Card className={`overflow-hidden border transition-all duration-300 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 ${isComing ? "border-primary/30" : "border-border/40 opacity-75"}`}>
+        <div className={`h-1 w-full ${isComing ? "bg-gradient-to-r from-emerald-500 to-emerald-700" : "bg-muted"}`} />
 
-          {/* Left: event info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              {eventDate && <TimingBadge dateStr={order.event.startDate} />}
-              <StatusBadge status={order.status} />
-            </div>
-            <h3 className="font-bold font-display text-base leading-tight mb-0.5">{order.event?.title ?? "Événement"}</h3>
-            <p className="text-sm text-muted-foreground mb-3">{order.ticketType?.name}</p>
-
-            <div className="space-y-1.5 mb-3">
-              {eventDate && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="w-3 h-3 text-accent shrink-0" />
-                  <span>{format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}</span>
-                </div>
-              )}
-              {order.event?.location && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="w-3 h-3 text-accent shrink-0" />
-                  <span>{order.event.location}, {order.event.city}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="font-display font-bold text-accent text-lg">{formatMGA(order.totalAmount)}</div>
-              <div className="text-xs text-muted-foreground">×{order.quantity} billet{order.quantity > 1 ? "s" : ""}</div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 mt-3">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs flex-1" onClick={handleDownload}>
-                <Download className="w-3.5 h-3.5" /> Télécharger
-              </Button>
-              <Button variant="outline" size="sm" className="px-3" onClick={handleShare}>
-                <Share2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Right: QR code always visible */}
-          <div className="shrink-0 flex flex-col items-center gap-1.5" ref={qrRef}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/15 rounded-xl blur-md" />
-              <div className="relative p-2.5 bg-white rounded-xl shadow-md">
-                <QRCodeSVG value={qrValue} size={110} level="H" fgColor="#14532d" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground text-center leading-tight max-w-[110px]">
-              Scanner à l'entrée
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* ── Non-confirmed: simple layout ── */
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-3">
+        {order.status === "confirmed" ? (
+          <div className="p-5 flex gap-5 items-start">
+            {/* Left: event info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 {eventDate && <TimingBadge dateStr={order.event.startDate} />}
                 <StatusBadge status={order.status} />
               </div>
-              <h3 className="font-bold font-display text-lg leading-tight">{order.event?.title ?? "Événement"}</h3>
-              <p className="text-sm text-muted-foreground">{order.ticketType?.name}</p>
+              <h3 className="font-bold font-display text-base leading-tight mb-0.5">{order.event?.title ?? "Événement"}</h3>
+              <p className="text-sm text-muted-foreground mb-3">{order.ticketType?.name}</p>
+
+              <div className="space-y-1.5 mb-3">
+                {eventDate && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="w-3 h-3 text-accent shrink-0" />
+                    <span>{format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}</span>
+                  </div>
+                )}
+                {order.event?.location && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="w-3 h-3 text-accent shrink-0" />
+                    <span>{order.event.location}, {order.event.city}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-display font-bold text-accent text-lg">{formatMGA(order.totalAmount)}</div>
+                <div className="text-xs text-muted-foreground">×{order.quantity} billet{order.quantity > 1 ? "s" : ""}</div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs flex-1" onClick={handleDownload}>
+                  <Download className="w-3.5 h-3.5" /> Télécharger
+                </Button>
+                <Button variant="outline" size="sm" className="px-3" onClick={() => setShowModal(true)}>
+                  <Share2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
-            <div className="text-right shrink-0">
-              <div className="font-display font-bold text-accent text-xl">{formatMGA(order.totalAmount)}</div>
-              <div className="text-xs text-muted-foreground">{order.quantity} billet{order.quantity > 1 ? "s" : ""}</div>
+
+            {/* Right: QR code — click to enlarge */}
+            <div
+              className="shrink-0 flex flex-col items-center gap-1.5 cursor-pointer group"
+              ref={qrRef}
+              onClick={() => setShowModal(true)}
+              title="Agrandir le QR code"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-emerald-500/15 rounded-xl blur-md group-hover:blur-lg transition-all" />
+                <div className="relative p-2.5 bg-white rounded-xl shadow-md group-hover:shadow-emerald-500/20 group-hover:scale-105 transition-all">
+                  <QRCodeSVG value={qrValue} size={110} level="H" fgColor="#14532d" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: "rgba(0,0,0,0.35)" }}>
+                  <span className="text-white text-xs font-semibold">Agrandir</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center leading-tight max-w-[110px]">
+                Scanner à l'entrée
+              </p>
             </div>
           </div>
-          <div className="space-y-1.5">
-            {eventDate && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span>{format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+        ) : (
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {eventDate && <TimingBadge dateStr={order.event.startDate} />}
+                  <StatusBadge status={order.status} />
+                </div>
+                <h3 className="font-bold font-display text-lg leading-tight">{order.event?.title ?? "Événement"}</h3>
+                <p className="text-sm text-muted-foreground">{order.ticketType?.name}</p>
               </div>
-            )}
-            {order.event?.location && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span>{order.event.location}, {order.event.city}</span>
+              <div className="text-right shrink-0">
+                <div className="font-display font-bold text-accent text-xl">{formatMGA(order.totalAmount)}</div>
+                <div className="text-xs text-muted-foreground">{order.quantity} billet{order.quantity > 1 ? "s" : ""}</div>
               </div>
-            )}
-            <div className="text-xs text-muted-foreground">
-              Cmd #{String(order.id).padStart(6, "0")}
+            </div>
+            <div className="space-y-1.5">
+              {eventDate && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>{format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                </div>
+              )}
+              {order.event?.location && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span>{order.event.location}, {order.event.city}</span>
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Cmd #{String(order.id).padStart(6, "0")}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </Card>
+        )}
+      </Card>
+    </>
   );
 }
 
