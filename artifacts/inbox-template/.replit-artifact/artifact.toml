@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/inbox-template/"
+title = "Inbox Ticket Template"
+version = "1.0.0"
+id = "artifacts/inbox-template"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/inbox-template/" ]
+localPort = 20407
+
+[services.development]
+run = "pnpm --filter @workspace/inbox-template run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/inbox-template", "run", "build" ]
+publicDir = "artifacts/inbox-template/.next"
+serve = "static"
+
+[services.env]
+PORT = "20407"
+BASE_PATH = "/inbox-template/"

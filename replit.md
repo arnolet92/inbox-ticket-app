@@ -73,3 +73,49 @@ All API routes under `/api`:
 
 Run: `pnpm --filter @workspace/scripts run seed`
 Creates: 6 events, 18 ticket types, 40 orders, ~32 payments with realistic Malagasy data.
+
+---
+
+## Inbox Ticket Template (`artifacts/inbox-template`)
+
+**Static Next.js 15 template** — no backend, no database. All data is mock/static.
+Designed for integration with the user's existing MySQL + Python backend.
+
+**Stack**: Next.js 15 (App Router), Tailwind CSS v4, React 19, qrcode.react, framer-motion
+
+**Preview**: `/inbox-template/`
+
+**Workflow**: `pnpm --filter @workspace/inbox-template run dev` (port 20407)
+
+### Pages
+
+**Public** (avec navigation + footer)
+- `/inbox-template/` — Accueil : hero, stats, événements à venir, modes de paiement
+- `/inbox-template/events` — Liste avec filtres (recherche, catégorie, à venir/passé)
+- `/inbox-template/events/[id]` — Détail événement, sélection billets, panier flottant
+- `/inbox-template/checkout` — Commande 3 étapes (infos, paiement, confirmation)
+- `/inbox-template/confirmation` — Succès + QR code billet
+- `/inbox-template/mes-billets` — Connexion puis liste des billets avec QR
+- `/inbox-template/auth` — Connexion / inscription
+
+**Admin** (sidebar, sans auth)
+- `/inbox-template/admin` — Tableau de bord : KPIs, graphique revenus, modes paiement
+- `/inbox-template/admin/events` — Liste des événements
+- `/inbox-template/admin/events/[id]` — Détail + commandes
+- `/inbox-template/admin/users` — Membres de l'équipe
+
+**Organisateur** (sans sidebar)
+- `/inbox-template/organizer/login` — Connexion organisateur
+- `/inbox-template/organizer/events` — Événements gérés
+- `/inbox-template/organizer/events/[id]` — Tabs: vue d'ensemble / scan billets / ventes
+
+### Mock data (`lib/mock-data.ts`)
+- 6 événements (Gala, Festival, Concert, Conférence, Mode, Soirée électro)
+- 3 types de billets par événement
+- 10 commandes (clients malgaches)
+- Stats admin, revenus mensuels, stats paiement (Orange Money, MVola, Espèces)
+
+### Design
+- Thème africain luxe sombre : `#080f09` fond, `#1a4525` primaire, `#2d9e4e` accent
+- UI entière en français, montants en MGA (Ariary)
+- QR format : `INBOXTICKET-ORD-{id}-{phone}`

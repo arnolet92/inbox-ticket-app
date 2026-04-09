@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --font-display: var(--font-display);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  color-scheme: dark;
+  --background: 145 55% 5%;
+  --foreground: 145 5% 95%;
+  --card: 145 40% 8%;
+  --card-foreground: 145 5% 95%;
+  --popover: 145 40% 8%;
+  --popover-foreground: 145 5% 95%;
+  --primary: 145 45% 18%;
+  --primary-foreground: 145 5% 95%;
+  --secondary: 145 20% 13%;
+  --secondary-foreground: 145 5% 90%;
+  --muted: 145 20% 12%;
+  --muted-foreground: 145 10% 58%;
+  --accent: 145 55% 40%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 145 30% 16%;
+  --input: 145 30% 16%;
+  --ring: 145 55% 40%;
+  --radius: 0.75rem;
+  --font-display: "Rajdhani", sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Background pattern */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 50% 0%, hsl(145 55% 12% / 0.3) 0%, transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      hsl(145 40% 10% / 0.15) 0px,
+      hsl(145 40% 10% / 0.15) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  z-index: -1;
+  pointer-events: none;
+}
+
+.glass-panel {
+  background: hsl(145 40% 8% / 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid hsl(145 30% 16% / 0.6);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(145 55% 50%), hsl(145 55% 65%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 0 1px hsl(145 55% 40% / 0.3), 0 8px 32px hsl(145 55% 20% / 0.2);
+}
