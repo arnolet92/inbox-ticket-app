@@ -10,6 +10,7 @@ export type OrganizerSession = {
 type OrganizerContextType = {
   organizer: OrganizerSession | null;
   login: (email: string, password: string) => { ok: boolean; error?: string };
+  loginAs: (session: OrganizerSession) => void;
   logout: () => void;
 };
 
@@ -54,13 +55,18 @@ export function OrganizerProvider({ children }: { children: React.ReactNode }) {
     return { ok: true };
   }, []);
 
+  const loginAs = useCallback((session: OrganizerSession) => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    setOrganizer(session);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
     setOrganizer(null);
   }, []);
 
   return (
-    <OrganizerContext.Provider value={{ organizer, login, logout }}>
+    <OrganizerContext.Provider value={{ organizer, login, loginAs, logout }}>
       {children}
     </OrganizerContext.Provider>
   );

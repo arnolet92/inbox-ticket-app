@@ -49,9 +49,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             {!user && (
-              <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
-                Admin
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/organizer/login" className="text-sm font-semibold px-4 py-2 rounded-lg bg-muted text-muted-foreground border border-border hover:bg-muted/80 hover:text-foreground transition-all flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4" /> Organisateur
+                </Link>
+                <Link href="/admin" className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/40 transition-all">
+                  Admin
+                </Link>
+              </div>
             )}
             {user ? (
               <div className="flex items-center gap-3 pl-2 border-l border-border">
@@ -119,7 +124,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             {!user && (
-              <Link href="/admin" className="text-lg font-semibold text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
+              <>
+                <Link href="/organizer/login" className="text-lg font-semibold text-muted-foreground flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Building2 className="w-5 h-5" /> Espace Organisateur
+                </Link>
+                <Link href="/admin" className="text-lg font-semibold text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>Espace Admin</Link>
+              </>
             )}
           </div>
         )}
