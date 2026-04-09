@@ -215,6 +215,8 @@ export default function AdminEventDetail() {
 
   /* ── Scan tab state ── */
   const [scanInput, setScanInput] = useState("");
+  const [scanMobileKey, setScanMobileKey] = useState("");
+  const [scanMobileCode, setScanMobileCode] = useState("");
   const [scanResult, setScanResult] = useState<null | {
     status: "valid" | "used" | "invalid";
     order?: typeof orders extends Array<infer T> ? T : never;
@@ -566,8 +568,8 @@ export default function AdminEventDetail() {
   };
 
   /* ── Scan handler ── */
-  const handleScan = () => {
-    const q = scanInput.trim().toUpperCase();
+  const handleScan = (override?: string) => {
+    const q = (override ?? scanInput).trim().toUpperCase();
     if (!q) return;
     let found: { order: NonNullable<typeof orders>[0]; unitIndex: number; codes: ReturnType<typeof getBilletCodesForUnit>; ticketId: string } | null = null;
     for (const order of (orders ?? [])) {
@@ -2716,123 +2718,315 @@ export default function AdminEventDetail() {
 
       {/* ─── TAB: SCAN BILLET ─── */}
       {activeTab === "scan" && (
-        <div className="space-y-6 max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center mx-auto mb-3">
-              <ScanLine className="w-8 h-8 text-accent" />
-            </div>
-            <h3 className="font-bold font-display text-2xl mb-1">Scanner un billet</h3>
-            <p className="text-muted-foreground text-sm">
-              Saisissez la <span className="font-mono font-bold text-accent">clé de billet</span> ou le <span className="font-mono font-bold text-accent">code de confirmation</span> puis validez.
-            </p>
+        <>
+          {/* ══════════════════════════════════
+              MOBILE — full-screen premium scan
+          ══════════════════════════════════ */}
+          <div className="lg:hidden">
+            <style>{`
+              @keyframes scanLine {
+                0%, 100% { top: 12%; }
+                50% { top: 82%; }
+              }
+              @keyframes cornerPulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.4; }
+              }
+              @keyframes resultPop {
+                0% { transform: scale(0.7); opacity: 0; }
+                80% { transform: scale(1.05); }
+                100% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+
+            {/* ── No result yet: scan UI ── */}
+            {!scanResult && (
+              <div className="flex flex-col min-h-[80vh] items-center pt-4 pb-8 space-y-6">
+                {/* Viewfinder */}
+                <div className="relative w-64 h-64 mx-auto">
+                  {/* Background blur */}
+                  <div className="absolute inset-0 rounded-3xl bg-card/40 border border-border/30 backdrop-blur-sm" />
+                  {/* Corner accents */}
+                  {[
+                    "top-2 left-2 border-t-2 border-l-2 rounded-tl-xl",
+                    "top-2 right-2 border-t-2 border-r-2 rounded-tr-xl",
+                    "bottom-2 left-2 border-b-2 border-l-2 rounded-bl-xl",
+                    "bottom-2 right-2 border-b-2 border-r-2 rounded-br-xl",
+                  ].map((cls, i) => (
+                    <div
+                      key={i}
+                      className={`absolute w-10 h-10 border-accent ${cls}`}
+                      style={{ animation: `cornerPulse 2s ease-in-out infinite`, animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                  {/* Scanning line */}
+                  <div
+                    className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent rounded-full shadow-[0_0_12px_3px_rgba(45,158,78,0.5)]"
+                    style={{ animation: "scanLine 2.4s ease-in-out infinite", position: "absolute" }}
+                  />
+                  {/* Center icon */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ScanLine className="w-16 h-16 text-accent/30" />
+                  </div>
+                </div>
+
+                <div className="text-center px-4">
+                  <h3 className="font-display font-black text-2xl text-white mb-1">Scanner un billet</h3>
+                  <p className="text-muted-foreground text-sm">Entrez la clé ou le code manuellement</p>
+                </div>
+
+                {/* Two input fields */}
+                <div className="w-full max-w-sm px-4 space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block font-semibold">
+                      🎟 Clé de billet
+                    </label>
+                    <input
+                      value={scanMobileKey}
+                      onChange={(e) => setScanMobileKey(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const v = (scanMobileKey || scanMobileCode).trim();
+                          if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); }
+                        }
+                      }}
+                      placeholder="Ex: A1B2C3"
+                      maxLength={12}
+                      className="w-full px-4 py-3.5 text-lg font-mono bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border/50" />
+                    <span className="text-xs text-muted-foreground font-semibold">OU</span>
+                    <div className="flex-1 h-px bg-border/50" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5 block font-semibold">
+                      📋 Code de confirmation
+                    </label>
+                    <input
+                      value={scanMobileCode}
+                      onChange={(e) => setScanMobileCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const v = (scanMobileCode || scanMobileKey).trim();
+                          if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); }
+                        }
+                      }}
+                      placeholder="Ex: CONF-X7Y2"
+                      maxLength={12}
+                      className="w-full px-4 py-3.5 text-lg font-mono bg-card border-2 border-border rounded-2xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const v = (scanMobileKey || scanMobileCode).trim();
+                      if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); }
+                    }}
+                    disabled={!scanMobileKey.trim() && !scanMobileCode.trim()}
+                    className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-xl flex items-center justify-center gap-2 shadow-2xl shadow-accent/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                  >
+                    <ScanLine className="w-6 h-6" /> Valider le billet
+                  </button>
+                </div>
+
+                {/* Scan history mini — mobile */}
+                {scanHistory.length > 0 && (
+                  <div className="w-full max-w-sm px-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Derniers scans</span>
+                      <button onClick={() => { setScanHistory([]); }} className="text-xs text-muted-foreground hover:text-foreground">Effacer</button>
+                    </div>
+                    <div className="space-y-2">
+                      {scanHistory.slice(0, 5).map((h, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
+                          <span className="text-xl shrink-0">{h.status === "valid" ? "✅" : h.status === "used" ? "⚠️" : "❌"}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-mono text-sm font-bold text-accent">{h.input}</div>
+                            {h.customerName && <div className="text-xs text-muted-foreground truncate">{h.customerName}</div>}
+                          </div>
+                          <div className="text-xs text-muted-foreground shrink-0">{format(h.time, "HH:mm", { locale: fr })}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Result display — mobile full screen ── */}
+            {scanResult && (
+              <div
+                className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-8 ${
+                  scanResult.status === "valid" ? "bg-emerald-950" : scanResult.status === "used" ? "bg-orange-950" : "bg-red-950"
+                }`}
+                style={{ animation: "resultPop 0.4s ease-out forwards" }}
+              >
+                <div className="text-center space-y-4 mb-8">
+                  <div className="text-9xl">{scanResult.status === "valid" ? "✅" : scanResult.status === "used" ? "⚠️" : "❌"}</div>
+                  <div className={`text-4xl font-display font-black tracking-wide ${
+                    scanResult.status === "valid" ? "text-emerald-300" : scanResult.status === "used" ? "text-orange-300" : "text-red-300"
+                  }`}>
+                    {scanResult.status === "valid" ? "BILLET VALIDE" : scanResult.status === "used" ? "DÉJÀ UTILISÉ" : "INVALIDE"}
+                  </div>
+                  {scanResult.order && (
+                    <div className="space-y-1 mt-2">
+                      <div className="font-bold text-white text-2xl">{scanResult.order.customerName}</div>
+                      <div className="text-muted-foreground text-lg">{scanResult.order.ticketType?.name ?? "—"}</div>
+                      <div className="font-mono text-xs text-muted-foreground mt-2">
+                        Commande #{String(scanResult.order.id).padStart(5, "0")} · Billet {(scanResult.unitIndex ?? 0) + 1}/{scanResult.order.quantity}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {scanResult.status === "valid" && scanResult.ticketId && (
+                  <button
+                    onClick={() => {
+                      handleToggleUsed(scanResult.ticketId!);
+                      setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
+                      setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
+                    }}
+                    className="w-full max-w-xs py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xl mb-4 transition-all active:scale-95"
+                  >
+                    ✓ Marquer comme utilisé
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setScanResult(null)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors font-semibold mt-4"
+                >
+                  <ChevronLeft className="w-5 h-5" /> Scanner un autre billet
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Scan input */}
-          <Card className="p-5">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                value={scanInput}
-                onChange={(e) => setScanInput(e.target.value.toUpperCase())}
-                onKeyDown={(e) => { if (e.key === "Enter") handleScan(); }}
-                placeholder="CLÉBILLET  ou  CODE…"
-                maxLength={12}
-                autoFocus
-                className="flex-1 px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
-              />
-              <button
-                onClick={handleScan}
-                disabled={!scanInput.trim()}
-                className="px-6 py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                <ScanLine className="w-5 h-5" /> Valider
-              </button>
-            </div>
-          </Card>
+          {/* ══════════════════════════════════
+              DESKTOP — existing UI unchanged
+          ══════════════════════════════════ */}
+          <div className="hidden lg:block">
+            <div className="space-y-6 max-w-2xl mx-auto">
+              {/* Header */}
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center mx-auto mb-3">
+                  <ScanLine className="w-8 h-8 text-accent" />
+                </div>
+                <h3 className="font-bold font-display text-2xl mb-1">Scanner un billet</h3>
+                <p className="text-muted-foreground text-sm">
+                  Saisissez la <span className="font-mono font-bold text-accent">clé de billet</span> ou le <span className="font-mono font-bold text-accent">code de confirmation</span> puis validez.
+                </p>
+              </div>
 
-          {/* Scan result */}
-          {scanResult && (
-            <div className={`rounded-2xl border-2 p-8 text-center transition-all ${
-              scanResult.status === "valid"
-                ? "border-emerald-500/60 bg-emerald-950/30"
-                : scanResult.status === "used"
-                ? "border-orange-500/60 bg-orange-950/30"
-                : "border-red-500/60 bg-red-950/30"
-            }`}>
-              <div className="text-6xl mb-4">
-                {scanResult.status === "valid" ? "✅" : scanResult.status === "used" ? "⚠️" : "❌"}
-              </div>
-              <div className={`text-3xl font-display font-bold mb-2 ${
-                scanResult.status === "valid" ? "text-emerald-400"
-                : scanResult.status === "used" ? "text-orange-400"
-                : "text-red-400"
-              }`}>
-                {scanResult.status === "valid" ? "BILLET VALIDE"
-                  : scanResult.status === "used" ? "DÉJÀ UTILISÉ"
-                  : "BILLET INVALIDE"}
-              </div>
-              {scanResult.order && (
-                <div className="text-sm text-muted-foreground space-y-1 mt-4 mb-4">
-                  <div className="font-bold text-foreground text-lg">{scanResult.order.customerName}</div>
-                  <div className="text-muted-foreground">{scanResult.order.ticketType?.name ?? "—"}</div>
-                  <div className="font-mono text-xs mt-2">
-                    Commande #{String(scanResult.order.id).padStart(5, "0")} · Billet {(scanResult.unitIndex ?? 0) + 1}/{scanResult.order.quantity}
+              {/* Scan input */}
+              <Card className="p-5">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    value={scanInput}
+                    onChange={(e) => setScanInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleScan(); }}
+                    placeholder="CLÉBILLET  ou  CODE…"
+                    maxLength={12}
+                    autoFocus
+                    className="flex-1 px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                  />
+                  <button
+                    onClick={() => handleScan()}
+                    disabled={!scanInput.trim()}
+                    className="px-6 py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <ScanLine className="w-5 h-5" /> Valider
+                  </button>
+                </div>
+              </Card>
+
+              {/* Scan result */}
+              {scanResult && (
+                <div className={`rounded-2xl border-2 p-8 text-center transition-all ${
+                  scanResult.status === "valid"
+                    ? "border-emerald-500/60 bg-emerald-950/30"
+                    : scanResult.status === "used"
+                    ? "border-orange-500/60 bg-orange-950/30"
+                    : "border-red-500/60 bg-red-950/30"
+                }`}>
+                  <div className="text-6xl mb-4">
+                    {scanResult.status === "valid" ? "✅" : scanResult.status === "used" ? "⚠️" : "❌"}
+                  </div>
+                  <div className={`text-3xl font-display font-bold mb-2 ${
+                    scanResult.status === "valid" ? "text-emerald-400"
+                    : scanResult.status === "used" ? "text-orange-400"
+                    : "text-red-400"
+                  }`}>
+                    {scanResult.status === "valid" ? "BILLET VALIDE"
+                      : scanResult.status === "used" ? "DÉJÀ UTILISÉ"
+                      : "BILLET INVALIDE"}
+                  </div>
+                  {scanResult.order && (
+                    <div className="text-sm text-muted-foreground space-y-1 mt-4 mb-4">
+                      <div className="font-bold text-foreground text-lg">{scanResult.order.customerName}</div>
+                      <div className="text-muted-foreground">{scanResult.order.ticketType?.name ?? "—"}</div>
+                      <div className="font-mono text-xs mt-2">
+                        Commande #{String(scanResult.order.id).padStart(5, "0")} · Billet {(scanResult.unitIndex ?? 0) + 1}/{scanResult.order.quantity}
+                      </div>
+                    </div>
+                  )}
+                  {scanResult.status === "valid" && scanResult.ticketId && (
+                    <button
+                      onClick={() => {
+                        handleToggleUsed(scanResult.ticketId!);
+                        setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
+                        setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
+                      }}
+                      className="mt-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg transition-all"
+                    >
+                      ✓ Marquer comme utilisé
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Scan history */}
+              {scanHistory.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold font-display text-lg">Historique ({scanHistory.length})</h4>
+                    <button
+                      onClick={() => { setScanHistory([]); setScanResult(null); }}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border rounded-full px-3 py-1 transition-colors"
+                    >
+                      <X className="w-3 h-3" /> Effacer
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {scanHistory.map((h, i) => (
+                      <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
+                        <div className="text-2xl shrink-0">
+                          {h.status === "valid" ? "✅" : h.status === "used" ? "⚠️" : "❌"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-mono text-sm font-bold text-accent">{h.input}</div>
+                          {h.customerName && <div className="text-xs text-muted-foreground truncate">{h.customerName}</div>}
+                        </div>
+                        <div className={`text-xs font-bold shrink-0 ${
+                          h.status === "valid" ? "text-emerald-400"
+                            : h.status === "used" ? "text-orange-400"
+                            : "text-red-400"
+                        }`}>
+                          {h.status === "valid" ? "Valide" : h.status === "used" ? "Utilisé" : "Invalide"}
+                        </div>
+                        <div className="text-xs text-muted-foreground shrink-0">
+                          {format(h.time, "HH:mm:ss", { locale: fr })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-              {scanResult.status === "valid" && scanResult.ticketId && (
-                <button
-                  onClick={() => {
-                    handleToggleUsed(scanResult.ticketId!);
-                    setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
-                    setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
-                  }}
-                  className="mt-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg transition-all"
-                >
-                  ✓ Marquer comme utilisé
-                </button>
-              )}
             </div>
-          )}
-
-          {/* Scan history */}
-          {scanHistory.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold font-display text-lg">Historique ({scanHistory.length})</h4>
-                <button
-                  onClick={() => { setScanHistory([]); setScanResult(null); }}
-                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border rounded-full px-3 py-1 transition-colors"
-                >
-                  <X className="w-3 h-3" /> Effacer
-                </button>
-              </div>
-              <div className="space-y-2">
-                {scanHistory.map((h, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
-                    <div className="text-2xl shrink-0">
-                      {h.status === "valid" ? "✅" : h.status === "used" ? "⚠️" : "❌"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-sm font-bold text-accent">{h.input}</div>
-                      {h.customerName && <div className="text-xs text-muted-foreground truncate">{h.customerName}</div>}
-                    </div>
-                    <div className={`text-xs font-bold shrink-0 ${
-                      h.status === "valid" ? "text-emerald-400"
-                        : h.status === "used" ? "text-orange-400"
-                        : "text-red-400"
-                    }`}>
-                      {h.status === "valid" ? "Valide" : h.status === "used" ? "Utilisé" : "Invalide"}
-                    </div>
-                    <div className="text-xs text-muted-foreground shrink-0">
-                      {format(h.time, "HH:mm:ss", { locale: fr })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        </>
       )}
 
     </AdminLayout>
