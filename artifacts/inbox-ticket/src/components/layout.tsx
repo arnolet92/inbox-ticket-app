@@ -135,11 +135,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 relative z-10">
+      <main className="flex-1">
         {children}
       </main>
 
-      <footer className="bg-card border-t border-border py-12 relative z-10 mt-auto">
+      <footer className="bg-card border-t border-border py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <Logo />
           <p className="text-muted-foreground text-sm">
