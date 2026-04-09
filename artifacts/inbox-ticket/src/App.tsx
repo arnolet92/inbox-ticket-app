@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { OrganizerProvider } from "@/context/OrganizerContext";
 
 import Home from "@/pages/Home";
 import Events from "@/pages/Events";
@@ -20,6 +21,9 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminOrganizers from "@/pages/admin/AdminOrganizers";
 import AdminContacts from "@/pages/admin/AdminContacts";
 import BilletPublic from "@/pages/BilletPublic";
+import OrganizerLogin from "@/pages/organizer/OrganizerLogin";
+import OrganizerEvents from "@/pages/organizer/OrganizerEvents";
+import OrganizerEventDetail from "@/pages/organizer/OrganizerEventDetail";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -54,6 +58,11 @@ function Router() {
       <Route path="/admin/organizers" component={AdminOrganizers} />
       <Route path="/admin/contacts" component={AdminContacts} />
 
+      {/* Organizer Routes */}
+      <Route path="/organizer/login" component={OrganizerLogin} />
+      <Route path="/organizer/events" component={OrganizerEvents} />
+      <Route path="/organizer/events/:id" component={OrganizerEventDetail} />
+
       {/* 404 */}
       <Route component={NotFound} />
     </Switch>
@@ -65,9 +74,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
+          <OrganizerProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </OrganizerProvider>
         </AuthProvider>
         <Toaster />
       </TooltipProvider>

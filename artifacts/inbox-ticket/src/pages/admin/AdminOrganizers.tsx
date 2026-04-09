@@ -16,6 +16,7 @@ type Organizer = {
   email: string;
   website: string;
   status: OrgStatus;
+  password?: string;
   createdAt: string;
 };
 
@@ -28,15 +29,25 @@ const STATUS_CONFIG: Record<OrgStatus, { label: string; variant: "success" | "de
 };
 
 const DEMO_ORGS: Organizer[] = [
-  { id: "1", name: "Hery Rakoto", company: "HeryEvent Pro", phone: "034 11 111 11", email: "hery@heryevent.mg", website: "heryevent.mg", status: "active", createdAt: "2025-11-01T00:00:00Z" },
-  { id: "2", name: "Soa Ramiandrisoa", company: "SoaConcept Madagascar", phone: "033 22 222 22", email: "soa@soaconcept.mg", website: "soaconcept.mg", status: "active", createdAt: "2025-12-15T00:00:00Z" },
-  { id: "3", name: "Tiana Productions", company: "Tiana Prod", phone: "032 33 333 33", email: "contact@tianaprod.mg", website: "", status: "pending", createdAt: "2026-01-20T00:00:00Z" },
+  { id: "1", name: "Hery Rakoto", company: "HeryEvent Pro", phone: "034 11 111 11", email: "hery@heryevent.mg", website: "heryevent.mg", status: "active", password: "hery1234", createdAt: "2025-11-01T00:00:00Z" },
+  { id: "2", name: "Soa Ramiandrisoa", company: "SoaConcept Madagascar", phone: "033 22 222 22", email: "soa@soaconcept.mg", website: "soaconcept.mg", status: "active", password: "soa1234", createdAt: "2025-12-15T00:00:00Z" },
+  { id: "3", name: "Tiana Productions", company: "Tiana Prod", phone: "032 33 333 33", email: "contact@tianaprod.mg", website: "", status: "pending", password: "tiana1234", createdAt: "2026-01-20T00:00:00Z" },
 ];
 
 function getOrganizers(): Organizer[] {
   try {
     const raw = localStorage.getItem(ORGS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const orgs: Organizer[] = JSON.parse(raw);
+      const needsMigration = orgs.some((o) => !o.password);
+      if (needsMigration) {
+        const defaultPasswords: Record<string, string> = { "1": "hery1234", "2": "soa1234", "3": "tiana1234" };
+        const migrated = orgs.map((o) => o.password ? o : { ...o, password: defaultPasswords[o.id] ?? `org${o.id}1234` });
+        localStorage.setItem(ORGS_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+      return orgs;
+    }
   } catch {}
   localStorage.setItem(ORGS_KEY, JSON.stringify(DEMO_ORGS));
   return DEMO_ORGS;
@@ -54,7 +65,7 @@ const AVATAR_COLORS = [
   "bg-primary", "bg-blue-600", "bg-violet-600", "bg-amber-600", "bg-rose-600",
 ];
 
-const emptyForm = { name: "", company: "", phone: "", email: "", website: "", status: "pending" as OrgStatus };
+const emptyForm = { name: "", company: "", phone: "", email: "", website: "", status: "pending" as OrgStatus, password: "" };
 
 export default function AdminOrganizers() {
   const [organizers, setOrganizers] = useState<Organizer[]>(getOrganizers);
@@ -91,7 +102,7 @@ export default function AdminOrganizers() {
 
   function openEdit(org: Organizer) {
     setEditTarget(org);
-    setForm({ name: org.name, company: org.company, phone: org.phone, email: org.email, website: org.website, status: org.status });
+    setForm({ name: org.name, company: org.company, phone: org.phone, email: org.email, website: org.website, status: org.status, password: org.password ?? "" });
     setFormError("");
     setModal("edit");
   }
@@ -295,7 +306,8 @@ export default function AdminOrganizers() {
                 { label: "Nom complet *", key: "name", placeholder: "Jean Rakoto", type: "text" },
                 { label: "Société / Organisation *", key: "company", placeholder: "Event Pro Madagascar", type: "text" },
                 { label: "Téléphone *", key: "phone", placeholder: "034 XX XXX XX", type: "tel" },
-                { label: "Email", key: "email", placeholder: "contact@societe.mg", type: "email" },
+                { label: "Email (connexion organisateur)", key: "email", placeholder: "contact@societe.mg", type: "email" },
+                { label: "Mot de passe portail organisateur", key: "password", placeholder: "Mot de passe pour l'espace organisateur", type: "text" },
                 { label: "Site web", key: "website", placeholder: "www.societe.mg", type: "text" },
               ].map(({ label, key, placeholder, type }) => (
                 <div key={key}>
