@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { Building2, ScanLine, ShoppingCart } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Building2, ScanLine, ShoppingCart, Eye, EyeOff } from "lucide-react";
 import { useOrganizer } from "@/context/OrganizerContext";
 import { Logo } from "@/components/layout";
 import { STATIC_ORGANIZERS } from "@/data/static";
@@ -8,10 +8,16 @@ import { STATIC_ORGANIZERS } from "@/data/static";
 export default function OrganizerLogin() {
   const { loginAs } = useOrganizer();
   const [, navigate] = useLocation();
+  const [pseudo, setPseudo] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAccess = (role: "organisateur" | "agent-vente" | "agent-scan") => {
     const org = STATIC_ORGANIZERS.find(o => o.status !== "suspended") ?? STATIC_ORGANIZERS[0];
-    const roleLabel = role === "organisateur" ? "Organisateur" : role === "agent-vente" ? "Agent Vente" : "Agent Scan";
+    const roleLabel =
+      role === "organisateur" ? "Organisateur" :
+      role === "agent-vente" ? "Agent Vente" : "Agent Scan";
+
     if (org) {
       loginAs({ id: org.id, name: org.name, company: org.company, email: org.email, role });
     } else {
@@ -22,61 +28,95 @@ export default function OrganizerLogin() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.04]"
-        style={{ backgroundImage: "repeating-linear-gradient(45deg,#22c55e 0,#22c55e 1px,transparent 0,transparent 50%),repeating-linear-gradient(-45deg,#f59e0b 0,#f59e0b 1px,transparent 0,transparent 50%)", backgroundSize: "20px 20px" }} />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/10 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-[url('/pharmasalepos/images/hero-bg.png')] bg-cover bg-center opacity-5 pointer-events-none" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-6"><Logo /></div>
-          <h1 className="text-3xl font-bold font-display">Espace Organisateur</h1>
-          <p className="text-muted-foreground mt-2">Choisissez votre rôle pour accéder à votre espace.</p>
+      <div className="w-full max-w-md relative z-10">
+        <div className="flex justify-center mb-8">
+          <Logo />
         </div>
 
-        <div className="space-y-4">
-          {[
-            {
-              role: "organisateur" as const,
-              icon: <Building2 className="w-7 h-7" />,
-              title: "Organisateur",
-              desc: "Gérez vos événements et consultez vos statistiques",
-              color: "hsl(var(--accent))",
-            },
-            {
-              role: "agent-vente" as const,
-              icon: <ShoppingCart className="w-7 h-7" />,
-              title: "Agent de vente",
-              desc: "Vendez des billets sur place",
-              color: "#f59e0b",
-            },
-            {
-              role: "agent-scan" as const,
-              icon: <ScanLine className="w-7 h-7" />,
-              title: "Agent de scan",
-              desc: "Validez les billets à l'entrée",
-              color: "#3b82f6",
-            },
-          ].map(item => (
+        <div className="glass-panel rounded-3xl p-10 border border-border/60 shadow-2xl flex flex-col items-center gap-6 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30">
+            <Building2 className="w-8 h-8 text-accent" />
+          </div>
+
+          <div>
+            <h1 className="text-2xl font-bold font-display text-white mb-2">Espace Organisateur</h1>
+            <p className="text-muted-foreground text-sm">Gérez vos événements, billets et commandes</p>
+          </div>
+
+          {/* Champs de connexion */}
+          <div className="w-full space-y-3 text-left">
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">
+                Pseudo
+              </label>
+              <input
+                type="text"
+                value={pseudo}
+                onChange={(e) => setPseudo(e.target.value)}
+                placeholder="Votre identifiant"
+                autoComplete="username"
+                className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-11 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Boutons de rôle */}
+          <div className="w-full space-y-3">
             <button
-              key={item.role}
-              onClick={() => handleAccess(item.role)}
-              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-border hover:border-accent/50 bg-card hover:bg-card/80 transition-all text-left group"
+              onClick={() => handleAccess("organisateur")}
+              className="w-full py-3.5 px-6 rounded-xl bg-accent text-black font-bold text-base hover:bg-accent/90 active:scale-95 transition-all shadow-lg shadow-accent/20 flex items-center justify-center gap-2"
             >
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: item.color + "20", border: `1.5px solid ${item.color}40`, color: item.color }}>
-                {item.icon}
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-lg">{item.title}</div>
-                <div className="text-sm text-muted-foreground">{item.desc}</div>
-              </div>
-              <div className="text-muted-foreground group-hover:text-accent transition-colors">→</div>
+              <Building2 className="w-5 h-5" />
+              Organisateur
             </button>
-          ))}
-        </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-8">
-          Ceci est une démo. Cliquez sur un rôle pour accéder directement.
-        </p>
+            <button
+              onClick={() => handleAccess("agent-vente")}
+              className="w-full py-3.5 px-6 rounded-xl bg-primary/20 border border-primary/40 text-white font-semibold text-base hover:bg-primary/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="w-5 h-5 text-accent" />
+              Agent vente
+            </button>
+
+            <button
+              onClick={() => handleAccess("agent-scan")}
+              className="w-full py-3.5 px-6 rounded-xl bg-primary/20 border border-primary/40 text-white font-semibold text-base hover:bg-primary/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <ScanLine className="w-5 h-5 text-accent" />
+              Agent scan
+            </button>
+          </div>
+
+          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Retour au site public
+          </Link>
+        </div>
       </div>
     </div>
   );
