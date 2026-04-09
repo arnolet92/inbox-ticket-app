@@ -302,135 +302,142 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: "hsl(150 15% 6%)", border: "1.5px solid hsl(145 60% 25% / 0.5)" }}
+        className="relative w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col"
+        style={{
+          background: "hsl(150 15% 6%)",
+          border: "1.5px solid hsl(145 60% 25% / 0.5)",
+          maxHeight: "92vh",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-border/60" />
+        </div>
+
         {/* Top bar */}
-        <div className="px-6 pt-6 pb-4 flex items-start justify-between">
+        <div className="px-5 pt-3 pb-3 flex items-start justify-between shrink-0">
           <div>
-            <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-1">Billet électronique</p>
-            <h2 className="font-bold font-display text-lg leading-tight">{order.event?.title ?? "Événement"}</h2>
-            <p className="text-sm text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
+            <p className="text-[10px] text-accent font-semibold tracking-widest uppercase mb-0.5">Billet électronique</p>
+            <h2 className="font-bold font-display text-base leading-tight">{order.event?.title ?? "Événement"}</h2>
+            <p className="text-xs text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xl leading-none"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xl leading-none shrink-0 ml-2"
           >×</button>
         </div>
 
-        {/* Dashed separator */}
-        <div className="mx-6 border-t border-dashed border-accent/20 mb-5" />
+        <div className="mx-5 border-t border-dashed border-accent/20" />
 
-        {/* Large QR */}
-        <div className="flex flex-col items-center px-6 mb-5" ref={modalQrRef}>
-          <div className="relative">
-            <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
-            <div className="relative p-4 bg-white rounded-2xl shadow-xl">
-              <QRCodeSVG value={qrValue} size={200} level="H" fgColor="#14532d" />
-            </div>
-          </div>
-          {eventDate && (
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
-            </p>
-          )}
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
 
-          {/* Three security codes */}
-          <div className="flex gap-2 mt-3 w-full">
-            {[
-              { label: "Clé de sécurité", value: ticketKey },
-              { label: "Confirmation", value: confirmCode },
-              { label: "N° billet", value: ticketNumber },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 px-1"
-                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
-              >
-                <span className="text-[9px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
-                <span className="font-mono font-bold text-sm tracking-widest text-white">{c.value}</span>
+          {/* QR + codes */}
+          <div className="flex flex-col items-center" ref={modalQrRef}>
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+              <div className="relative p-3 bg-white rounded-2xl shadow-xl">
+                <QRCodeSVG value={qrValue} size={170} level="H" fgColor="#14532d" />
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Action buttons row */}
-        <div className="flex gap-2 px-6 mb-4">
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
-            <Download className="w-3.5 h-3.5" /> Télécharger
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
-            <Printer className="w-3.5 h-3.5" /> Imprimer
-          </Button>
-        </div>
-
-        {/* Social share */}
-        <div className="px-6 pb-6">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Partager le lien du billet via</p>
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {SOCIAL.map((s) => {
-              const isActive = showLinkFor === s.label;
-              return (
-                <button
-                  key={s.label}
-                  onClick={() => handleSocial(s)}
-                  className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: isActive ? `${s.color}30` : `${s.color}18`,
-                    border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}`,
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{ background: s.color }}>
-                    <img src={s.icon} alt={s.label} className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground font-medium">{s.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Link panel for Instagram / TikTok */}
-          {showLinkFor && (
-            <div
-              className="rounded-xl p-3 mb-1"
-              style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}
-            >
-              <p className="text-xs text-muted-foreground mb-2">
-                Copiez ce lien et partagez-le dans <span className="text-white font-semibold">{showLinkFor}</span> :
+            </div>
+            {eventDate && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
               </p>
-              <div className="flex gap-2 items-center">
-                <input
-                  ref={linkInputRef}
-                  readOnly
-                  value={shareUrl}
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                  className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none focus:border-accent/50 cursor-text"
-                />
-                <button
-                  onClick={handleCopyLink}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                  style={{
-                    background: copied ? "#16a34a" : "hsl(145 60% 30%)",
-                    color: "white",
-                  }}
+            )}
+            {/* Security codes */}
+            <div className="flex gap-2 mt-3 w-full">
+              {[
+                { label: "Clé", value: ticketKey },
+                { label: "Confirmation", value: confirmCode },
+                { label: "N° billet", value: ticketNumber },
+              ].map((c) => (
+                <div
+                  key={c.label}
+                  className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
+                  style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
                 >
-                  {copied ? "✓ Copié" : "Copier"}
-                </button>
-              </div>
-              {copied && (
-                <p className="text-[10px] text-accent mt-1.5">
-                  Lien copié ! Ouvrez {showLinkFor} et collez-le dans un message.
-                </p>
-              )}
+                  <span className="text-[8px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                  <span className="font-mono font-bold text-xs tracking-widest text-white">{c.value}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
+              <Download className="w-3.5 h-3.5" /> Télécharger
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
+              <Printer className="w-3.5 h-3.5" /> Imprimer
+            </Button>
+          </div>
+
+          {/* Social share */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 font-medium">Partager via</p>
+            <div className="grid grid-cols-4 gap-2">
+              {SOCIAL.map((s) => {
+                const isActive = showLinkFor === s.label;
+                return (
+                  <button
+                    key={s.label}
+                    onClick={() => handleSocial(s)}
+                    className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: isActive ? `${s.color}30` : `${s.color}18`,
+                      border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}`,
+                    }}
+                  >
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
+                      <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Link panel */}
+            {showLinkFor && (
+              <div
+                className="rounded-xl p-3 mt-2"
+                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  Copiez ce lien dans <span className="text-white font-semibold">{showLinkFor}</span> :
+                </p>
+                <div className="flex gap-2 items-center">
+                  <input
+                    ref={linkInputRef}
+                    readOnly
+                    value={shareUrl}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none focus:border-accent/50 cursor-text"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                    style={{ background: copied ? "#16a34a" : "hsl(145 60% 30%)", color: "white" }}
+                  >
+                    {copied ? "✓ Copié" : "Copier"}
+                  </button>
+                </div>
+                {copied && (
+                  <p className="text-[10px] text-accent mt-1.5">
+                    Lien copié ! Ouvrez {showLinkFor} et collez-le.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
