@@ -19,8 +19,7 @@ run = "pnpm --filter @workspace/inbox-template run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/inbox-template", "run", "build" ]
-publicDir = "artifacts/inbox-template/.next"
-serve = "static"
+run = [ "pnpm", "--filter", "@workspace/inbox-template", "run", "start" ]
 
 [services.env]
 PORT = "20407"
