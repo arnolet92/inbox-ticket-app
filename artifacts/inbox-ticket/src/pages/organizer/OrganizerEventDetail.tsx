@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { useParams, Link } from "wouter";
 import { PaymentBadge, getPaymentColor } from "@/components/PaymentBadge";
 import {
@@ -217,6 +218,8 @@ export default function OrganizerEventDetail() {
   const [scanInput, setScanInput] = useState("");
   const [scanMobileKey, setScanMobileKey] = useState("");
   const [scanMobileCode, setScanMobileCode] = useState("");
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const [scanResult, setScanResult] = useState<null | {
     status: "valid" | "used" | "invalid";
     order?: typeof orders extends Array<infer T> ? T : never;
@@ -569,8 +572,48 @@ export default function OrganizerEventDetail() {
 
   /* ── Scan handler ── */
   const handleScan = (override?: string) => {
-    const q = (override ?? scanInput).trim().toUpperCase();
-    if (!q) return;
+    let raw = (override ?? scanInput).trim();
+    if (!raw) return;
+
+    // Parse QR code format: INBOXTICKET-ORD-{id}-{phone}
+    const qrMatch = raw.match(/INBOXTICKET-ORD-(\d+)/i);
+    if (qrMatch) {
+      const orderId = parseInt(qrMatch[1]);
+      const order = (orders ?? []).find((o) => o.id === orderId);
+      const label = `QR #${String(orderId).padStart(5, "0")}`;
+      if (!order) {
+        setScanResult({ status: "invalid" });
+        setScanHistory((prev) => [{ input: label, status: "invalid", time: new Date() }, ...prev.slice(0, 19)]);
+        setScanInput("");
+        return;
+      }
+      // Find first non-used unit
+      let qrFound: typeof found = null;
+      for (let i = 0; i < order.quantity; i++) {
+        const ticketId = makeTicketId(order.id, i);
+        if (!usedTickets.has(ticketId)) {
+          const codes = getBilletCodesForUnit(order.id, i);
+          qrFound = { order, unitIndex: i, codes, ticketId };
+          break;
+        }
+      }
+      if (!qrFound) {
+        // All units used — show first unit as "used"
+        const codes = getBilletCodesForUnit(order.id, 0);
+        const ticketId = makeTicketId(order.id, 0);
+        qrFound = { order, unitIndex: 0, codes, ticketId };
+        setScanResult({ status: "used", ...qrFound });
+        setScanHistory((prev) => [{ input: label, status: "used", customerName: order.customerName, time: new Date() }, ...prev.slice(0, 19)]);
+      } else {
+        setScanResult({ status: "valid", ...qrFound });
+        setScanHistory((prev) => [{ input: label, status: "valid", customerName: order.customerName, time: new Date() }, ...prev.slice(0, 19)]);
+      }
+      setScanInput("");
+      return;
+    }
+
+    // Regular key / code lookup
+    const q = raw.toUpperCase();
     let found: { order: NonNullable<typeof orders>[0]; unitIndex: number; codes: ReturnType<typeof getBilletCodesForUnit>; ticketId: string } | null = null;
     for (const order of (orders ?? [])) {
       for (let i = 0; i < order.quantity; i++) {
@@ -594,6 +637,47 @@ export default function OrganizerEventDetail() {
     }
     setScanInput("");
   };
+
+  /* ── Camera QR scanner lifecycle (mobile) ── */
+  useEffect(() => {
+    const elementId = "qr-reader-mobile";
+    if (activeTab !== "scan" || scanResult !== null) return;
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let scanner: Html5Qrcode | null = null;
+    let stopped = false;
+
+    const start = async () => {
+      try {
+        scanner = new Html5Qrcode(elementId);
+        qrScannerRef.current = scanner;
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1 },
+          (decodedText) => {
+            if (stopped) return;
+            stopped = true;
+            scanner?.stop().catch(() => {});
+            handleScan(decodedText);
+          },
+          () => {}
+        );
+        setCameraError(null);
+      } catch {
+        setCameraError("Caméra non disponible — saisie manuelle uniquement.");
+      }
+    };
+
+    start();
+
+    return () => {
+      stopped = true;
+      scanner?.stop().catch(() => {});
+      qrScannerRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, scanResult]);
 
   if (eventLoading) {
     return (
@@ -2737,16 +2821,43 @@ export default function OrganizerEventDetail() {
                 80% { transform: scale(1.05); }
                 100% { transform: scale(1); opacity: 1; }
               }
+              /* Hide html5-qrcode default UI */
+              #qr-reader-mobile > img,
+              #qr-reader-mobile__header_message,
+              #qr-reader-mobile__dashboard_section_csr,
+              #qr-reader-mobile__dashboard_section_swaplink,
+              #qr-reader-mobile > div > button,
+              #qr-reader-mobile select {
+                display: none !important;
+              }
+              #qr-reader-mobile video {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+              }
+              #qr-reader-mobile {
+                border: none !important;
+              }
             `}</style>
 
             {/* ── No result yet: scan UI ── */}
             {!scanResult && (
               <div className="flex flex-col min-h-[80vh] items-center pt-4 pb-8 space-y-6">
                 {/* Viewfinder */}
-                <div className="relative w-64 h-64 mx-auto">
-                  {/* Background blur */}
-                  <div className="absolute inset-0 rounded-3xl bg-card/40 border border-border/30 backdrop-blur-sm" />
-                  {/* Corner accents */}
+                <div className="relative w-64 h-64 mx-auto overflow-hidden rounded-3xl">
+                  {/* Camera feed OR decorative fallback */}
+                  {!cameraError ? (
+                    <div
+                      id="qr-reader-mobile"
+                      className="absolute inset-0 rounded-3xl overflow-hidden bg-black"
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 rounded-3xl bg-card/40 border border-border/30 backdrop-blur-sm flex items-center justify-center">
+                      <ScanLine className="w-16 h-16 text-accent/30" />
+                    </div>
+                  )}
+                  {/* Corner accents overlay */}
                   {[
                     "top-2 left-2 border-t-2 border-l-2 rounded-tl-xl",
                     "top-2 right-2 border-t-2 border-r-2 rounded-tr-xl",
@@ -2755,24 +2866,24 @@ export default function OrganizerEventDetail() {
                   ].map((cls, i) => (
                     <div
                       key={i}
-                      className={`absolute w-10 h-10 border-accent ${cls}`}
+                      className={`absolute w-10 h-10 border-accent z-10 ${cls}`}
                       style={{ animation: `cornerPulse 2s ease-in-out infinite`, animationDelay: `${i * 0.15}s` }}
                     />
                   ))}
-                  {/* Scanning line */}
+                  {/* Scanning line overlay */}
                   <div
-                    className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent rounded-full shadow-[0_0_12px_3px_rgba(45,158,78,0.5)]"
+                    className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent rounded-full shadow-[0_0_12px_3px_rgba(45,158,78,0.5)] z-10"
                     style={{ animation: "scanLine 2.4s ease-in-out infinite", position: "absolute" }}
                   />
-                  {/* Center icon */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ScanLine className="w-16 h-16 text-accent/30" />
-                  </div>
                 </div>
 
                 <div className="text-center px-4">
                   <h3 className="font-display font-black text-2xl text-white mb-1">Scanner un billet</h3>
-                  <p className="text-muted-foreground text-sm">Entrez la clé ou le code manuellement</p>
+                  {cameraError ? (
+                    <p className="text-orange-400 text-xs">{cameraError}</p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Pointez la caméra vers le QR code du billet</p>
+                  )}
                 </div>
 
                 {/* Two input fields */}
