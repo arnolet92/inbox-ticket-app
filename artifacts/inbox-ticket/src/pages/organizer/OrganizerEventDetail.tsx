@@ -722,7 +722,7 @@ export default function OrganizerEventDetail() {
     orgRole === "agent-vente"
       ? ALL_TABS.filter((t) => t.key === "vente" || t.key === "orders")
       : orgRole === "agent-scan"
-      ? ALL_TABS.filter((t) => t.key === "scan")
+      ? ALL_TABS.filter((t) => t.key === "scan" || t.key === "orders")
       : ALL_TABS;
 
   return (
