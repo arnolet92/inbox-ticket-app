@@ -272,15 +272,10 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { organizer, logout } = useOrganizer();
 
-  React.useEffect(() => {
-    if (!organizer) {
-      navigate("/organizer/login");
-    }
-  }, [organizer, navigate]);
+  const displayName = organizer?.name ?? "Organisateur";
+  const displayCompany = organizer?.company ?? "Inbox Ticket";
 
-  if (!organizer) return null;
-
-  const initials = organizer.name
+  const initials = displayName
     .split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
 
   const links = [
@@ -329,8 +324,8 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold truncate text-foreground">{organizer.name}</div>
-              <div className="text-xs text-muted-foreground truncate">{organizer.company}</div>
+              <div className="text-sm font-bold truncate text-foreground">{displayName}</div>
+              <div className="text-xs text-muted-foreground truncate">{displayCompany}</div>
             </div>
           </div>
 

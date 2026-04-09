@@ -29,10 +29,9 @@ export default function OrganizerEvents() {
   const createEvent = useCreateEvent();
 
   const events = React.useMemo(() => {
-    if (!allEvents || !organizer) return [];
-    const map = getEventOrgMap();
-    return allEvents.filter((e) => map[String(e.id)] === organizer.id);
-  }, [allEvents, organizer]);
+    if (!allEvents) return [];
+    return allEvents;
+  }, [allEvents]);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
