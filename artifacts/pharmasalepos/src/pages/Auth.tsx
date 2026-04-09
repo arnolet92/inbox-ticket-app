@@ -115,6 +115,25 @@ function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () 
         <h1 className="text-3xl font-bold font-display mb-1">Bon retour ! 👋</h1>
         <p className="text-muted-foreground text-sm">Connectez-vous pour accéder à vos billets</p>
       </div>
+
+      {/* Demo credentials banner */}
+      <div className="rounded-xl border border-accent/25 bg-accent/8 p-4 space-y-2">
+        <p className="text-xs font-semibold text-accent uppercase tracking-wider">Compte démo client</p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-sm text-foreground/80 space-y-0.5">
+            <p><span className="text-muted-foreground">Tél :</span> <span className="font-mono font-medium">+261341234567</span></p>
+            <p><span className="text-muted-foreground">Mot de passe :</span> <span className="font-mono font-medium">demo123</span></p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setPhone("+261341234567"); setPassword("demo123"); setErrors({}); setGlobalError(""); }}
+            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent/20 text-accent hover:bg-accent/30 border border-accent/30 transition-all"
+          >
+            Remplir
+          </button>
+        </div>
+      </div>
+
       {globalError && (
         <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 shrink-0" /> {globalError}
