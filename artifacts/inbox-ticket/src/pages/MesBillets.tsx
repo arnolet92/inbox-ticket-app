@@ -422,11 +422,42 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
 /* ── Ticket card ── */
 function TicketCard({ order }: { order: any }) {
   const qrRef = React.useRef<HTMLDivElement>(null);
+  const linkInputRef2 = React.useRef<HTMLInputElement>(null);
   const [showModal, setShowModal] = React.useState(false);
+  const [showQRView, setShowQRView] = React.useState(false);   // vue QR en-place sur mobile
+  const [showLinkFor2, setShowLinkFor2] = React.useState<string | null>(null);
+  const [copied2, setCopied2] = React.useState<string | null>(null);
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const isComing = eventDate ? isFuture(eventDate) : false;
   const qrValue = `INBOXTICKET-ORD-${order.id}-${order.customerPhone ?? order.customerEmail}`;
   const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
+  const orderId = String(order.id).padStart(6, "0");
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const shareUrl2 = `${window.location.origin}${base}/billet?code=${encodeURIComponent(qrValue)}`;
+  const shareMsg2 = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}\n${shareUrl2}`);
+
+  const SOCIAL2 = [
+    { label: "WhatsApp",  color: "#25D366", icon: "https://cdn.simpleicons.org/whatsapp/ffffff",  link: `https://wa.me/?text=${shareMsg2}` },
+    { label: "Messenger", color: "#0099FF", icon: "https://cdn.simpleicons.org/messenger/ffffff", link: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(shareUrl2)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(shareUrl2)}` },
+    { label: "Instagram", color: "#E1306C", icon: "https://cdn.simpleicons.org/instagram/ffffff", link: null },
+    { label: "TikTok",    color: "#010101", icon: "https://cdn.simpleicons.org/tiktok/ffffff",    link: null },
+  ];
+
+  const handleSocial2 = (s: typeof SOCIAL2[0]) => {
+    if (s.link) { window.open(s.link, "_blank", "noopener"); }
+    else { setShowLinkFor2(s.label); setTimeout(() => linkInputRef2.current?.select(), 50); }
+  };
+  const handleCopyLink2 = () => {
+    const ta = document.createElement("textarea"); ta.value = shareUrl2; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    setCopied2(showLinkFor2); setTimeout(() => setCopied2(null), 2500);
+  };
+
+  /* Ouvre QR : modal sur desktop, vue en place sur mobile */
+  const openQR = () => {
+    if (window.innerWidth < 640) { setShowQRView(true); setShowLinkFor2(null); }
+    else setShowModal(true);
+  };
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -458,7 +489,84 @@ function TicketCard({ order }: { order: any }) {
       <Card className={`overflow-hidden border transition-all duration-300 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 ${isComing ? "border-primary/30" : "border-border/40 opacity-75"}`}>
         <div className={`h-1 w-full ${isComing ? "bg-gradient-to-r from-emerald-500 to-emerald-700" : "bg-muted"}`} />
 
-        {order.status === "confirmed" ? (
+        {/* ── Vue QR en place (mobile) ── */}
+        {showQRView ? (
+          <div className="p-4">
+            {/* Retour */}
+            <button onClick={() => { setShowQRView(false); setShowLinkFor2(null); }}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white mb-3 transition-colors">
+              <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Retour au billet
+            </button>
+
+            {/* QR centré */}
+            <div ref={qrRef} className="flex flex-col items-center mb-4">
+              <div className="relative mb-2">
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+                <div className="relative p-3 bg-white rounded-2xl shadow-xl">
+                  <QRCodeSVG value={qrValue} size={200} level="H" fgColor="#14532d" />
+                </div>
+              </div>
+              {eventDate && (
+                <p className="text-xs text-muted-foreground text-center mb-2">
+                  {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
+                </p>
+              )}
+              <div className="flex gap-2 w-full">
+                {[
+                  { label: "Clé", value: ticketKey },
+                  { label: "Confirmation", value: confirmCode },
+                  { label: "N° billet", value: ticketNumber },
+                ].map((c) => (
+                  <div key={c.label} className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
+                    style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}>
+                    <span className="text-[8px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                    <span className="font-mono font-bold text-xs tracking-widest text-white">{c.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 mb-3">
+              <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
+                <Download className="w-3.5 h-3.5" /> Télécharger
+              </Button>
+            </div>
+
+            {/* Partage */}
+            <p className="text-[10px] text-muted-foreground mb-2 font-medium">Partager via</p>
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {SOCIAL2.map((s) => (
+                <button key={s.label} onClick={() => handleSocial2(s)}
+                  className="flex flex-col items-center gap-1 py-2 rounded-xl active:scale-95 transition-transform"
+                  style={{ background: `${s.color}18`, border: `1.5px solid ${s.color}33` }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
+                    <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
+                </button>
+              ))}
+            </div>
+            {showLinkFor2 && (
+              <div className="rounded-xl p-3" style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Copiez dans <span className="text-white font-semibold">{showLinkFor2}</span> :
+                </p>
+                <div className="flex gap-2 items-center">
+                  <input ref={linkInputRef2} readOnly value={shareUrl2}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none" />
+                  <button onClick={handleCopyLink2} className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold"
+                    style={{ background: copied2 ? "#16a34a" : "hsl(145 60% 30%)", color: "white" }}>
+                    {copied2 ? "✓ Copié" : "Copier"}
+                  </button>
+                </div>
+                {copied2 && <p className="text-[10px] text-accent mt-1.5">Lien copié !</p>}
+              </div>
+            )}
+          </div>
+
+        ) : order.status === "confirmed" ? (
           <div className="p-5 flex gap-5 items-start">
             {/* Left: event info */}
             <div className="flex-1 min-w-0">
@@ -494,7 +602,7 @@ function TicketCard({ order }: { order: any }) {
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs flex-1" onClick={handleDownload}>
                   <Download className="w-3.5 h-3.5" /> Télécharger
                 </Button>
-                <Button variant="outline" size="sm" className="px-3" onClick={() => setShowModal(true)}>
+                <Button variant="outline" size="sm" className="px-3" onClick={openQR}>
                   <Share2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -504,7 +612,7 @@ function TicketCard({ order }: { order: any }) {
             <div
               className="shrink-0 flex flex-col items-center gap-1.5 cursor-pointer group"
               ref={qrRef}
-              onClick={() => setShowModal(true)}
+              onClick={openQR}
               title="Agrandir le QR code"
             >
               <div className="relative">
