@@ -2920,45 +2920,44 @@ export default function AdminEventDetail() {
                 </p>
               </div>
 
-              {/* Scan input */}
-              <Card className="p-5 space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">🎟 Clé de billet</label>
-                    <input
-                      value={scanMobileKey}
-                      onChange={(e) => setScanMobileKey(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
-                      placeholder="Ex: A1B2C3"
-                      maxLength={12}
-                      autoFocus
-                      className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
-                    />
+              {/* Scan card — bascule entre saisie et résultat */}
+              {!scanResult ? (
+                <Card className="p-5 space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">🎟 Clé de billet</label>
+                      <input
+                        value={scanMobileKey}
+                        onChange={(e) => setScanMobileKey(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
+                        placeholder="Ex: A1B2C3"
+                        maxLength={12}
+                        autoFocus
+                        className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">📋 Code de confirmation</label>
+                      <input
+                        value={scanMobileCode}
+                        onChange={(e) => setScanMobileCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileCode || scanMobileKey).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
+                        placeholder="Ex: CONF-X7Y2"
+                        maxLength={12}
+                        className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">📋 Code de confirmation</label>
-                    <input
-                      value={scanMobileCode}
-                      onChange={(e) => setScanMobileCode(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileCode || scanMobileKey).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
-                      placeholder="Ex: CONF-X7Y2"
-                      maxLength={12}
-                      className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={() => { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } }}
-                  disabled={!scanMobileKey.trim() && !scanMobileCode.trim()}
-                  className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  <ScanLine className="w-5 h-5" /> Valider le billet
-                </button>
-              </Card>
-
-              {/* Scan result */}
-              {scanResult && (
-                <div className={`rounded-2xl border-2 p-8 text-center transition-all ${
+                  <button
+                    onClick={() => { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } }}
+                    disabled={!scanMobileKey.trim() && !scanMobileCode.trim()}
+                    className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  >
+                    <ScanLine className="w-5 h-5" /> Valider le billet
+                  </button>
+                </Card>
+              ) : (
+                <Card className={`p-8 text-center border-2 transition-all ${
                   scanResult.status === "valid"
                     ? "border-emerald-500/60 bg-emerald-950/30"
                     : scanResult.status === "used"
@@ -2978,27 +2977,35 @@ export default function AdminEventDetail() {
                       : "BILLET INVALIDE"}
                   </div>
                   {scanResult.order && (
-                    <div className="text-sm text-muted-foreground space-y-1 mt-4 mb-4">
+                    <div className="space-y-1 mt-4 mb-6">
                       <div className="font-bold text-foreground text-lg">{scanResult.order.customerName}</div>
                       <div className="text-muted-foreground">{scanResult.order.ticketType?.name ?? "—"}</div>
-                      <div className="font-mono text-xs mt-2">
+                      <div className="font-mono text-xs text-muted-foreground mt-2">
                         Commande #{String(scanResult.order.id).padStart(5, "0")} · Billet {(scanResult.unitIndex ?? 0) + 1}/{scanResult.order.quantity}
                       </div>
                     </div>
                   )}
-                  {scanResult.status === "valid" && scanResult.ticketId && (
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                    {scanResult.status === "valid" && scanResult.ticketId && (
+                      <button
+                        onClick={() => {
+                          handleToggleUsed(scanResult.ticketId!);
+                          setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
+                          setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
+                        }}
+                        className="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg transition-all"
+                      >
+                        ✓ Marquer comme utilisé
+                      </button>
+                    )}
                     <button
-                      onClick={() => {
-                        handleToggleUsed(scanResult.ticketId!);
-                        setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
-                        setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
-                      }}
-                      className="mt-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg transition-all"
+                      onClick={() => setScanResult(null)}
+                      className="px-6 py-3 rounded-xl border border-border bg-background hover:bg-card text-foreground font-semibold transition-all flex items-center justify-center gap-2"
                     >
-                      ✓ Marquer comme utilisé
+                      <ChevronLeft className="w-4 h-4" /> Scanner un autre billet
                     </button>
-                  )}
-                </div>
+                  </div>
+                </Card>
               )}
 
               {/* Scan history */}
