@@ -200,15 +200,18 @@ export default function AdminEventDetail() {
   const [usedTickets, setUsedTickets] = useState<Set<string>>(() => getUsedTickets());
 
   /* ── Vente tab state ── */
-  const [venteSelectedTT, setVenteSelectedTT] = useState<number | null>(null);
-  const [venteQty, setVenteQty] = useState(1);
+  const [venteCart, setVenteCart] = useState<Map<number, number>>(new Map());
   const [venteCustomerName, setVenteCustomerName] = useState("");
   const [venteCustomerPhone, setVenteCustomerPhone] = useState("");
-  const [ventePaymentMethod, setVentePaymentMethod] = useState("orange_money");
+  const [ventePaymentMethod, setVentePaymentMethod] = useState("especes");
   const [venteSales, setVenteSales] = useState<Array<{
-    id: number; ticketType: string; qty: number; total: number;
+    id: number; items: string[]; total: number;
     customerName: string; method: string; time: Date;
   }>>([]);
+  const [venteMobileStep, setVenteMobileStep] = useState<"vente" | "panier" | "paiement">("vente");
+  const [venteConfirmOpen, setVenteConfirmOpen] = useState(false);
+  const [venteIsProcessing, setVenteIsProcessing] = useState(false);
+  const [venteSuccessMsg, setVenteSuccessMsg] = useState("");
 
   /* ── Scan tab state ── */
   const [scanInput, setScanInput] = useState("");
@@ -390,6 +393,31 @@ export default function AdminEventDetail() {
       vendus: prods.reduce((s, p) => s + p.sold, 0),
     };
   });
+
+  /* ── Vente cart helpers ── */
+  const addToCart = (ttId: number) => setVenteCart((prev) => { const m = new Map(prev); m.set(ttId, (m.get(ttId) ?? 0) + 1); return m; });
+  const removeFromCart = (ttId: number) => setVenteCart((prev) => { const m = new Map(prev); const cur = m.get(ttId) ?? 0; if (cur <= 1) m.delete(ttId); else m.set(ttId, cur - 1); return m; });
+  const clearVenteCart = () => { setVenteCart(new Map()); setVenteCustomerName(""); setVenteCustomerPhone(""); setVentePaymentMethod("especes"); setVenteMobileStep("vente"); };
+  const cartTotal = Array.from(venteCart.entries()).reduce((sum, [ttId, qty]) => {
+    const tt = ticketTypes?.find((t) => t.id === ttId);
+    return sum + (tt ? parseFloat(String(tt.price)) * qty : 0);
+  }, 0);
+  const cartItemCount = Array.from(venteCart.values()).reduce((s, q) => s + q, 0);
+  const handleVenteConfirm = async () => {
+    setVenteConfirmOpen(false);
+    setVenteIsProcessing(true);
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+    setVenteIsProcessing(false);
+    const items: string[] = [];
+    venteCart.forEach((qty, ttId) => {
+      const tt = ticketTypes?.find((t) => t.id === ttId);
+      if (tt) items.push(`${tt.name} ×${qty}`);
+    });
+    setVenteSales((prev) => [{ id: Date.now(), items, total: cartTotal, customerName: venteCustomerName, method: ventePaymentMethod, time: new Date() }, ...prev]);
+    setVenteSuccessMsg(`✅ Encaissement confirmé — ${venteCustomerName} — ${formatMGA(cartTotal)}`);
+    clearVenteCart();
+    setTimeout(() => setVenteSuccessMsg(""), 5000);
+  };
 
   const fillPct = event && event.totalCapacity > 0
     ? Math.round((event.soldTickets / event.totalCapacity) * 100) : 0;
@@ -2071,14 +2099,44 @@ export default function AdminEventDetail() {
 
       {/* ─── TAB: VENTE ─── */}
       {activeTab === "vente" && (
-        <div className="space-y-6">
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left: Ticket selector */}
+        <div className="relative">
+          {/* ── Premium loading overlay ── */}
+          {venteIsProcessing && (
+            <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex flex-col items-center justify-center">
+              <div className="relative w-28 h-28 mb-6">
+                <div className="absolute inset-0 rounded-full border-4 border-accent/20" />
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-accent animate-spin" />
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-emerald-500/60 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CreditCard className="w-9 h-9 text-accent animate-pulse" />
+                </div>
+              </div>
+              <div className="text-2xl font-display font-bold text-white mb-2">Traitement en cours…</div>
+              <div className="text-sm text-muted-foreground mb-6">Veuillez patienter</div>
+              <div className="w-56 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-accent to-emerald-400 rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: "70%" }} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Success banner ── */}
+          {venteSuccessMsg && (
+            <div className="mb-5 p-4 bg-emerald-950/70 border border-emerald-500/50 rounded-2xl text-emerald-300 font-semibold flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+              {venteSuccessMsg}
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════
+              DESKTOP layout  (lg and above)
+          ════════════════════════════════════════ */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+            {/* Left: ticket catalog */}
             <div className="lg:col-span-2 space-y-4">
-              <h3 className="font-bold font-display text-xl">Sélectionner un type de billet</h3>
+              <h3 className="font-bold font-display text-xl">Catalogue des billets</h3>
               {ticketsLoading ? (
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-card rounded-xl animate-pulse" />)}
+                  {[1, 2, 3].map((i) => <div key={i} className="h-40 bg-card rounded-2xl animate-pulse" />)}
                 </div>
               ) : (ticketTypes?.length ?? 0) === 0 ? (
                 <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
@@ -2089,158 +2147,350 @@ export default function AdminEventDetail() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   {ticketTypes?.map((tt) => {
                     const remaining = tt.quantity - (tt.soldCount ?? 0);
-                    const selected = venteSelectedTT === tt.id;
+                    const qty = venteCart.get(tt.id) ?? 0;
                     return (
-                      <button
+                      <div
                         key={tt.id}
-                        onClick={() => { setVenteSelectedTT(selected ? null : tt.id); setVenteQty(1); }}
-                        disabled={remaining === 0}
-                        className={`text-left p-5 rounded-2xl border-2 transition-all ${
-                          selected
-                            ? "border-accent bg-accent/10"
-                            : remaining === 0
-                            ? "border-border opacity-50 cursor-not-allowed"
-                            : "border-border hover:border-accent/50 hover:bg-card/80"
-                        }`}
+                        className={`rounded-2xl border-2 p-5 transition-all ${qty > 0 ? "border-accent bg-accent/5 shadow-accent/10 shadow-lg" : "border-border bg-card"} ${remaining === 0 ? "opacity-50" : ""}`}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-3">
-                          <div>
-                            <div className="font-bold text-lg leading-tight">{tt.name}</div>
-                            {tt.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{tt.description}</div>}
+                        <div className="mb-3">
+                          <div className="font-bold text-lg leading-tight">{tt.name}</div>
+                          {tt.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{tt.description}</div>}
+                          <div className={`text-xs mt-1 ${remaining === 0 ? "text-red-400" : remaining <= 10 ? "text-orange-400" : "text-muted-foreground"}`}>
+                            {remaining === 0 ? "Épuisé" : `${remaining} restant${remaining > 1 ? "s" : ""}`}
                           </div>
-                          {selected && (
-                            <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center shrink-0">
-                              <CheckCircle className="w-4 h-4 text-black" />
-                            </div>
-                          )}
                         </div>
-                        <div className="text-2xl font-display font-bold text-accent">{formatMGA(tt.price)}</div>
-                        <div className={`text-xs mt-1 ${remaining <= 10 ? "text-orange-400" : "text-muted-foreground"}`}>
-                          {remaining === 0 ? "Épuisé" : `${remaining} restant${remaining > 1 ? "s" : ""}`}
+                        <div className="flex items-center justify-between">
+                          <div className="text-2xl font-display font-bold text-accent">{formatMGA(tt.price)}</div>
+                          <div className="flex items-center gap-2">
+                            {qty > 0 && (
+                              <button
+                                onClick={() => removeFromCart(tt.id)}
+                                className="w-9 h-9 rounded-xl border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                            )}
+                            {qty > 0 && (
+                              <span className="w-8 text-center text-xl font-display font-bold text-accent">{qty}</span>
+                            )}
+                            <button
+                              onClick={() => addToCart(tt.id)}
+                              disabled={remaining === 0}
+                              className="w-10 h-10 rounded-xl bg-accent hover:bg-accent/80 text-black flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed font-bold shadow-md"
+                              title="Ajouter au panier"
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
               )}
-
-              {/* Quantity selector */}
-              {venteSelectedTT && (
-                <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
-                  <span className="font-semibold text-sm text-muted-foreground">Quantité :</span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setVenteQty((q) => Math.max(1, q - 1))}
-                      className="w-10 h-10 rounded-xl border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="text-2xl font-display font-bold w-10 text-center">{venteQty}</span>
-                    <button
-                      onClick={() => setVenteQty((q) => q + 1)}
-                      className="w-10 h-10 rounded-xl border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Right: Checkout */}
+            {/* Right: cart + checkout */}
             <div className="space-y-4">
               <h3 className="font-bold font-display text-xl">Encaissement</h3>
-              <Card className="p-5 space-y-4">
-                {venteSelectedTT ? (() => {
-                  const tt = ticketTypes?.find((t) => t.id === venteSelectedTT);
-                  if (!tt) return null;
-                  const total = parseFloat(String(tt.price)) * venteQty;
-                  return (
-                    <>
-                      {/* Summary */}
-                      <div className="p-3 bg-accent/10 rounded-xl border border-accent/20">
-                        <div className="text-sm font-semibold">{tt.name}</div>
-                        <div className="text-xs text-muted-foreground">{venteQty} × {formatMGA(tt.price)}</div>
-                        <div className="text-2xl font-display font-bold text-accent mt-1">{formatMGA(total)}</div>
-                      </div>
-
-                      {/* Customer */}
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
-                          <input
-                            value={venteCustomerName}
-                            onChange={(e) => setVenteCustomerName(e.target.value)}
-                            placeholder="Ex: Rakoto Jean"
-                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
-                          <input
-                            value={venteCustomerPhone}
-                            onChange={(e) => setVenteCustomerPhone(e.target.value)}
-                            placeholder="Ex: 034 12 345 67"
-                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Payment method */}
-                      <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Mode de paiement</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            { key: "orange_money", label: "Orange Money" },
-                            { key: "mvola", label: "MVola" },
-                            { key: "mastercard", label: "Mastercard" },
-                          ].map((m) => (
-                            <button
-                              key={m.key}
-                              onClick={() => setVentePaymentMethod(m.key)}
-                              className={`py-2 px-2 rounded-lg border text-xs font-semibold transition-all ${
-                                ventePaymentMethod === m.key
-                                  ? "border-accent bg-accent/10 text-accent"
-                                  : "border-border text-muted-foreground hover:border-accent/40"
-                              }`}
-                            >
-                              {m.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Confirm button */}
-                      <button
-                        onClick={() => {
-                          if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
-                          setVenteSales((prev) => [{
-                            id: Date.now(), ticketType: tt.name, qty: venteQty,
-                            total, customerName: venteCustomerName,
-                            method: ventePaymentMethod, time: new Date(),
-                          }, ...prev]);
-                          setVenteSelectedTT(null); setVenteQty(1);
-                          setVenteCustomerName(""); setVenteCustomerPhone("");
-                        }}
-                        className="w-full py-3 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2"
-                      >
-                        <CreditCard className="w-5 h-5" /> Encaisser {formatMGA(total)}
-                      </button>
-                    </>
-                  );
-                })() : (
+              <Card className="p-5 space-y-4 sticky top-4">
+                {cartItemCount === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
-                    <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    Sélectionnez un type de billet pour commencer
+                    <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    Cliquez sur <span className="font-bold text-accent">+</span> pour ajouter des billets
                   </div>
+                ) : (
+                  <>
+                    {/* Cart lines */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">Panier ({cartItemCount} billet{cartItemCount > 1 ? "s" : ""})</div>
+                      {Array.from(venteCart.entries()).map(([ttId, qty]) => {
+                        const tt = ticketTypes?.find((t) => t.id === ttId);
+                        if (!tt) return null;
+                        const sub = parseFloat(String(tt.price)) * qty;
+                        return (
+                          <div key={ttId} className="flex items-center justify-between gap-2 py-2 border-b border-border/50 last:border-0">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold truncate">{tt.name}</div>
+                              <div className="text-xs text-muted-foreground">{qty} × {formatMGA(tt.price)}</div>
+                            </div>
+                            <div className="font-bold text-accent text-sm shrink-0">{formatMGA(sub)}</div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between items-center pt-2 font-bold">
+                        <span>Total</span>
+                        <span className="text-2xl font-display text-accent">{formatMGA(cartTotal)}</span>
+                      </div>
+                    </div>
+
+                    {/* Customer */}
+                    <div className="space-y-3 pt-2 border-t border-border/50">
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
+                        <input
+                          value={venteCustomerName}
+                          onChange={(e) => setVenteCustomerName(e.target.value)}
+                          placeholder="Ex: Rakoto Jean"
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
+                        <input
+                          value={venteCustomerPhone}
+                          onChange={(e) => setVenteCustomerPhone(e.target.value)}
+                          placeholder="Ex: 034 12 345 67"
+                          className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Payment */}
+                    <div>
+                      <label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Mode de paiement</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { key: "especes", label: "💵 Espèces" },
+                          { key: "orange_money", label: "🟠 Orange Money" },
+                          { key: "mvola", label: "🔴 MVola" },
+                        ].map((m) => (
+                          <button
+                            key={m.key}
+                            onClick={() => setVentePaymentMethod(m.key)}
+                            className={`py-2.5 px-2 rounded-xl border text-xs font-semibold transition-all text-center leading-tight ${
+                              ventePaymentMethod === m.key
+                                ? "border-accent bg-accent/10 text-accent"
+                                : "border-border text-muted-foreground hover:border-accent/40"
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Encaisser */}
+                    <button
+                      onClick={() => {
+                        if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
+                        setVenteConfirmOpen(true);
+                      }}
+                      className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                    >
+                      <CreditCard className="w-5 h-5" /> Encaisser {formatMGA(cartTotal)}
+                    </button>
+                  </>
                 )}
               </Card>
             </div>
           </div>
 
-          {/* Recent sales */}
+          {/* ════════════════════════════════════════
+              MOBILE layout  (< lg)
+          ════════════════════════════════════════ */}
+          <div className="lg:hidden">
+            {/* Stepper */}
+            <div className="flex mb-6 rounded-2xl border border-border overflow-hidden bg-card">
+              {(["vente", "panier", "paiement"] as const).map((step, i) => {
+                const labels = ["🎟 Billets", `🛒 Panier${cartItemCount > 0 ? ` (${cartItemCount})` : ""}`, "💳 Paiement"];
+                const isActive = venteMobileStep === step;
+                const isPast = (venteMobileStep === "panier" && i === 0) || (venteMobileStep === "paiement" && i <= 1);
+                return (
+                  <button
+                    key={step}
+                    onClick={() => setVenteMobileStep(step)}
+                    className={`flex-1 py-3.5 text-xs font-bold transition-all border-r last:border-0 border-border ${
+                      isActive ? "bg-accent text-black" : isPast ? "bg-accent/20 text-accent" : "text-muted-foreground"
+                    }`}
+                  >
+                    {labels[i]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── Step 1: Billets ── */}
+            {venteMobileStep === "vente" && (
+              <div className="space-y-4">
+                {ticketsLoading ? (
+                  <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-card rounded-xl animate-pulse" />)}</div>
+                ) : (ticketTypes?.length ?? 0) === 0 ? (
+                  <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
+                    <Ticket className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Aucun billet configuré.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {ticketTypes?.map((tt) => {
+                      const remaining = tt.quantity - (tt.soldCount ?? 0);
+                      const qty = venteCart.get(tt.id) ?? 0;
+                      return (
+                        <div key={tt.id} className={`rounded-2xl border-2 p-4 flex items-center gap-4 transition-all ${qty > 0 ? "border-accent bg-accent/5" : "border-border bg-card"}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold">{tt.name}</div>
+                            <div className="text-xl font-display font-bold text-accent">{formatMGA(tt.price)}</div>
+                            <div className={`text-xs ${remaining === 0 ? "text-red-400" : remaining <= 10 ? "text-orange-400" : "text-muted-foreground"}`}>
+                              {remaining === 0 ? "Épuisé" : `${remaining} restants`}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {qty > 0 && (
+                              <button onClick={() => removeFromCart(tt.id)} className="w-10 h-10 rounded-xl border border-border bg-background flex items-center justify-center">
+                                <Minus className="w-4 h-4" />
+                              </button>
+                            )}
+                            {qty > 0 && <span className="w-7 text-center font-display font-bold text-accent text-xl">{qty}</span>}
+                            <button
+                              onClick={() => addToCart(tt.id)}
+                              disabled={remaining === 0}
+                              className="w-10 h-10 rounded-xl bg-accent hover:bg-accent/80 text-black flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed font-bold"
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {cartItemCount > 0 && (
+                  <button
+                    onClick={() => setVenteMobileStep("panier")}
+                    className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                  >
+                    <ShoppingCart className="w-5 h-5" /> Panier ({cartItemCount}) — {formatMGA(cartTotal)}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ── Step 2: Panier ── */}
+            {venteMobileStep === "panier" && (
+              <div className="space-y-4">
+                {cartItemCount === 0 ? (
+                  <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
+                    <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">Panier vide</p>
+                    <button onClick={() => setVenteMobileStep("vente")} className="mt-4 text-accent text-sm font-semibold">← Retour aux billets</button>
+                  </div>
+                ) : (
+                  <>
+                    <Card className="p-4 space-y-3">
+                      {Array.from(venteCart.entries()).map(([ttId, qty]) => {
+                        const tt = ticketTypes?.find((t) => t.id === ttId);
+                        if (!tt) return null;
+                        const sub = parseFloat(String(tt.price)) * qty;
+                        return (
+                          <div key={ttId} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold truncate">{tt.name}</div>
+                              <div className="text-xs text-muted-foreground">{formatMGA(tt.price)} / billet</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button onClick={() => removeFromCart(ttId)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center">
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-6 text-center font-bold text-accent">{qty}</span>
+                              <button onClick={() => addToCart(ttId)} className="w-8 h-8 rounded-lg bg-accent/20 border border-accent/30 text-accent flex items-center justify-center">
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="text-sm font-bold text-accent shrink-0 w-20 text-right">{formatMGA(sub)}</div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between items-center pt-2 font-bold">
+                        <span>Total</span>
+                        <span className="text-2xl font-display text-accent">{formatMGA(cartTotal)}</span>
+                      </div>
+                    </Card>
+
+                    <Card className="p-4 space-y-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
+                        <input
+                          value={venteCustomerName}
+                          onChange={(e) => setVenteCustomerName(e.target.value)}
+                          placeholder="Ex: Rakoto Jean"
+                          className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-accent/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
+                        <input
+                          value={venteCustomerPhone}
+                          onChange={(e) => setVenteCustomerPhone(e.target.value)}
+                          placeholder="Ex: 034 12 345 67"
+                          className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-accent/50"
+                        />
+                      </div>
+                    </Card>
+
+                    <button
+                      onClick={() => {
+                        if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
+                        setVenteMobileStep("paiement");
+                      }}
+                      className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2"
+                    >
+                      Choisir le paiement →
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Step 3: Paiement ── */}
+            {venteMobileStep === "paiement" && (
+              <div className="space-y-4">
+                <Card className="p-5">
+                  <div className="text-sm text-muted-foreground mb-1">Récapitulatif</div>
+                  <div className="font-bold text-lg mb-0.5">{venteCustomerName || "—"}</div>
+                  <div className="text-3xl font-display font-bold text-accent mb-4">{formatMGA(cartTotal)}</div>
+                  <div className="text-xs text-muted-foreground mb-5">
+                    {Array.from(venteCart.entries()).map(([ttId, qty]) => {
+                      const tt = ticketTypes?.find((t) => t.id === ttId);
+                      return tt ? `${tt.name} ×${qty}` : null;
+                    }).filter(Boolean).join(" · ")}
+                  </div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-wide mb-3 font-semibold">Mode de paiement</div>
+                  <div className="space-y-3">
+                    {[
+                      { key: "especes", label: "💵 Espèces", sub: "Paiement en liquide" },
+                      { key: "orange_money", label: "🟠 Orange Money", sub: "Paiement mobile Orange" },
+                      { key: "mvola", label: "🔴 MVola", sub: "Paiement mobile MVola" },
+                    ].map((m) => (
+                      <button
+                        key={m.key}
+                        onClick={() => setVentePaymentMethod(m.key)}
+                        className={`w-full p-4 rounded-2xl border-2 text-left flex items-center gap-4 transition-all ${
+                          ventePaymentMethod === m.key ? "border-accent bg-accent/10" : "border-border hover:border-accent/40"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="font-bold">{m.label}</div>
+                          <div className="text-xs text-muted-foreground">{m.sub}</div>
+                        </div>
+                        {ventePaymentMethod === m.key && <CheckCircle className="w-5 h-5 text-accent shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+                <button
+                  onClick={() => setVenteConfirmOpen(true)}
+                  className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-xl flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                >
+                  <CreditCard className="w-6 h-6" /> Encaisser {formatMGA(cartTotal)}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── Session sales ── */}
           {venteSales.length > 0 && (
-            <div>
+            <div className="mt-8">
               <h3 className="font-bold font-display text-lg mb-4">Ventes de la session ({venteSales.length})</h3>
               <div className="space-y-3">
                 {venteSales.map((sale) => (
@@ -2250,8 +2500,8 @@ export default function AdminEventDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold">{sale.customerName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {sale.ticketType} · {sale.qty} billet{sale.qty > 1 ? "s" : ""} · {methodLabels[sale.method] ?? sale.method}
+                      <div className="text-xs text-muted-foreground truncate">
+                        {sale.items.join(" · ")} · {sale.method === "especes" ? "💵 Espèces" : sale.method === "orange_money" ? "🟠 Orange Money" : "🔴 MVola"}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -2269,6 +2519,51 @@ export default function AdminEventDetail() {
               </div>
             </div>
           )}
+
+          {/* ── Confirmation dialog ── */}
+          <Dialog isOpen={venteConfirmOpen} onClose={() => setVenteConfirmOpen(false)} title="Confirmer l'encaissement">
+            <div className="space-y-4">
+              <div className="p-4 bg-card rounded-xl border border-border">
+                <div className="text-xs text-muted-foreground mb-1">Client</div>
+                <div className="font-bold text-lg">{venteCustomerName}</div>
+                {venteCustomerPhone && <div className="text-sm text-muted-foreground">{venteCustomerPhone}</div>}
+              </div>
+              <div className="p-4 bg-accent/10 rounded-xl border border-accent/20">
+                <div className="text-xs text-muted-foreground mb-2">Détail commande</div>
+                {Array.from(venteCart.entries()).map(([ttId, qty]) => {
+                  const tt = ticketTypes?.find((t) => t.id === ttId);
+                  if (!tt) return null;
+                  return (
+                    <div key={ttId} className="flex justify-between text-sm py-1.5">
+                      <span className="text-muted-foreground">{tt.name} <span className="font-bold text-foreground">×{qty}</span></span>
+                      <span className="font-bold">{formatMGA(parseFloat(String(tt.price)) * qty)}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between font-bold text-lg pt-3 border-t border-accent/30 mt-2">
+                  <span>Total à encaisser</span>
+                  <span className="text-accent">{formatMGA(cartTotal)}</span>
+                </div>
+              </div>
+              <div className="p-4 bg-card rounded-xl border border-border">
+                <div className="text-xs text-muted-foreground mb-1">Mode de paiement</div>
+                <div className="font-bold text-xl">
+                  {ventePaymentMethod === "especes" ? "💵 Espèces"
+                    : ventePaymentMethod === "orange_money" ? "🟠 Orange Money"
+                    : "🔴 MVola"}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => setVenteConfirmOpen(false)} className="flex-1">Annuler</Button>
+                <button
+                  onClick={handleVenteConfirm}
+                  className="flex-1 py-3 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" /> Valider
+                </button>
+              </div>
+            </div>
+          </Dialog>
         </div>
       )}
 
