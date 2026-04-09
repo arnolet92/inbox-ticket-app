@@ -2246,7 +2246,7 @@ export default function OrganizerEventDetail() {
                     {/* Customer */}
                     <div className="space-y-3 pt-2 border-t border-border/50">
                       <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client</label>
                         <input
                           value={venteCustomerName}
                           onChange={(e) => setVenteCustomerName(e.target.value)}
@@ -2292,7 +2292,6 @@ export default function OrganizerEventDetail() {
                     {/* Encaisser */}
                     <button
                       onClick={() => {
-                        if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
                         if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; }
                         setVenteConfirmOpen(true);
                       }}
@@ -2310,29 +2309,28 @@ export default function OrganizerEventDetail() {
               MOBILE layout  (< lg)
           ════════════════════════════════════════ */}
           <div className="lg:hidden">
-            {/* Stepper */}
+            {/* Step indicator — NOT clickable, just visual */}
             <div className="flex mb-6 rounded-2xl border border-border overflow-hidden bg-card">
               {(["vente", "panier", "paiement"] as const).map((step, i) => {
-                const labels = ["🎟 Billets", `🛒 Panier${cartItemCount > 0 ? ` (${cartItemCount})` : ""}`, "💳 Paiement"];
+                const labels = ["🎟 Billets", `🛒 Panier${cartItemCount > 0 ? ` (${cartItemCount})` : ""}`, "✅ Confirmation"];
                 const isActive = venteMobileStep === step;
                 const isPast = (venteMobileStep === "panier" && i === 0) || (venteMobileStep === "paiement" && i <= 1);
                 return (
-                  <button
+                  <div
                     key={step}
-                    onClick={() => setVenteMobileStep(step)}
-                    className={`flex-1 py-3.5 text-xs font-bold transition-all border-r last:border-0 border-border ${
-                      isActive ? "bg-accent text-black" : isPast ? "bg-accent/20 text-accent" : "text-muted-foreground"
+                    className={`flex-1 py-3.5 text-xs font-bold border-r last:border-0 border-border text-center select-none cursor-default transition-all ${
+                      isActive ? "bg-accent text-black" : isPast ? "bg-accent/20 text-accent" : "text-muted-foreground/50"
                     }`}
                   >
                     {labels[i]}
-                  </button>
+                  </div>
                 );
               })}
             </div>
 
-            {/* ── Step 1: Billets ── */}
+            {/* ── Step 1: Billets — floating FAB cart ── */}
             {venteMobileStep === "vente" && (
-              <div className="space-y-4">
+              <div className="pb-24">
                 {ticketsLoading ? (
                   <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-card rounded-xl animate-pulse" />)}</div>
                 ) : (ticketTypes?.length ?? 0) === 0 ? (
@@ -2374,29 +2372,42 @@ export default function OrganizerEventDetail() {
                     })}
                   </div>
                 )}
+
+                {/* Floating cart FAB */}
                 {cartItemCount > 0 && (
                   <button
                     onClick={() => setVenteMobileStep("panier")}
-                    className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                    className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3.5 bg-accent text-black font-bold rounded-2xl shadow-2xl shadow-accent/40 active:scale-95 transition-transform"
                   >
-                    <ShoppingCart className="w-5 h-5" /> Panier ({cartItemCount}) — {formatMGA(cartTotal)}
+                    <ShoppingCart className="w-5 h-5" />
+                    <span className="text-base">{cartItemCount}</span>
+                    <span className="text-sm opacity-80">— {formatMGA(cartTotal)}</span>
                   </button>
                 )}
               </div>
             )}
 
-            {/* ── Step 2: Panier ── */}
+            {/* ── Step 2: Panier + infos client + paiement ── */}
             {venteMobileStep === "panier" && (
-              <div className="space-y-4">
+              <div className="space-y-4 pb-28">
+                {/* Back */}
+                <button
+                  onClick={() => setVenteMobileStep("vente")}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm font-semibold -mt-1 mb-1"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Retour aux billets
+                </button>
+
                 {cartItemCount === 0 ? (
                   <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
                     <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground">Panier vide</p>
-                    <button onClick={() => setVenteMobileStep("vente")} className="mt-4 text-accent text-sm font-semibold">← Retour aux billets</button>
                   </div>
                 ) : (
                   <>
-                    <Card className="p-4 space-y-3">
+                    {/* Cart items */}
+                    <Card className="p-4 space-y-2">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">Récapitulatif billets</div>
                       {Array.from(venteCart.entries()).map(([ttId, qty]) => {
                         const tt = ticketTypes?.find((t) => t.id === ttId);
                         if (!tt) return null;
@@ -2407,7 +2418,7 @@ export default function OrganizerEventDetail() {
                               <div className="font-semibold truncate">{tt.name}</div>
                               <div className="text-xs text-muted-foreground">{formatMGA(tt.price)} / billet</div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button onClick={() => removeFromCart(ttId)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center">
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
@@ -2426,9 +2437,11 @@ export default function OrganizerEventDetail() {
                       </div>
                     </Card>
 
+                    {/* Customer info */}
                     <Card className="p-4 space-y-3">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Infos client</div>
                       <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
+                        <label className="text-xs text-muted-foreground mb-1 block">Nom du client</label>
                         <input
                           value={venteCustomerName}
                           onChange={(e) => setVenteCustomerName(e.target.value)}
@@ -2437,73 +2450,146 @@ export default function OrganizerEventDetail() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone *</label>
+                        <label className="text-xs text-muted-foreground mb-1 block">Téléphone <span className="text-accent font-bold">*</span></label>
                         <input
                           value={venteCustomerPhone}
                           onChange={(e) => setVenteCustomerPhone(e.target.value)}
                           placeholder="Ex: 034 12 345 67"
+                          type="tel"
                           className="w-full px-3 py-2.5 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-accent/50"
                         />
                       </div>
                     </Card>
 
+                    {/* Payment method */}
+                    <Card className="p-4">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">Mode de paiement</div>
+                      <div className="space-y-2">
+                        {[
+                          { key: "especes", label: "💵 Espèces", sub: "Paiement en liquide" },
+                          { key: "orange_money", label: "🟠 Orange Money", sub: "Paiement mobile Orange" },
+                          { key: "mvola", label: "🔴 MVola", sub: "Paiement mobile MVola" },
+                        ].map((m) => (
+                          <button
+                            key={m.key}
+                            onClick={() => setVentePaymentMethod(m.key)}
+                            className={`w-full p-3.5 rounded-xl border-2 text-left flex items-center gap-3 transition-all ${
+                              ventePaymentMethod === m.key ? "border-accent bg-accent/10" : "border-border"
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="font-bold text-sm">{m.label}</div>
+                              <div className="text-xs text-muted-foreground">{m.sub}</div>
+                            </div>
+                            {ventePaymentMethod === m.key && <CheckCircle className="w-5 h-5 text-accent shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </Card>
+                  </>
+                )}
+
+                {/* Sticky Encaisser button */}
+                {cartItemCount > 0 && (
+                  <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
                     <button
                       onClick={() => {
-                        if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
                         if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; }
                         setVenteMobileStep("paiement");
                       }}
-                      className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2"
+                      className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
                     >
-                      Choisir le paiement →
+                      <CreditCard className="w-5 h-5" /> Encaisser {formatMGA(cartTotal)}
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* ── Step 3: Paiement ── */}
+            {/* ── Step 3: Confirmation ── */}
             {venteMobileStep === "paiement" && (
-              <div className="space-y-4">
-                <Card className="p-5">
-                  <div className="text-sm text-muted-foreground mb-1">Récapitulatif</div>
-                  <div className="font-bold text-lg mb-0.5">{venteCustomerName || "—"}</div>
-                  <div className="text-3xl font-display font-bold text-accent mb-4">{formatMGA(cartTotal)}</div>
-                  <div className="text-xs text-muted-foreground mb-5">
-                    {Array.from(venteCart.entries()).map(([ttId, qty]) => {
-                      const tt = ticketTypes?.find((t) => t.id === ttId);
-                      return tt ? `${tt.name} ×${qty}` : null;
-                    }).filter(Boolean).join(" · ")}
-                  </div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wide mb-3 font-semibold">Mode de paiement</div>
-                  <div className="space-y-3">
-                    {[
-                      { key: "especes", label: "💵 Espèces", sub: "Paiement en liquide" },
-                      { key: "orange_money", label: "🟠 Orange Money", sub: "Paiement mobile Orange" },
-                      { key: "mvola", label: "🔴 MVola", sub: "Paiement mobile MVola" },
-                    ].map((m) => (
-                      <button
-                        key={m.key}
-                        onClick={() => setVentePaymentMethod(m.key)}
-                        className={`w-full p-4 rounded-2xl border-2 text-left flex items-center gap-4 transition-all ${
-                          ventePaymentMethod === m.key ? "border-accent bg-accent/10" : "border-border hover:border-accent/40"
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="font-bold">{m.label}</div>
-                          <div className="text-xs text-muted-foreground">{m.sub}</div>
-                        </div>
-                        {ventePaymentMethod === m.key && <CheckCircle className="w-5 h-5 text-accent shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
-                </Card>
+              <div className="space-y-4 pb-28">
+                {/* Back */}
                 <button
-                  onClick={() => setVenteConfirmOpen(true)}
-                  className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-xl flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                  onClick={() => setVenteMobileStep("panier")}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors text-sm font-semibold -mt-1 mb-1"
                 >
-                  <CreditCard className="w-6 h-6" /> Encaisser {formatMGA(cartTotal)}
+                  <ChevronLeft className="w-4 h-4" /> Retour au panier
                 </button>
+
+                {/* Client card */}
+                <div className="p-4 bg-card rounded-xl border border-border flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0 text-xl font-bold text-accent">
+                    {venteCustomerPhone.charAt(0)}
+                  </div>
+                  <div>
+                    {venteCustomerName && <div className="font-bold text-lg leading-tight">{venteCustomerName}</div>}
+                    <div className="font-mono text-sm text-muted-foreground">{venteCustomerPhone}</div>
+                  </div>
+                </div>
+
+                {/* Order detail */}
+                <div className="p-4 bg-accent/10 rounded-xl border border-accent/20">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">Commande</div>
+                  {Array.from(venteCart.entries()).map(([ttId, qty]) => {
+                    const tt = ticketTypes?.find((t) => t.id === ttId);
+                    if (!tt) return null;
+                    return (
+                      <div key={ttId} className="flex justify-between text-sm py-2 border-b border-accent/10 last:border-0">
+                        <span className="text-muted-foreground">{tt.name} <span className="font-bold text-foreground">×{qty}</span></span>
+                        <span className="font-bold">{formatMGA(parseFloat(String(tt.price)) * qty)}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between font-bold text-xl pt-3 mt-1">
+                    <span>Total</span>
+                    <span className="text-accent">{formatMGA(cartTotal)}</span>
+                  </div>
+                </div>
+
+                {/* Payment-specific instruction */}
+                {ventePaymentMethod === "especes" && (
+                  <div className="p-4 rounded-xl border-2 border-emerald-600/40 bg-emerald-950/40 space-y-1">
+                    <div className="font-bold text-base">💵 Paiement en Espèces</div>
+                    <div className="text-sm text-muted-foreground">Montant à encaisser en liquide :</div>
+                    <div className="text-3xl font-display font-black text-accent">{formatMGA(cartTotal)}</div>
+                    <div className="text-xs text-emerald-400/80 pt-1">Remettez le reçu au client après validation.</div>
+                  </div>
+                )}
+                {ventePaymentMethod === "orange_money" && (
+                  <div className="p-4 rounded-xl border-2 border-orange-500/40 bg-orange-950/30 space-y-1">
+                    <div className="font-bold text-base text-orange-400">🟠 Orange Money</div>
+                    <div className="text-sm text-muted-foreground">Montant à recevoir via Orange Money :</div>
+                    <div className="text-3xl font-display font-black text-orange-400">{formatMGA(cartTotal)}</div>
+                    <div className="p-2.5 bg-black/30 rounded-lg mt-2">
+                      <div className="text-xs text-muted-foreground mb-0.5">Numéro expéditeur (client)</div>
+                      <div className="font-mono font-bold text-orange-300">{venteCustomerPhone}</div>
+                    </div>
+                    <div className="text-xs text-orange-300/70 pt-1">Vérifiez la réception avant de valider.</div>
+                  </div>
+                )}
+                {ventePaymentMethod === "mvola" && (
+                  <div className="p-4 rounded-xl border-2 border-red-500/40 bg-red-950/30 space-y-1">
+                    <div className="font-bold text-base text-red-400">🔴 MVola</div>
+                    <div className="text-sm text-muted-foreground">Montant à recevoir via MVola :</div>
+                    <div className="text-3xl font-display font-black text-red-400">{formatMGA(cartTotal)}</div>
+                    <div className="p-2.5 bg-black/30 rounded-lg mt-2">
+                      <div className="text-xs text-muted-foreground mb-0.5">Numéro expéditeur (client)</div>
+                      <div className="font-mono font-bold text-red-300">{venteCustomerPhone}</div>
+                    </div>
+                    <div className="text-xs text-red-300/70 pt-1">Vérifiez la réception avant de valider.</div>
+                  </div>
+                )}
+
+                {/* Sticky validate button */}
+                <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
+                  <button
+                    onClick={handleVenteConfirm}
+                    className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Valider l'encaissement
+                  </button>
+                </div>
               </div>
             )}
           </div>
