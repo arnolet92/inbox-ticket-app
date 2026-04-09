@@ -335,24 +335,24 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
 
         <div className="mx-5 border-t border-dashed border-accent/20" />
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+        {/* Scrollable body (scroll only if link panel opens) */}
+        <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4 space-y-3">
 
           {/* QR + codes */}
           <div className="flex flex-col items-center" ref={modalQrRef}>
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
-              <div className="relative p-3 bg-white rounded-2xl shadow-xl">
-                <QRCodeSVG value={qrValue} size={170} level="H" fgColor="#14532d" />
+              <div className="relative p-2.5 bg-white rounded-2xl shadow-xl">
+                <QRCodeSVG value={qrValue} size={148} level="H" fgColor="#14532d" />
               </div>
             </div>
             {eventDate && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
+              <p className="text-[11px] text-muted-foreground text-center mt-1.5">
                 {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
               </p>
             )}
             {/* Security codes */}
-            <div className="flex gap-2 mt-3 w-full">
+            <div className="flex gap-1.5 mt-2 w-full">
               {[
                 { label: "Clé", value: ticketKey },
                 { label: "Confirmation", value: confirmCode },
@@ -360,11 +360,11 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
               ].map((c) => (
                 <div
                   key={c.label}
-                  className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
+                  className="flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1"
                   style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
                 >
-                  <span className="text-[8px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
-                  <span className="font-mono font-bold text-xs tracking-widest text-white">{c.value}</span>
+                  <span className="text-[7px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                  <span className="font-mono font-bold text-[11px] tracking-widest text-white">{c.value}</span>
                 </div>
               ))}
             </div>
@@ -372,34 +372,34 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
 
           {/* Action buttons */}
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
-              <Download className="w-3.5 h-3.5" /> Télécharger
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs h-8" onClick={handleDownload}>
+              <Download className="w-3 h-3" /> Télécharger
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
-              <Printer className="w-3.5 h-3.5" /> Imprimer
+            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs h-8" onClick={handlePrint}>
+              <Printer className="w-3 h-3" /> Imprimer
             </Button>
           </div>
 
           {/* Social share */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2 font-medium">Partager via</p>
-            <div className="grid grid-cols-4 gap-2">
+            <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">Partager via</p>
+            <div className="grid grid-cols-4 gap-1.5">
               {SOCIAL.map((s) => {
                 const isActive = showLinkFor === s.label;
                 return (
                   <button
                     key={s.label}
                     onClick={() => handleSocial(s)}
-                    className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                    className="flex flex-col items-center gap-1 py-1.5 rounded-xl transition-all hover:scale-105 active:scale-95"
                     style={{
                       background: isActive ? `${s.color}30` : `${s.color}18`,
                       border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}`,
                     }}
                   >
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
-                      <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: s.color }}>
+                      <img src={s.icon} alt={s.label} className="w-3 h-3" />
                     </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
+                    <span className="text-[8px] text-muted-foreground font-medium">{s.label}</span>
                   </button>
                 );
               })}
