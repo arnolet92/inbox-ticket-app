@@ -311,78 +311,84 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
         style={{
           background: "hsl(150 15% 6%)",
           border: "1.5px solid hsl(145 60% 25% / 0.5)",
-          maxHeight: "92vh",
+          maxHeight: "92dvh",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle (mobile) */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-border/60" />
+        {/* ── ZONE FIXE : toujours visible, jamais scrollée ── */}
+
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2.5 pb-0 sm:hidden shrink-0">
+          <div className="w-9 h-1 rounded-full bg-border/60" />
         </div>
 
-        {/* Top bar */}
-        <div className="px-5 pt-3 pb-3 flex items-start justify-between shrink-0">
-          <div>
-            <p className="text-[10px] text-accent font-semibold tracking-widest uppercase mb-0.5">Billet électronique</p>
-            <h2 className="font-bold font-display text-base leading-tight">{order.event?.title ?? "Événement"}</h2>
-            <p className="text-xs text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
+        {/* Header */}
+        <div className="px-4 pt-2 pb-2 flex items-center justify-between shrink-0">
+          <div className="min-w-0">
+            <p className="text-[9px] text-accent font-semibold tracking-widest uppercase leading-none mb-0.5">Billet électronique</p>
+            <h2 className="font-bold font-display text-sm leading-tight truncate">{order.event?.title ?? "Événement"}</h2>
+            <p className="text-[11px] text-muted-foreground truncate">{order.ticketType?.name} · ×{order.quantity}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xl leading-none shrink-0 ml-2"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-lg leading-none shrink-0 ml-2"
           >×</button>
         </div>
 
-        <div className="mx-5 border-t border-dashed border-accent/20" />
+        {/* Separator */}
+        <div className="mx-4 border-t border-dashed border-accent/20 shrink-0" />
 
-        {/* Scrollable body (scroll only if link panel opens) */}
-        <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4 space-y-3">
-
-          {/* QR + codes */}
-          <div className="flex flex-col items-center" ref={modalQrRef}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
-              <div className="relative p-2.5 bg-white rounded-2xl shadow-xl">
-                <QRCodeSVG value={qrValue} size={148} level="H" fgColor="#14532d" />
-              </div>
-            </div>
-            {eventDate && (
-              <p className="text-[11px] text-muted-foreground text-center mt-1.5">
-                {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
-              </p>
-            )}
-            {/* Security codes */}
-            <div className="flex gap-1.5 mt-2 w-full">
-              {[
-                { label: "Clé", value: ticketKey },
-                { label: "Confirmation", value: confirmCode },
-                { label: "N° billet", value: ticketNumber },
-              ].map((c) => (
-                <div
-                  key={c.label}
-                  className="flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1"
-                  style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
-                >
-                  <span className="text-[7px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
-                  <span className="font-mono font-bold text-[11px] tracking-widest text-white">{c.value}</span>
-                </div>
-              ))}
+        {/* QR code — jamais scrollé */}
+        <div className="flex flex-col items-center px-4 pt-3 pb-2 shrink-0" ref={modalQrRef}>
+          <div className="relative">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+            <div className="relative p-2.5 bg-white rounded-2xl shadow-xl">
+              <QRCodeSVG value={qrValue} size={150} level="H" fgColor="#14532d" />
             </div>
           </div>
+          {eventDate && (
+            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+              {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
+            </p>
+          )}
+          {/* Security codes */}
+          <div className="flex gap-1.5 mt-2 w-full">
+            {[
+              { label: "Clé", value: ticketKey },
+              { label: "Confirmation", value: confirmCode },
+              { label: "N° billet", value: ticketNumber },
+            ].map((c) => (
+              <div
+                key={c.label}
+                className="flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-0.5"
+                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}
+              >
+                <span className="text-[7px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                <span className="font-mono font-bold text-[10px] tracking-widest text-white">{c.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="mx-4 border-t border-accent/10 shrink-0" />
+
+        {/* ── ZONE SCROLLABLE : boutons + partage ── */}
+        <div className="overflow-y-auto px-4 pt-2.5 pb-4 space-y-2.5">
 
           {/* Action buttons */}
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs h-8" onClick={handleDownload}>
+            <Button variant="outline" size="sm" className="flex-1 gap-1 text-[11px] h-8" onClick={handleDownload}>
               <Download className="w-3 h-3" /> Télécharger
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs h-8" onClick={handlePrint}>
+            <Button variant="outline" size="sm" className="flex-1 gap-1 text-[11px] h-8" onClick={handlePrint}>
               <Printer className="w-3 h-3" /> Imprimer
             </Button>
           </div>
 
           {/* Social share */}
           <div>
-            <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">Partager via</p>
+            <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">Partager via</p>
             <div className="grid grid-cols-4 gap-1.5">
               {SOCIAL.map((s) => {
                 const isActive = showLinkFor === s.label;
