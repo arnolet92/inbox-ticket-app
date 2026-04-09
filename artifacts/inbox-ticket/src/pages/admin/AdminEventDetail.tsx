@@ -638,10 +638,11 @@ export default function AdminEventDetail() {
     setScanInput("");
   };
 
-  /* ── Camera QR scanner lifecycle (mobile) ── */
+  /* ── Camera QR scanner lifecycle (mobile only) ── */
   useEffect(() => {
     const elementId = "qr-reader-mobile";
     if (activeTab !== "scan" || scanResult !== null) return;
+    if (window.innerWidth >= 1024) return; // desktop: pas de caméra
     const el = document.getElementById(elementId);
     if (!el) return;
 
