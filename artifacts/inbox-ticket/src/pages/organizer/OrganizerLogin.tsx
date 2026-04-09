@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Building2 } from "lucide-react";
+import { Building2, ScanLine, ShoppingCart, Eye, EyeOff } from "lucide-react";
 import { useOrganizer } from "@/context/OrganizerContext";
 import { Logo } from "@/components/layout";
 
@@ -17,13 +18,20 @@ function getFirstActiveOrganizer() {
 export default function OrganizerLogin() {
   const { loginAs } = useOrganizer();
   const [, navigate] = useLocation();
+  const [pseudo, setPseudo] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleAccess = () => {
+  const handleAccess = (role: "organisateur" | "agent-vente" | "agent-scan") => {
     const org = getFirstActiveOrganizer();
+    const roleLabel =
+      role === "organisateur" ? "Organisateur" :
+      role === "agent-vente" ? "Agent Vente" : "Agent Scan";
+
     if (org) {
       loginAs({ id: org.id, name: org.name, company: org.company, email: org.email });
     } else {
-      loginAs({ id: "admin", name: "Organisateur", company: "Inbox Ticket", email: "admin@inbox.mg" });
+      loginAs({ id: "admin", name: roleLabel, company: "Inbox Ticket", email: "admin@inbox.mg" });
     }
     navigate("/organizer/events");
   };
@@ -49,12 +57,71 @@ export default function OrganizerLogin() {
             <p className="text-muted-foreground text-sm">Gérez vos événements, billets et commandes</p>
           </div>
 
-          <button
-            onClick={handleAccess}
-            className="w-full py-3.5 px-6 rounded-xl bg-accent text-black font-bold text-base hover:bg-accent/90 active:scale-95 transition-all shadow-lg shadow-accent/20"
-          >
-            Se connecter
-          </button>
+          {/* Champs de connexion */}
+          <div className="w-full space-y-3 text-left">
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">
+                Pseudo
+              </label>
+              <input
+                type="text"
+                value={pseudo}
+                onChange={(e) => setPseudo(e.target.value)}
+                placeholder="Votre identifiant"
+                autoComplete="username"
+                className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-11 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Boutons de rôle */}
+          <div className="w-full space-y-3">
+            <button
+              onClick={() => handleAccess("organisateur")}
+              className="w-full py-3.5 px-6 rounded-xl bg-accent text-black font-bold text-base hover:bg-accent/90 active:scale-95 transition-all shadow-lg shadow-accent/20 flex items-center justify-center gap-2"
+            >
+              <Building2 className="w-5 h-5" />
+              Organisateur
+            </button>
+
+            <button
+              onClick={() => handleAccess("agent-vente")}
+              className="w-full py-3.5 px-6 rounded-xl bg-primary/20 border border-primary/40 text-white font-semibold text-base hover:bg-primary/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="w-5 h-5 text-accent" />
+              Agent vente
+            </button>
+
+            <button
+              onClick={() => handleAccess("agent-scan")}
+              className="w-full py-3.5 px-6 rounded-xl bg-primary/20 border border-primary/40 text-white font-semibold text-base hover:bg-primary/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <ScanLine className="w-5 h-5 text-accent" />
+              Agent scan
+            </button>
+          </div>
 
           <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Retour au site public
