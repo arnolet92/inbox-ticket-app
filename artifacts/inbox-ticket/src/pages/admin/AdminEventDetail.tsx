@@ -25,7 +25,7 @@ import {
   useCreateTicketType, useDeleteEvent,
 } from "@workspace/api-client-react";
 
-type Tab = "overview" | "finance" | "depenses" | "tickets" | "orders" | "shop" | "staff";
+type Tab = "overview" | "finance" | "depenses" | "tickets" | "orders" | "shop" | "staff" | "vente" | "scan";
 
 type Expense = {
   id: number;
@@ -198,6 +198,30 @@ export default function AdminEventDetail() {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
   const [usedTickets, setUsedTickets] = useState<Set<string>>(() => getUsedTickets());
+
+  /* ── Vente tab state ── */
+  const [venteSelectedTT, setVenteSelectedTT] = useState<number | null>(null);
+  const [venteQty, setVenteQty] = useState(1);
+  const [venteCustomerName, setVenteCustomerName] = useState("");
+  const [venteCustomerPhone, setVenteCustomerPhone] = useState("");
+  const [ventePaymentMethod, setVentePaymentMethod] = useState("orange_money");
+  const [venteSales, setVenteSales] = useState<Array<{
+    id: number; ticketType: string; qty: number; total: number;
+    customerName: string; method: string; time: Date;
+  }>>([]);
+
+  /* ── Scan tab state ── */
+  const [scanInput, setScanInput] = useState("");
+  const [scanResult, setScanResult] = useState<null | {
+    status: "valid" | "used" | "invalid";
+    order?: typeof orders extends Array<infer T> ? T : never;
+    unitIndex?: number;
+    codes?: ReturnType<typeof getBilletCodesForUnit>;
+    ticketId?: string;
+  }>(null);
+  const [scanHistory, setScanHistory] = useState<Array<{
+    input: string; status: string; customerName?: string; time: Date;
+  }>>([]);
 
   const handleToggleUsed = (ticketId: string) => {
     toggleTicketUsed(ticketId);
@@ -513,6 +537,34 @@ export default function AdminEventDetail() {
     setStockOpProduct(null);
   };
 
+  /* ── Scan handler ── */
+  const handleScan = () => {
+    const q = scanInput.trim().toUpperCase();
+    if (!q) return;
+    let found: { order: NonNullable<typeof orders>[0]; unitIndex: number; codes: ReturnType<typeof getBilletCodesForUnit>; ticketId: string } | null = null;
+    for (const order of (orders ?? [])) {
+      for (let i = 0; i < order.quantity; i++) {
+        const codes = getBilletCodesForUnit(order.id, i);
+        const ticketId = makeTicketId(order.id, i);
+        if (codes.ticketKey.toUpperCase() === q || codes.confirmCode.toUpperCase() === q) {
+          found = { order, unitIndex: i, codes, ticketId };
+          break;
+        }
+      }
+      if (found) break;
+    }
+    if (found) {
+      const isUsed = usedTickets.has(found.ticketId);
+      const result = { status: (isUsed ? "used" : "valid") as "valid" | "used", ...found };
+      setScanResult(result);
+      setScanHistory((prev) => [{ input: q, status: result.status, customerName: found!.order.customerName, time: new Date() }, ...prev.slice(0, 19)]);
+    } else {
+      setScanResult({ status: "invalid" });
+      setScanHistory((prev) => [{ input: q, status: "invalid", time: new Date() }, ...prev.slice(0, 19)]);
+    }
+    setScanInput("");
+  };
+
   if (eventLoading) {
     return (
       <AdminLayout>
@@ -544,6 +596,8 @@ export default function AdminEventDetail() {
     { key: "orders", label: "Commandes", icon: <ShoppingCart className="w-4 h-4" /> },
     // { key: "shop", label: "Shop", icon: <Store className="w-4 h-4" /> },
     { key: "staff", label: "Staff", icon: <Users className="w-4 h-4" /> },
+    { key: "vente", label: "Vente", icon: <ShoppingBag className="w-4 h-4" /> },
+    { key: "scan", label: "Scan billet", icon: <ScanLine className="w-4 h-4" /> },
   ];
 
   return (
@@ -2014,6 +2068,331 @@ export default function AdminEventDetail() {
           </Card>
         </div>
       )}
+
+      {/* ─── TAB: VENTE ─── */}
+      {activeTab === "vente" && (
+        <div className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Left: Ticket selector */}
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="font-bold font-display text-xl">Sélectionner un type de billet</h3>
+              {ticketsLoading ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-card rounded-xl animate-pulse" />)}
+                </div>
+              ) : (ticketTypes?.length ?? 0) === 0 ? (
+                <div className="text-center py-16 bg-card rounded-2xl border border-dashed border-border">
+                  <Ticket className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">Aucun type de billet configuré.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {ticketTypes?.map((tt) => {
+                    const remaining = tt.quantity - (tt.soldCount ?? 0);
+                    const selected = venteSelectedTT === tt.id;
+                    return (
+                      <button
+                        key={tt.id}
+                        onClick={() => { setVenteSelectedTT(selected ? null : tt.id); setVenteQty(1); }}
+                        disabled={remaining === 0}
+                        className={`text-left p-5 rounded-2xl border-2 transition-all ${
+                          selected
+                            ? "border-accent bg-accent/10"
+                            : remaining === 0
+                            ? "border-border opacity-50 cursor-not-allowed"
+                            : "border-border hover:border-accent/50 hover:bg-card/80"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div>
+                            <div className="font-bold text-lg leading-tight">{tt.name}</div>
+                            {tt.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{tt.description}</div>}
+                          </div>
+                          {selected && (
+                            <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center shrink-0">
+                              <CheckCircle className="w-4 h-4 text-black" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-2xl font-display font-bold text-accent">{formatMGA(tt.price)}</div>
+                        <div className={`text-xs mt-1 ${remaining <= 10 ? "text-orange-400" : "text-muted-foreground"}`}>
+                          {remaining === 0 ? "Épuisé" : `${remaining} restant${remaining > 1 ? "s" : ""}`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Quantity selector */}
+              {venteSelectedTT && (
+                <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
+                  <span className="font-semibold text-sm text-muted-foreground">Quantité :</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setVenteQty((q) => Math.max(1, q - 1))}
+                      className="w-10 h-10 rounded-xl border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-2xl font-display font-bold w-10 text-center">{venteQty}</span>
+                    <button
+                      onClick={() => setVenteQty((q) => q + 1)}
+                      className="w-10 h-10 rounded-xl border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Checkout */}
+            <div className="space-y-4">
+              <h3 className="font-bold font-display text-xl">Encaissement</h3>
+              <Card className="p-5 space-y-4">
+                {venteSelectedTT ? (() => {
+                  const tt = ticketTypes?.find((t) => t.id === venteSelectedTT);
+                  if (!tt) return null;
+                  const total = parseFloat(String(tt.price)) * venteQty;
+                  return (
+                    <>
+                      {/* Summary */}
+                      <div className="p-3 bg-accent/10 rounded-xl border border-accent/20">
+                        <div className="text-sm font-semibold">{tt.name}</div>
+                        <div className="text-xs text-muted-foreground">{venteQty} × {formatMGA(tt.price)}</div>
+                        <div className="text-2xl font-display font-bold text-accent mt-1">{formatMGA(total)}</div>
+                      </div>
+
+                      {/* Customer */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Nom du client *</label>
+                          <input
+                            value={venteCustomerName}
+                            onChange={(e) => setVenteCustomerName(e.target.value)}
+                            placeholder="Ex: Rakoto Jean"
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
+                          <input
+                            value={venteCustomerPhone}
+                            onChange={(e) => setVenteCustomerPhone(e.target.value)}
+                            placeholder="Ex: 034 12 345 67"
+                            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Payment method */}
+                      <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Mode de paiement</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { key: "orange_money", label: "Orange Money" },
+                            { key: "mvola", label: "MVola" },
+                            { key: "mastercard", label: "Mastercard" },
+                          ].map((m) => (
+                            <button
+                              key={m.key}
+                              onClick={() => setVentePaymentMethod(m.key)}
+                              className={`py-2 px-2 rounded-lg border text-xs font-semibold transition-all ${
+                                ventePaymentMethod === m.key
+                                  ? "border-accent bg-accent/10 text-accent"
+                                  : "border-border text-muted-foreground hover:border-accent/40"
+                              }`}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Confirm button */}
+                      <button
+                        onClick={() => {
+                          if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
+                          setVenteSales((prev) => [{
+                            id: Date.now(), ticketType: tt.name, qty: venteQty,
+                            total, customerName: venteCustomerName,
+                            method: ventePaymentMethod, time: new Date(),
+                          }, ...prev]);
+                          setVenteSelectedTT(null); setVenteQty(1);
+                          setVenteCustomerName(""); setVenteCustomerPhone("");
+                        }}
+                        className="w-full py-3 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2"
+                      >
+                        <CreditCard className="w-5 h-5" /> Encaisser {formatMGA(total)}
+                      </button>
+                    </>
+                  );
+                })() : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <Ticket className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    Sélectionnez un type de billet pour commencer
+                  </div>
+                )}
+              </Card>
+            </div>
+          </div>
+
+          {/* Recent sales */}
+          {venteSales.length > 0 && (
+            <div>
+              <h3 className="font-bold font-display text-lg mb-4">Ventes de la session ({venteSales.length})</h3>
+              <div className="space-y-3">
+                {venteSales.map((sale) => (
+                  <Card key={sale.id} className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                      <Ticket className="w-5 h-5 text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold">{sale.customerName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {sale.ticketType} · {sale.qty} billet{sale.qty > 1 ? "s" : ""} · {methodLabels[sale.method] ?? sale.method}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-bold text-emerald-400">{formatMGA(sale.total)}</div>
+                      <div className="text-xs text-muted-foreground">{format(sale.time, "HH:mm", { locale: fr })}</div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-4 p-4 bg-card rounded-xl border border-accent/20 flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">Total session</span>
+                <span className="text-xl font-display font-bold text-accent">
+                  {formatMGA(venteSales.reduce((s, v) => s + v.total, 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── TAB: SCAN BILLET ─── */}
+      {activeTab === "scan" && (
+        <div className="space-y-6 max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-2xl bg-accent/20 border border-accent/30 flex items-center justify-center mx-auto mb-3">
+              <ScanLine className="w-8 h-8 text-accent" />
+            </div>
+            <h3 className="font-bold font-display text-2xl mb-1">Scanner un billet</h3>
+            <p className="text-muted-foreground text-sm">
+              Saisissez la <span className="font-mono font-bold text-accent">clé de billet</span> ou le <span className="font-mono font-bold text-accent">code de confirmation</span> puis validez.
+            </p>
+          </div>
+
+          {/* Scan input */}
+          <Card className="p-5">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                value={scanInput}
+                onChange={(e) => setScanInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === "Enter") handleScan(); }}
+                placeholder="CLÉBILLET  ou  CODE…"
+                maxLength={12}
+                autoFocus
+                className="flex-1 px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+              />
+              <button
+                onClick={handleScan}
+                disabled={!scanInput.trim()}
+                className="px-6 py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <ScanLine className="w-5 h-5" /> Valider
+              </button>
+            </div>
+          </Card>
+
+          {/* Scan result */}
+          {scanResult && (
+            <div className={`rounded-2xl border-2 p-8 text-center transition-all ${
+              scanResult.status === "valid"
+                ? "border-emerald-500/60 bg-emerald-950/30"
+                : scanResult.status === "used"
+                ? "border-orange-500/60 bg-orange-950/30"
+                : "border-red-500/60 bg-red-950/30"
+            }`}>
+              <div className="text-6xl mb-4">
+                {scanResult.status === "valid" ? "✅" : scanResult.status === "used" ? "⚠️" : "❌"}
+              </div>
+              <div className={`text-3xl font-display font-bold mb-2 ${
+                scanResult.status === "valid" ? "text-emerald-400"
+                : scanResult.status === "used" ? "text-orange-400"
+                : "text-red-400"
+              }`}>
+                {scanResult.status === "valid" ? "BILLET VALIDE"
+                  : scanResult.status === "used" ? "DÉJÀ UTILISÉ"
+                  : "BILLET INVALIDE"}
+              </div>
+              {scanResult.order && (
+                <div className="text-sm text-muted-foreground space-y-1 mt-4 mb-4">
+                  <div className="font-bold text-foreground text-lg">{scanResult.order.customerName}</div>
+                  <div className="text-muted-foreground">{scanResult.order.ticketType?.name ?? "—"}</div>
+                  <div className="font-mono text-xs mt-2">
+                    Commande #{String(scanResult.order.id).padStart(5, "0")} · Billet {(scanResult.unitIndex ?? 0) + 1}/{scanResult.order.quantity}
+                  </div>
+                </div>
+              )}
+              {scanResult.status === "valid" && scanResult.ticketId && (
+                <button
+                  onClick={() => {
+                    handleToggleUsed(scanResult.ticketId!);
+                    setScanHistory((prev) => prev.map((h, i) => i === 0 ? { ...h, status: "used" } : h));
+                    setScanResult((prev) => prev ? { ...prev, status: "used" } : null);
+                  }}
+                  className="mt-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg transition-all"
+                >
+                  ✓ Marquer comme utilisé
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Scan history */}
+          {scanHistory.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-bold font-display text-lg">Historique ({scanHistory.length})</h4>
+                <button
+                  onClick={() => { setScanHistory([]); setScanResult(null); }}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border rounded-full px-3 py-1 transition-colors"
+                >
+                  <X className="w-3 h-3" /> Effacer
+                </button>
+              </div>
+              <div className="space-y-2">
+                {scanHistory.map((h, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
+                    <div className="text-2xl shrink-0">
+                      {h.status === "valid" ? "✅" : h.status === "used" ? "⚠️" : "❌"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-sm font-bold text-accent">{h.input}</div>
+                      {h.customerName && <div className="text-xs text-muted-foreground truncate">{h.customerName}</div>}
+                    </div>
+                    <div className={`text-xs font-bold shrink-0 ${
+                      h.status === "valid" ? "text-emerald-400"
+                        : h.status === "used" ? "text-orange-400"
+                        : "text-red-400"
+                    }`}>
+                      {h.status === "valid" ? "Valide" : h.status === "used" ? "Utilisé" : "Invalide"}
+                    </div>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {format(h.time, "HH:mm:ss", { locale: fr })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
     </AdminLayout>
   );
 }
