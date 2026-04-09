@@ -10,7 +10,7 @@ import { useListEvents } from "@/data/static";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { data: events } = useListEvents({ status: "upcoming" });
+  const { data: events, isLoading } = useListEvents({ status: "upcoming" });
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,7 +27,9 @@ export default function Home() {
 
   return (
     <PublicLayout>
+      {/* Hero Section */}
       <section className="relative min-h-[85vh] flex items-center pt-20 overflow-hidden african-pattern-bg">
+        {/* Background Image Setup */}
         <div className="absolute inset-0 z-0">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
@@ -67,7 +69,11 @@ export default function Home() {
                     <option value="Conférence">🎯 Conférence</option>
                     <option value="Soirée">🌙 Soirée</option>
                   </Select>
-                  <Input name="city" placeholder="Ville (ex: Antananarivo)" className="bg-background/80 border-border/50 h-12 flex-1" />
+                  <Input
+                    name="city"
+                    placeholder="Ville (ex: Antananarivo)"
+                    className="bg-background/80 border-border/50 h-12 flex-1"
+                  />
                   <Button type="submit" variant="accent" size="lg" className="h-12 w-full sm:w-auto px-8">
                     <Search className="h-5 w-5 mr-2" /> Rechercher
                   </Button>
@@ -76,76 +82,56 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.93 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="hidden lg:block h-[480px]"
+              transition={{ duration: 1, delay: 0.2 }}
+              className="hidden lg:block relative"
             >
-              <QueueIllustration />
+              <div className="rounded-3xl overflow-hidden border border-accent/15 shadow-2xl shadow-accent/10 bg-card/40 backdrop-blur-sm">
+                <QueueIllustration />
+              </div>
+              <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/5" />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 bg-card border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: "8+", label: "Événements" },
-              { value: "3", label: "Villes" },
-              { value: "30K+", label: "Billets vendus" },
-              { value: "3", label: "Modes de paiement" },
-            ].map((s, i) => (
-              <div key={i}>
-                <div className="text-4xl font-bold font-display text-accent mb-1">{s.value}</div>
-                <div className="text-sm text-muted-foreground">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Featured Events */}
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 relative">
+        <div className="african-pattern-overlay" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-4xl font-bold font-display mb-3">Événements à venir</h2>
-              <p className="text-muted-foreground text-lg">Ne manquez pas ces moments exceptionnels</p>
+              <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">Événements à la une</h2>
+              <p className="text-muted-foreground text-lg">Ne manquez pas les événements les plus attendus.</p>
             </div>
-            <Link href="/events" className="text-accent font-semibold hover:underline flex items-center gap-1">
-              Tout voir <ArrowRight className="w-4 h-4" />
+            <Link href="/events">
+              <Button variant="outline" className="hidden sm:flex">
+                Voir tout <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </Link>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        </div>
-      </section>
+          {isLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-96 bg-card rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
 
-      {/* How it works */}
-      <section className="py-24 bg-card border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold font-display mb-4">Comment ça marche ?</h2>
-          <p className="text-muted-foreground text-lg mb-16 max-w-2xl mx-auto">Réservez vos billets en 3 étapes simples</p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: "01", icon: "🔍", title: "Trouvez votre événement", desc: "Parcourez notre sélection d'événements et filtrez par catégorie, ville ou date." },
-              { step: "02", icon: "🎫", title: "Choisissez vos billets", desc: "Sélectionnez le type de billet et la quantité qui vous convient." },
-              { step: "03", icon: "📱", title: "Payez en un clic", desc: "Orange Money, MVola ou Mastercard — votre billet électronique arrive instantanément." },
-            ].map((item, i) => (
-              <div key={i} className="glass-panel p-8 rounded-2xl text-center relative">
-                <div className="text-xs font-bold text-accent/40 tracking-widest absolute top-4 right-4">{item.step}</div>
-                <div className="text-5xl mb-4">{item.icon}</div>
-                <h3 className="text-xl font-bold font-display mb-3">{item.title}</h3>
-                <p className="text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
+          <div className="mt-10 sm:hidden">
+            <Link href="/events" className="w-full block">
+              <Button variant="outline" className="w-full">
+                Voir tout <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

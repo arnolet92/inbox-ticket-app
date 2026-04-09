@@ -18,7 +18,7 @@ export function Logo() {
         }}
       />
       <span className="font-display text-xl font-extrabold tracking-widest text-accent uppercase">
-        Inbox Ticket
+        ticket
       </span>
     </Link>
   );
