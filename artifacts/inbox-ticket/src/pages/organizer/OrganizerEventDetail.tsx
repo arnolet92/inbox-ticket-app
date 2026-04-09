@@ -2100,23 +2100,41 @@ export default function OrganizerEventDetail() {
       {/* ─── TAB: VENTE ─── */}
       {activeTab === "vente" && (
         <div className="relative">
-          {/* ── Premium loading overlay ── */}
+          {/* ── Premium loading overlay — INBOX TICKET animated text ── */}
           {venteIsProcessing && (
-            <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex flex-col items-center justify-center">
-              <div className="relative w-28 h-28 mb-6">
-                <div className="absolute inset-0 rounded-full border-4 border-accent/20" />
-                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-accent animate-spin" />
-                <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-emerald-500/60 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <CreditCard className="w-9 h-9 text-accent animate-pulse" />
+            <>
+              <style>{`
+                @keyframes letterFloat {
+                  0%, 100% { transform: translateY(0px) scale(1); opacity: 1; }
+                  50% { transform: translateY(-14px) scale(1.08); opacity: 0.6; }
+                }
+                @keyframes barSlide {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(400%); }
+                }
+              `}</style>
+              <div className="fixed inset-0 z-[100] bg-black/92 backdrop-blur-xl flex flex-col items-center justify-center gap-10">
+                <div className="flex items-end gap-0.5 select-none" aria-label="INBOX TICKET">
+                  {"INBOX TICKET".split("").map((char, i) => (
+                    char === " "
+                      ? <span key={i} className="w-6" />
+                      : <span
+                          key={i}
+                          className="font-display font-black text-6xl md:text-7xl text-accent drop-shadow-[0_0_20px_rgba(45,158,78,0.6)]"
+                          style={{ display: "inline-block", animation: `letterFloat 1.6s ease-in-out infinite`, animationDelay: `${i * 0.09}s` }}
+                        >
+                          {char}
+                        </span>
+                  ))}
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="text-muted-foreground text-sm tracking-[0.25em] uppercase animate-pulse">Traitement en cours</div>
+                  <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent to-transparent w-1/3 rounded-full" style={{ animation: "barSlide 1.2s ease-in-out infinite" }} />
+                  </div>
                 </div>
               </div>
-              <div className="text-2xl font-display font-bold text-white mb-2">Traitement en cours…</div>
-              <div className="text-sm text-muted-foreground mb-6">Veuillez patienter</div>
-              <div className="w-56 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-accent to-emerald-400 rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: "70%" }} />
-              </div>
-            </div>
+            </>
           )}
 
           {/* ── Success banner ── */}
@@ -2237,7 +2255,7 @@ export default function OrganizerEventDetail() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone *</label>
                         <input
                           value={venteCustomerPhone}
                           onChange={(e) => setVenteCustomerPhone(e.target.value)}
@@ -2275,6 +2293,7 @@ export default function OrganizerEventDetail() {
                     <button
                       onClick={() => {
                         if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
+                        if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; }
                         setVenteConfirmOpen(true);
                       }}
                       className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
@@ -2418,7 +2437,7 @@ export default function OrganizerEventDetail() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone</label>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">Téléphone *</label>
                         <input
                           value={venteCustomerPhone}
                           onChange={(e) => setVenteCustomerPhone(e.target.value)}
@@ -2431,6 +2450,7 @@ export default function OrganizerEventDetail() {
                     <button
                       onClick={() => {
                         if (!venteCustomerName.trim()) { alert("Veuillez saisir le nom du client"); return; }
+                        if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; }
                         setVenteMobileStep("paiement");
                       }}
                       className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2"
@@ -2523,43 +2543,84 @@ export default function OrganizerEventDetail() {
           {/* ── Confirmation dialog ── */}
           <Dialog isOpen={venteConfirmOpen} onClose={() => setVenteConfirmOpen(false)} title="Confirmer l'encaissement">
             <div className="space-y-4">
-              <div className="p-4 bg-card rounded-xl border border-border">
-                <div className="text-xs text-muted-foreground mb-1">Client</div>
-                <div className="font-bold text-lg">{venteCustomerName}</div>
-                {venteCustomerPhone && <div className="text-sm text-muted-foreground">{venteCustomerPhone}</div>}
+              {/* Client */}
+              <div className="p-4 bg-card rounded-xl border border-border flex items-center gap-4">
+                <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0 text-xl font-bold text-accent">
+                  {venteCustomerName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-0.5">Client</div>
+                  <div className="font-bold text-lg leading-tight">{venteCustomerName}</div>
+                  <div className="text-sm text-muted-foreground font-mono">{venteCustomerPhone}</div>
+                </div>
               </div>
+
+              {/* Order detail */}
               <div className="p-4 bg-accent/10 rounded-xl border border-accent/20">
-                <div className="text-xs text-muted-foreground mb-2">Détail commande</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">Détail commande</div>
                 {Array.from(venteCart.entries()).map(([ttId, qty]) => {
                   const tt = ticketTypes?.find((t) => t.id === ttId);
                   if (!tt) return null;
                   return (
-                    <div key={ttId} className="flex justify-between text-sm py-1.5">
+                    <div key={ttId} className="flex justify-between text-sm py-2 border-b border-accent/10 last:border-0">
                       <span className="text-muted-foreground">{tt.name} <span className="font-bold text-foreground">×{qty}</span></span>
                       <span className="font-bold">{formatMGA(parseFloat(String(tt.price)) * qty)}</span>
                     </div>
                   );
                 })}
-                <div className="flex justify-between font-bold text-lg pt-3 border-t border-accent/30 mt-2">
-                  <span>Total à encaisser</span>
+                <div className="flex justify-between font-bold text-xl pt-3 mt-1">
+                  <span>Total</span>
                   <span className="text-accent">{formatMGA(cartTotal)}</span>
                 </div>
               </div>
-              <div className="p-4 bg-card rounded-xl border border-border">
-                <div className="text-xs text-muted-foreground mb-1">Mode de paiement</div>
-                <div className="font-bold text-xl">
-                  {ventePaymentMethod === "especes" ? "💵 Espèces"
-                    : ventePaymentMethod === "orange_money" ? "🟠 Orange Money"
-                    : "🔴 MVola"}
+
+              {/* Payment method with specific instructions */}
+              {ventePaymentMethod === "especes" && (
+                <div className="p-4 rounded-xl border-2 border-emerald-600/40 bg-emerald-950/40 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-lg">
+                    <span>💵</span> Paiement en Espèces
+                  </div>
+                  <div className="text-sm text-muted-foreground">Encaissez le montant en liquide :</div>
+                  <div className="text-3xl font-display font-black text-accent">{formatMGA(cartTotal)}</div>
+                  <div className="text-xs text-emerald-400/80 pt-1">Remettez le reçu au client après validation.</div>
                 </div>
-              </div>
-              <div className="flex gap-3 pt-2">
+              )}
+              {ventePaymentMethod === "orange_money" && (
+                <div className="p-4 rounded-xl border-2 border-orange-500/40 bg-orange-950/30 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-lg text-orange-400">
+                    <span>🟠</span> Paiement Orange Money
+                  </div>
+                  <div className="text-sm text-muted-foreground">Demandez au client d'envoyer le montant via Orange Money :</div>
+                  <div className="text-3xl font-display font-black text-orange-400">{formatMGA(cartTotal)}</div>
+                  <div className="p-3 bg-black/30 rounded-lg mt-2">
+                    <div className="text-xs text-muted-foreground mb-0.5">Numéro expéditeur (client)</div>
+                    <div className="font-mono font-bold text-lg text-orange-300">{venteCustomerPhone}</div>
+                  </div>
+                  <div className="text-xs text-orange-300/70">Vérifiez la réception du paiement avant de valider.</div>
+                </div>
+              )}
+              {ventePaymentMethod === "mvola" && (
+                <div className="p-4 rounded-xl border-2 border-red-500/40 bg-red-950/30 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-lg text-red-400">
+                    <span>🔴</span> Paiement MVola
+                  </div>
+                  <div className="text-sm text-muted-foreground">Demandez au client d'envoyer le montant via MVola :</div>
+                  <div className="text-3xl font-display font-black text-red-400">{formatMGA(cartTotal)}</div>
+                  <div className="p-3 bg-black/30 rounded-lg mt-2">
+                    <div className="text-xs text-muted-foreground mb-0.5">Numéro expéditeur (client)</div>
+                    <div className="font-mono font-bold text-lg text-red-300">{venteCustomerPhone}</div>
+                  </div>
+                  <div className="text-xs text-red-300/70">Vérifiez la réception du paiement avant de valider.</div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
                 <Button variant="outline" onClick={() => setVenteConfirmOpen(false)} className="flex-1">Annuler</Button>
                 <button
                   onClick={handleVenteConfirm}
-                  className="flex-1 py-3 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
                 >
-                  <CheckCircle className="w-5 h-5" /> Valider
+                  <CheckCircle className="w-5 h-5" /> Valider l'encaissement
                 </button>
               </div>
             </div>
