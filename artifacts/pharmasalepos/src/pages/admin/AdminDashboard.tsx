@@ -4,16 +4,15 @@ import { Ticket, DollarSign, CalendarDays, ShoppingBag } from "lucide-react";
 import { AdminLayout } from "@/components/layout";
 import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge } from "@/components/ui";
 import { formatMGA, formatPaymentMethod } from "@/lib/utils";
-import {
-  STATIC_ADMIN_STATS, STATIC_REVENUE_BY_MONTH, STATIC_SALES_BY_EVENT,
-  STATIC_PAYMENT_STATS, STATIC_ORDERS, STATIC_EVENTS,
-} from "@/data/static";
+import { STATIC_ADMIN_STATS, STATIC_REVENUE_BY_MONTH, STATIC_SALES_BY_EVENT, STATIC_PAYMENT_STATS, STATIC_ORDERS, STATIC_EVENTS } from "@/data/static";
 
 const COLORS = ["#4caf50", "#1a4a2e", "#ff6600", "#00b050", "#8884d8"];
 
 export default function AdminDashboard() {
-  const stats = STATIC_ADMIN_STATS;
-  const recentOrders = STATIC_ORDERS.filter(o => o.status === "confirmed").slice(0, 5);
+  const stats = { ...STATIC_ADMIN_STATS, activeEvents: STATIC_EVENTS.filter((e) => e.status !== "past").length };
+  const recentOrders = STATIC_ORDERS.filter((o) => o.status === "confirmed").slice(0, 5);
+  const paymentData = STATIC_PAYMENT_STATS.map((p) => ({ method: p.method, amount: p.count * 30000 }));
+  const salesData = STATIC_SALES_BY_EVENT.map((s, i) => ({ eventId: i + 1, eventTitle: s.name, revenue: s.sales * 20000, percentage: Math.round((s.sales / STATIC_SALES_BY_EVENT.reduce((a, b) => a + b.sales, 0)) * 100) }));
 
   return (
     <AdminLayout>
@@ -23,90 +22,171 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[
-          { icon: <DollarSign className="h-6 w-6" />, color: "accent", label: "Revenus Totaux", value: formatMGA(stats.totalRevenue), growth: `+${stats.revenueGrowth}%` },
-          { icon: <ShoppingBag className="h-6 w-6" />, color: "blue-500", label: "Commandes", value: stats.totalOrders, growth: `+${stats.ordersGrowth}%` },
-          { icon: <Ticket className="h-6 w-6" />, color: "orange-500", label: "Tickets Vendus", value: stats.totalTicketsSold, growth: null },
-          { icon: <CalendarDays className="h-6 w-6" />, color: "purple-500", label: "Événements", value: stats.totalEvents, growth: null },
-        ].map((kpi, i) => (
-          <Card key={i} className="p-6 bg-gradient-to-br from-card to-background border-border/50">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl bg-accent/20 text-accent flex items-center justify-center`}>{kpi.icon}</div>
-              {kpi.growth && <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">{kpi.growth}</Badge>}
+        <Card className="p-6 bg-gradient-to-br from-card to-background border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-accent/20 text-accent flex items-center justify-center">
+              <DollarSign className="h-6 w-6" />
             </div>
-            <div className="text-sm font-semibold text-muted-foreground mb-1">{kpi.label}</div>
-            <div className="text-3xl font-bold font-display text-white">{kpi.value}</div>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
-        <Card className="p-6">
-          <h2 className="text-lg font-bold mb-6">Revenus par mois</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={STATIC_REVENUE_BY_MONTH}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={v => `${(v/1000000).toFixed(1)}M`} />
-              <Tooltip formatter={(v: any) => [formatMGA(v), "Revenus"]} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="revenue" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ fill: "hsl(var(--accent))" }} />
-            </LineChart>
-          </ResponsiveContainer>
+            <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">+{stats.revenueGrowth}%</Badge>
+          </div>
+          <div className="text-sm font-semibold text-muted-foreground mb-1">Revenus Totaux</div>
+          <div className="text-3xl font-bold font-display text-white">{formatMGA(stats.totalRevenue)}</div>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-lg font-bold mb-6">Méthodes de paiement</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={STATIC_PAYMENT_STATS} dataKey="count" nameKey="method" cx="50%" cy="50%" outerRadius={80} label={({ method, percent }) => `${method} ${(percent! * 100).toFixed(0)}%`}>
-                {STATIC_PAYMENT_STATS.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-            </PieChart>
-          </ResponsiveContainer>
+        <Card className="p-6 bg-gradient-to-br from-card to-background border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center">
+              <ShoppingBag className="h-6 w-6" />
+            </div>
+            <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">+{stats.ordersGrowth}%</Badge>
+          </div>
+          <div className="text-sm font-semibold text-muted-foreground mb-1">Commandes</div>
+          <div className="text-3xl font-bold font-display text-white">{stats.totalOrders}</div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-card to-background border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-500 flex items-center justify-center">
+              <Ticket className="h-6 w-6" />
+            </div>
+          </div>
+          <div className="text-sm font-semibold text-muted-foreground mb-1">Tickets Vendus</div>
+          <div className="text-3xl font-bold font-display text-white">{stats.totalTicketsSold}</div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-card to-background border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-500 flex items-center justify-center">
+              <CalendarDays className="h-6 w-6" />
+            </div>
+            <Badge variant="outline">{stats.activeEvents} actifs</Badge>
+          </div>
+          <div className="text-sm font-semibold text-muted-foreground mb-1">Total Événements</div>
+          <div className="text-3xl font-bold font-display text-white">{stats.totalEvents}</div>
         </Card>
       </div>
 
-      <Card className="p-6 mb-8">
-        <h2 className="text-lg font-bold mb-6">Ventes par événement</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={STATIC_SALES_BY_EVENT}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-            <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-            <Bar dataKey="sales" fill="hsl(var(--accent))" radius={[4,4,0,0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
+      <div className="grid lg:grid-cols-3 gap-8 mb-8">
+        <Card className="lg:col-span-2 p-6">
+          <h3 className="font-bold text-lg mb-6">Évolution des Revenus (12 derniers mois)</h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={STATIC_REVENUE_BY_MONTH} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v / 1000}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#111", borderColor: "#222", borderRadius: "8px" }}
+                  itemStyle={{ color: "#fff" }}
+                  formatter={(v: number) => formatMGA(v)}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#4caf50" strokeWidth={3} dot={{ r: 4, fill: "#4caf50", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
 
-      <Card className="p-6">
-        <h2 className="text-lg font-bold mb-6">Commandes récentes</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>#</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Événement</TableHead>
-              <TableHead>Paiement</TableHead>
-              <TableHead>Montant</TableHead>
-              <TableHead>Statut</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recentOrders.map(o => (
-              <TableRow key={o.id}>
-                <TableCell className="font-mono text-xs">{String(o.id).padStart(6, "0")}</TableCell>
-                <TableCell>{o.customerName}</TableCell>
-                <TableCell className="max-w-[160px] truncate">{o.event.title}</TableCell>
-                <TableCell>{formatPaymentMethod(o.paymentMethod)}</TableCell>
-                <TableCell className="font-semibold text-accent">{formatMGA(o.totalAmount)}</TableCell>
-                <TableCell><Badge variant="success">Confirmé</Badge></TableCell>
+        <Card className="p-6 flex flex-col">
+          <h3 className="font-bold text-lg mb-6">Méthodes de Paiement</h3>
+          <div className="flex-1 min-h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={paymentData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="method" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={formatPaymentMethod} />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  contentStyle={{ backgroundColor: "#111", borderColor: "#222", borderRadius: "8px" }}
+                  formatter={(v: number) => formatMGA(v)}
+                />
+                <Bar dataKey="amount" fill="#1a4a2e" radius={[0, 4, 4, 0]}>
+                  {paymentData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 p-6 overflow-hidden">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-lg">Commandes Récentes</h3>
+            <Badge variant="outline">Voir tout</Badge>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Client</TableHead>
+                <TableHead>Événement</TableHead>
+                <TableHead>Montant</TableHead>
+                <TableHead>Statut</TableHead>
               </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>
+                    <div className="font-medium">{order.customerName}</div>
+                    <div className="text-xs text-muted-foreground">{order.customerPhone}</div>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate">{order.event?.title}</TableCell>
+                  <TableCell className="font-bold text-accent">{formatMGA(order.totalAmount)}</TableCell>
+                  <TableCell>
+                    <Badge variant="success">Confirmé</Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!recentOrders.length && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Aucune commande récente</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="font-bold text-lg mb-6">Ventes par Événement</h3>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={salesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="revenue"
+                  stroke="none"
+                >
+                  {salesData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#111", borderColor: "#222", borderRadius: "8px" }}
+                  formatter={(v: number) => formatMGA(v)}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 space-y-2">
+            {salesData.slice(0, 3).map((item, idx) => (
+              <div key={item.eventId} className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                  <span className="truncate max-w-[150px]">{item.eventTitle}</span>
+                </div>
+                <span className="font-bold">{item.percentage}%</span>
+              </div>
             ))}
-          </TableBody>
-        </Table>
-      </Card>
+          </div>
+        </Card>
+      </div>
     </AdminLayout>
   );
 }

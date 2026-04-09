@@ -15,6 +15,8 @@ import AdminEventDetail from "@/pages/admin/AdminEventDetail";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminOrganizers from "@/pages/admin/AdminOrganizers";
 import AdminContacts from "@/pages/admin/AdminContacts";
+import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminPayments from "@/pages/admin/AdminPayments";
 import BilletPublic from "@/pages/BilletPublic";
 import OrganizerLogin from "@/pages/organizer/OrganizerLogin";
 import OrganizerEvents from "@/pages/organizer/OrganizerEvents";
@@ -38,6 +40,8 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/organizers" component={AdminOrganizers} />
       <Route path="/admin/contacts" component={AdminContacts} />
+      <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/payments" component={AdminPayments} />
       <Route path="/organizer/login" component={OrganizerLogin} />
       <Route path="/organizer/events" component={OrganizerEvents} />
       <Route path="/organizer/events/:id" component={OrganizerEventDetail} />
