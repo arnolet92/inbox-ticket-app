@@ -88,7 +88,7 @@ export default function AdminEventsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <Link href={`/inbox-template/admin/events/${ev.id}`}
+                      <Link href={`/admin/events/${ev.id}`}
                         className="flex items-center gap-1 text-xs text-accent hover:underline whitespace-nowrap">
                         Voir <ArrowUpRight className="w-3 h-3" />
                       </Link>

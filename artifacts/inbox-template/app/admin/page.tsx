@@ -101,7 +101,7 @@ export default function AdminDashboard() {
           <h2 className="font-display font-bold text-lg flex items-center gap-2">
             <Clock className="w-4 h-4 text-accent" /> Commandes récentes
           </h2>
-          <Link href="/inbox-template/admin/events" className="text-xs text-accent hover:underline flex items-center gap-1">
+          <Link href="/admin/events" className="text-xs text-accent hover:underline flex items-center gap-1">
             Voir tout <ArrowUpRight className="w-3 h-3" />
           </Link>
         </div>

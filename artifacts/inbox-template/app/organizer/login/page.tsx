@@ -18,7 +18,7 @@ export default function OrganizerLoginPage() {
     setError("");
     setTimeout(() => {
       setLoading(false);
-      router.push("/inbox-template/organizer/events");
+      router.push("/organizer/events");
     }, 1000);
   };
 

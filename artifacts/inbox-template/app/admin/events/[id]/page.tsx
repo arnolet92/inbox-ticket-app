@@ -11,7 +11,7 @@ export default function AdminEventDetailPage() {
   if (!event) return (
     <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
       <p className="text-muted-foreground">Événement introuvable</p>
-      <Link href="/inbox-template/admin/events" className="text-accent hover:underline text-sm">← Retour</Link>
+      <Link href="/admin/events" className="text-accent hover:underline text-sm">← Retour</Link>
     </div>
   );
 
@@ -22,7 +22,7 @@ export default function AdminEventDetailPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/inbox-template/admin/events"
+        <Link href="/admin/events"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Retour aux événements
         </Link>

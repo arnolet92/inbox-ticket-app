@@ -78,12 +78,12 @@ function ConfirmationContent() {
           <button className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border font-semibold text-sm hover:border-accent/40 transition-all">
             <Share2 className="w-4 h-4" /> Partager
           </button>
-          <Link href="/inbox-template/mes-billets"
+          <Link href="/mes-billets"
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm text-black transition-all hover:opacity-90"
             style={{ background: "hsl(145 55% 40%)" }}>
             <Ticket className="w-4 h-4" /> Voir mes billets
           </Link>
-          <Link href="/inbox-template/events"
+          <Link href="/events"
             className="flex items-center justify-center gap-2 w-full py-3 text-sm text-muted-foreground hover:text-white transition-colors">
             Explorer d&apos;autres événements <ArrowRight className="w-4 h-4" />
           </Link>

@@ -92,7 +92,7 @@ export default function EventsPage() {
               const minPrice = Math.min(...ev.ticketTypes.map((t) => t.price));
               const pct = Math.round((ev.soldTickets / ev.totalCapacity) * 100);
               return (
-                <Link key={ev.id} href={`/inbox-template/events/${ev.id}`}
+                <Link key={ev.id} href={`/events/${ev.id}`}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card hover:border-accent/40 transition-all hover:shadow-xl card-glow">
                   <div className="aspect-[16/9] overflow-hidden bg-muted relative">
                     {ev.imageUrl ? (

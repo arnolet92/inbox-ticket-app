@@ -42,14 +42,14 @@ function CheckoutForm() {
   const handleSubmit = () => {
     setLoading(true);
     setTimeout(() => {
-      router.push(`/inbox-template/confirmation?orderId=${Math.floor(Math.random() * 900) + 100}&eventId=${eventId}`);
+      router.push(`/confirmation?orderId=${Math.floor(Math.random() * 900) + 100}&eventId=${eventId}`);
     }, 1500);
   };
 
   return (
     <PublicLayout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Link href={`/inbox-template/events/${eventId}`}
+        <Link href={`/events/${eventId}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Retour à l&apos;événement
         </Link>

@@ -8,7 +8,7 @@ import {
 
 function Logo() {
   return (
-    <Link href="/inbox-template/admin" className="flex items-center gap-2">
+    <Link href="/admin" className="flex items-center gap-2">
       <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: "hsl(145 55% 40%)" }}>
         <Ticket className="w-4 h-4 text-black" />
       </div>
@@ -21,9 +21,9 @@ function Logo() {
 }
 
 const NAV = [
-  { href: "/inbox-template/admin", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/inbox-template/admin/events", label: "Événements", icon: Calendar },
-  { href: "/inbox-template/admin/users", label: "Utilisateurs", icon: Users },
+  { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/admin/events", label: "Événements", icon: Calendar },
+  { href: "/admin/users", label: "Utilisateurs", icon: Users },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +37,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {NAV.map((item) => {
-          const active = pathname === item.href || (item.href !== "/inbox-template/admin" && pathname.startsWith(item.href));
+          const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href} onClick={() => setMobile(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${

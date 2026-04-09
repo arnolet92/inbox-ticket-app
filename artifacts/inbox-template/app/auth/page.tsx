@@ -18,7 +18,7 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      router.push("/inbox-template/mes-billets");
+      router.push("/mes-billets");
     }, 1000);
   };
 
@@ -116,7 +116,7 @@ export default function AuthPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Pas encore de billet ?{" "}
-            <Link href="/inbox-template/events" className="text-accent hover:underline">
+            <Link href="/events" className="text-accent hover:underline">
               Découvrir les événements
             </Link>
           </p>

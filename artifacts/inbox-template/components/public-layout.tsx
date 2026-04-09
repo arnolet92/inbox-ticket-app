@@ -23,8 +23,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   const links = [
     { href: "/inbox-template", label: "Accueil" },
-    { href: "/inbox-template/events", label: "Événements" },
-    { href: "/inbox-template/mes-billets", label: "Mes Billets" },
+    { href: "/events", label: "Événements" },
+    { href: "/mes-billets", label: "Mes Billets" },
   ];
 
   return (
@@ -47,13 +47,13 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
             <Link
-              href="/inbox-template/organizer/login"
+              href="/organizer/login"
               className="text-sm font-semibold px-4 py-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-accent/40 transition-all flex items-center gap-1.5"
             >
               <Building2 className="w-4 h-4" /> Organisateur
             </Link>
             <Link
-              href="/inbox-template/auth"
+              href="/auth"
               className="text-sm font-semibold px-4 py-2 rounded-lg text-black hover:opacity-90 transition-all flex items-center gap-1.5"
               style={{ background: "hsl(145 55% 40%)" }}
             >
@@ -71,7 +71,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 {l.label}
               </Link>
             ))}
-            <Link href="/inbox-template/auth" className="text-lg font-semibold text-accent" onClick={() => setOpen(false)}>
+            <Link href="/auth" className="text-lg font-semibold text-accent" onClick={() => setOpen(false)}>
               Connexion
             </Link>
           </div>
@@ -87,8 +87,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             © {new Date().getFullYear()} Inbox Ticket — Vivez l&apos;événementiel autrement.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Link href="/inbox-template/admin" className="hover:text-accent transition-colors">Admin</Link>
-            <Link href="/inbox-template/organizer/login" className="hover:text-accent transition-colors">Organisateur</Link>
+            <Link href="/admin" className="hover:text-accent transition-colors">Admin</Link>
+            <Link href="/organizer/login" className="hover:text-accent transition-colors">Organisateur</Link>
           </div>
         </div>
       </footer>

@@ -31,7 +31,7 @@ export default function OrganizerEventsPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">Ratsimba Events</span>
-            <button onClick={() => router.push("/inbox-template/organizer/login")}
+            <button onClick={() => router.push("/organizer/login")}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors">
               <LogOut className="w-4 h-4" /> Déconnexion
             </button>
@@ -97,7 +97,7 @@ export default function OrganizerEventsPage() {
                       <p className="text-[10px] text-muted-foreground">Revenus</p>
                       <p className="font-display font-bold text-accent text-sm">{formatMGA(revenue)}</p>
                     </div>
-                    <Link href={`/inbox-template/organizer/events/${ev.id}`}
+                    <Link href={`/organizer/events/${ev.id}`}
                       className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:border-accent/40 transition-all">
                       Gérer <ArrowUpRight className="w-3.5 h-3.5" />
                     </Link>

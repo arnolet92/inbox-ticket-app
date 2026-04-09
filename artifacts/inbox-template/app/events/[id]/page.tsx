@@ -20,7 +20,7 @@ export default function EventDetailPage() {
         <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4">
           <Ticket className="w-12 h-12 text-muted-foreground opacity-30" />
           <p className="text-muted-foreground">Événement introuvable</p>
-          <Link href="/inbox-template/events" className="text-accent hover:underline">← Retour aux événements</Link>
+          <Link href="/events" className="text-accent hover:underline">← Retour aux événements</Link>
         </div>
       </PublicLayout>
     );
@@ -45,7 +45,7 @@ export default function EventDetailPage() {
 
   const goCheckout = () => {
     const cartData = encodeURIComponent(JSON.stringify(cart));
-    router.push(`/inbox-template/checkout?eventId=${event.id}&cart=${cartData}`);
+    router.push(`/checkout?eventId=${event.id}&cart=${cartData}`);
   };
 
   return (
@@ -60,7 +60,7 @@ export default function EventDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 pb-8">
           <div className="max-w-7xl mx-auto">
-            <Link href="/inbox-template/events"
+            <Link href="/events"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white mb-4 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Retour
             </Link>

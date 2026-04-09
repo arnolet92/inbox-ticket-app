@@ -26,7 +26,7 @@ function EventCard({ event }: { event: typeof EVENTS[0] }) {
   const minPrice = Math.min(...event.ticketTypes.map((t) => t.price));
   const pct = Math.round((event.soldTickets / event.totalCapacity) * 100);
   return (
-    <Link href={`/inbox-template/events/${event.id}`}
+    <Link href={`/events/${event.id}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card hover:border-accent/40 transition-all hover:shadow-xl hover:shadow-accent/5 card-glow">
       <div className="aspect-[16/9] overflow-hidden bg-muted relative">
         {event.imageUrl ? (
@@ -99,12 +99,12 @@ export default function HomePage() {
             Découvrez et réservez les meilleurs événements à Madagascar. Concerts, galas, festivals, conférences — votre billet en quelques clics.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/inbox-template/events"
+            <Link href="/events"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-black font-bold text-lg hover:opacity-90 transition-all hover:scale-105"
               style={{ background: "hsl(145 55% 40%)" }}>
               Explorer les événements <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/inbox-template/auth"
+            <Link href="/auth"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg border border-border hover:border-accent/40 transition-all hover:scale-105">
               Mes billets <Ticket className="w-5 h-5" />
             </Link>
@@ -140,7 +140,7 @@ export default function HomePage() {
               <h2 className="font-display font-bold text-3xl mb-1">Événements à venir</h2>
               <p className="text-muted-foreground">Ne manquez aucun moment fort</p>
             </div>
-            <Link href="/inbox-template/events"
+            <Link href="/events"
               className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-accent hover:gap-2.5 transition-all">
               Voir tout <ArrowRight className="w-4 h-4" />
             </Link>
@@ -150,7 +150,7 @@ export default function HomePage() {
           </div>
           {upcoming.length > 3 && (
             <div className="text-center mt-10">
-              <Link href="/inbox-template/events"
+              <Link href="/events"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border hover:border-accent/40 font-semibold transition-all">
                 Voir tous les événements <ArrowRight className="w-4 h-4" />
               </Link>

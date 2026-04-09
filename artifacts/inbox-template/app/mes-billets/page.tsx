@@ -186,7 +186,7 @@ export default function MesBilletsPage() {
             </form>
             <p className="text-center text-xs text-muted-foreground mt-4">
               Pas encore de billet ?{" "}
-              <Link href="/inbox-template/events" className="text-accent hover:underline">Découvrir les événements</Link>
+              <Link href="/events" className="text-accent hover:underline">Découvrir les événements</Link>
             </p>
           </div>
         ) : (

@@ -90,7 +90,7 @@ export default function OrganizerEventDetailPage() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(145 55% 5%)" }}>
       <div className="text-center space-y-3">
         <p className="text-muted-foreground">Événement introuvable</p>
-        <Link href="/inbox-template/organizer/events" className="text-accent hover:underline text-sm">← Retour</Link>
+        <Link href="/organizer/events" className="text-accent hover:underline text-sm">← Retour</Link>
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ export default function OrganizerEventDetailPage() {
     <div className="min-h-screen" style={{ background: "hsl(145 55% 5%)" }}>
       <header className="sticky top-0 z-40 glass-panel">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <button onClick={() => router.push("/inbox-template/organizer/events")}
+          <button onClick={() => router.push("/organizer/events")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" /> Mes événements
           </button>
