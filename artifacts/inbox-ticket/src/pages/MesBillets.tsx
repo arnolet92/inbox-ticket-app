@@ -6,7 +6,7 @@ import { fr } from "date-fns/locale";
 import {
   Ticket, Phone, Lock, Eye, EyeOff, Search, Calendar, MapPin,
   Download, Share2, Printer, Clock, CheckCircle2, XCircle, AlertCircle,
-  Award, ChevronRight, Sparkles, TrendingUp, LogOut, ShieldCheck,
+  Award, ChevronRight, Sparkles, TrendingUp, LogOut, ShieldCheck, X,
 } from "lucide-react";
 import { PublicLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
@@ -492,11 +492,17 @@ function TicketCard({ order }: { order: any }) {
         {/* ── Vue QR en place (mobile) ── */}
         {showQRView ? (
           <div className="p-4">
-            {/* Retour */}
-            <button onClick={() => { setShowQRView(false); setShowLinkFor2(null); }}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white mb-3 transition-colors">
-              <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Retour au billet
-            </button>
+            {/* Header retour + fermer */}
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => { setShowQRView(false); setShowLinkFor2(null); }}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors">
+                <ChevronRight className="w-3.5 h-3.5 rotate-180" /> Retour au billet
+              </button>
+              <button onClick={() => { setShowQRView(false); setShowLinkFor2(null); }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/15 text-muted-foreground hover:text-white transition-all">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
             {/* QR centré */}
             <div ref={qrRef} className="flex flex-col items-center mb-4">
