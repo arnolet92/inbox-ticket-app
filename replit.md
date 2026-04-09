@@ -119,3 +119,55 @@ Designed for integration with the user's existing MySQL + Python backend.
 - Thème africain luxe sombre : `#080f09` fond, `#1a4525` primaire, `#2d9e4e` accent
 - UI entière en français, montants en MGA (Ariary)
 - QR format : `INBOXTICKET-ORD-{id}-{phone}`
+
+---
+
+## PharmasalePOS (`artifacts/pharmasalepos`)
+
+**Static Vite+React clone of InboxTicket** — no backend, no database. All data is hardcoded in `src/data/static.ts`.
+
+**Stack**: React + Vite, Tailwind CSS v4, wouter, recharts, framer-motion, qrcode.react
+
+**Preview**: `/pharmasalepos/`
+
+**Port**: 8082 (mapped in `.replit` [[ports]] → externalPort 3003)
+
+**Key note**: Port must be registered in `.replit` [[ports]] for the Replit workflow system to detect and route to it. Original port 19647 was not registered, causing persistent DIDNT_OPEN_A_PORT failures.
+
+### Pages
+
+**Public** (PublicLayout: Navbar + Footer)
+- `/pharmasalepos/` — Accueil : hero animé, événements en vedette, QueueIllustration
+- `/pharmasalepos/events` — Liste avec filtres (recherche, catégorie, statut)
+- `/pharmasalepos/events/:id` — Détail événement, sélection billets, PaymentProcessing
+- `/pharmasalepos/checkout` — Commande avec paiement multi-méthode
+- `/pharmasalepos/orders/:id` — Confirmation avec confetti + QR code téléchargeable
+- `/pharmasalepos/mes-billets` — Liste des billets avec QR, fidélité, filtres
+- `/pharmasalepos/auth` — Connexion / inscription (tel + mot de passe)
+- `/pharmasalepos/billet` — Scan public de billet (validation QR)
+
+**Admin** (AdminLayout: sidebar collapsible)
+- `/pharmasalepos/admin` — Dashboard : KPIs, graphiques revenus + paiements (recharts)
+- `/pharmasalepos/admin/events` — CRUD événements
+- `/pharmasalepos/admin/events/:id` — Détail avec commandes
+- `/pharmasalepos/admin/users` — Gestion utilisateurs
+- `/pharmasalepos/admin/organizers` — Gestion organisateurs
+- `/pharmasalepos/admin/contacts` — Messages de contact
+
+**Organisateur** (OrganizerLayout)
+- `/pharmasalepos/organizer/login` — 3 rôles: organisateur / agent-vente / agent-scan
+- `/pharmasalepos/organizer/events` — Événements gérés
+- `/pharmasalepos/organizer/events/:id` — Tabs: vue d'ensemble / scan / ventes
+
+### Static Data (`src/data/static.ts`)
+- 8 événements (Concert, Festival, Sport, Gala, etc.)
+- 3 types de billets par événement (VIP, Standard, Économique)
+- 6 commandes avec billets QR
+- 5 organisateurs avec 3 rôles (organisateur, agent-vente, agent-scan)
+- Hooks: `useEvents`, `useEvent`, `useOrders`, `useMyOrders`, `useStats`
+
+### Design
+- Clone exact du thème dark green d'InboxTicket
+- Fonts: DM Sans + Outfit (Google Fonts)
+- Pattern Kente SVG en arrière-plan
+- Glass-panel glassmorphism sur les cards et modals
