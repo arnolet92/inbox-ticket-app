@@ -18,23 +18,13 @@ const LOADING_HTML = `<!DOCTYPE html>
 <meta http-equiv="refresh" content="2">
 </head><body><p>Starting...</p></body></html>`;
 
-// Start Next.js on internal port
+// Start Next.js on internal port directly (same process group as proxy)
 const next = spawn(
-  "pnpm",
-  [
-    "--filter",
-    "@workspace/inbox-template",
-    "exec",
-    "next",
-    "dev",
-    "--port",
-    String(NEXT_PORT),
-    "--hostname",
-    "0.0.0.0",
-  ],
+  join(__dirname, "node_modules/.bin/next"),
+  ["dev", "--port", String(NEXT_PORT), "--hostname", "0.0.0.0"],
   {
     stdio: "inherit",
-    cwd: join(__dirname, "../.."),
+    cwd: __dirname,
     env: { ...process.env, PORT: String(NEXT_PORT) },
   }
 );
@@ -128,30 +118,21 @@ function handleUpgrade(req, socket, head) {
 const server = http.createServer(handleRequest);
 server.on("upgrade", handleUpgrade);
 
-// Retry binding with explicit 0.0.0.0 for Replit proxy compatibility
-function startListening(attempt = 0) {
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`> Dev proxy listening on http://0.0.0.0:${PORT}`);
-    console.log(`> Starting Next.js on port ${NEXT_PORT}...`);
-  });
+// Bind with explicit 0.0.0.0 for Replit proxy compatibility
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`> Dev proxy listening on http://0.0.0.0:${PORT}`);
+  console.log(`> Starting Next.js on port ${NEXT_PORT}...`);
+});
 
-  server.on("error", (err) => {
-    if (err.code === "EADDRINUSE" && attempt < 5) {
-      console.log(
-        `> Port ${PORT} in use, retrying in 500ms... (attempt ${attempt + 1})`
-      );
-      setTimeout(() => {
-        server.close();
-        startListening(attempt + 1);
-      }, 500);
-    } else {
-      console.error(`> Failed to bind to port ${PORT}:`, err.message);
-      process.exit(1);
-    }
-  });
-}
-
-startListening();
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    // Port already in use — another instance is serving. Stay alive.
+    console.log(`> Port ${PORT} already in use; this instance will idle.`);
+  } else {
+    console.error(`> Server error:`, err.message);
+    process.exit(1);
+  }
+});
 
 process.on("SIGTERM", () => {
   clearInterval(readyPoller);
