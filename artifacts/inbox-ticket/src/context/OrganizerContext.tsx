@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 
+export type OrganizerRole = "organisateur" | "agent-vente" | "agent-scan";
+
 export type OrganizerSession = {
   id: string;
   name: string;
   company: string;
   email: string;
+  role?: OrganizerRole;
 };
 
 type OrganizerContextType = {

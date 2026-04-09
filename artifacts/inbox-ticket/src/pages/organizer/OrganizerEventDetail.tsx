@@ -16,6 +16,7 @@ import {
   ResponsiveContainer, Legend, AreaChart, Area, ReferenceLine, Cell,
 } from "recharts";
 import { OrganizerLayout } from "@/components/layout";
+import { useOrganizer } from "@/context/OrganizerContext";
 import { Card, Button, Badge, Dialog, Input, Label, Select, Textarea,
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui";
 import { formatMGA, formatPaymentMethod } from "@/lib/utils";
@@ -182,7 +183,12 @@ export default function OrganizerEventDetail() {
   const { id } = useParams<{ id: string }>();
   const eventId = Number(id);
 
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const { organizer } = useOrganizer();
+  const orgRole = organizer?.role ?? "organisateur";
+
+  const [activeTab, setActiveTab] = useState<Tab>(() =>
+    orgRole === "agent-vente" ? "vente" : orgRole === "agent-scan" ? "scan" : "overview"
+  );
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [shopProducts, setShopProducts] = useState<ShopProduct[]>(SHOP_PRODUCTS_INITIAL);
@@ -703,17 +709,21 @@ export default function OrganizerEventDetail() {
 
   const imageSrc = event.imageUrl || getCategoryImage(event.category);
 
-  const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  const ALL_TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "overview", label: "Vue d'ensemble", icon: <TrendingUp className="w-4 h-4" /> },
-    // { key: "finance", label: "Finances", icon: <BarChart2 className="w-4 h-4" /> },
-    // { key: "depenses", label: "Dépenses", icon: <Receipt className="w-4 h-4" /> },
     { key: "tickets", label: "Billets", icon: <Ticket className="w-4 h-4" /> },
     { key: "orders", label: "Commandes", icon: <ShoppingCart className="w-4 h-4" /> },
-    // { key: "shop", label: "Shop", icon: <Store className="w-4 h-4" /> },
     { key: "staff", label: "Staff", icon: <Users className="w-4 h-4" /> },
     { key: "vente", label: "Vente", icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan", label: "Scan billet", icon: <ScanLine className="w-4 h-4" /> },
   ];
+
+  const TABS =
+    orgRole === "agent-vente"
+      ? ALL_TABS.filter((t) => t.key === "vente" || t.key === "orders")
+      : orgRole === "agent-scan"
+      ? ALL_TABS.filter((t) => t.key === "scan")
+      : ALL_TABS;
 
   return (
     <OrganizerLayout>

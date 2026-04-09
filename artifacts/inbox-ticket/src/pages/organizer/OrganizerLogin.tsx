@@ -29,9 +29,9 @@ export default function OrganizerLogin() {
       role === "agent-vente" ? "Agent Vente" : "Agent Scan";
 
     if (org) {
-      loginAs({ id: org.id, name: org.name, company: org.company, email: org.email });
+      loginAs({ id: org.id, name: org.name, company: org.company, email: org.email, role });
     } else {
-      loginAs({ id: "admin", name: roleLabel, company: "Inbox Ticket", email: "admin@inbox.mg" });
+      loginAs({ id: "admin", name: roleLabel, company: "Inbox Ticket", email: "admin@inbox.mg", role });
     }
     navigate("/organizer/events");
   };
