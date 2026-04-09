@@ -2921,25 +2921,39 @@ export default function OrganizerEventDetail() {
               </div>
 
               {/* Scan input */}
-              <Card className="p-5">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    value={scanInput}
-                    onChange={(e) => setScanInput(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleScan(); }}
-                    placeholder="CLÉBILLET  ou  CODE…"
-                    maxLength={12}
-                    autoFocus
-                    className="flex-1 px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
-                  />
-                  <button
-                    onClick={() => handleScan()}
-                    disabled={!scanInput.trim()}
-                    className="px-6 py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-                  >
-                    <ScanLine className="w-5 h-5" /> Valider
-                  </button>
+              <Card className="p-5 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">🎟 Clé de billet</label>
+                    <input
+                      value={scanMobileKey}
+                      onChange={(e) => setScanMobileKey(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
+                      placeholder="Ex: A1B2C3"
+                      maxLength={12}
+                      autoFocus
+                      className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1.5 block">📋 Code de confirmation</label>
+                    <input
+                      value={scanMobileCode}
+                      onChange={(e) => setScanMobileCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => { if (e.key === "Enter") { const v = (scanMobileCode || scanMobileKey).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } } }}
+                      placeholder="Ex: CONF-X7Y2"
+                      maxLength={12}
+                      className="w-full px-4 py-3 text-lg font-mono bg-background border-2 border-border rounded-xl focus:outline-none focus:border-accent transition-colors text-center tracking-widest uppercase"
+                    />
+                  </div>
                 </div>
+                <button
+                  onClick={() => { const v = (scanMobileKey || scanMobileCode).trim(); if (v) { handleScan(v); setScanMobileKey(""); setScanMobileCode(""); } }}
+                  disabled={!scanMobileKey.trim() && !scanMobileCode.trim()}
+                  className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <ScanLine className="w-5 h-5" /> Valider le billet
+                </button>
               </Card>
 
               {/* Scan result */}
