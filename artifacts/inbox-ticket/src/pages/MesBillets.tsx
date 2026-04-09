@@ -46,6 +46,13 @@ function TimingBadge({ dateStr }: { dateStr: string }) {
 function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onClose: () => void }) {
   const modalQrRef = React.useRef<HTMLDivElement>(null);
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
+
+  /* Bloquer le scroll de la page à l'ouverture */
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
   const orderId = String(order.id).padStart(6, "0");
   const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
   const shareText = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}`);
@@ -301,187 +308,99 @@ function QRModal({ order, qrValue, onClose }: { order: any; qrValue: string; onC
   };
 
   return (
-    <>
-      {/* ══ MOBILE : plein écran ══ */}
-      <div
-        className="sm:hidden fixed inset-0 z-[100] flex flex-col"
-        style={{ background: "hsl(150 15% 5%)" }}
-      >
-        {/* Top bar mobile */}
-        <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 shrink-0"
-          style={{ borderBottom: "1px solid hsl(145 40% 14%)" }}>
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] text-accent font-semibold tracking-widest uppercase leading-none">Billet électronique</p>
-            <h2 className="font-bold font-display text-sm leading-tight truncate">{order.event?.title ?? "Événement"}</h2>
-            <p className="text-[11px] text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground bg-white/5 active:bg-white/15 text-xl leading-none shrink-0 ml-3"
-          >×</button>
-        </div>
+    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "hsl(150 15% 5%)" }}>
 
-        {/* QR code — centré, toujours visible */}
-        <div className="flex flex-col items-center justify-center flex-1 px-6" ref={modalQrRef}>
-          <div className="relative mb-3">
-            <div className="absolute inset-0 bg-emerald-500/25 rounded-3xl blur-2xl scale-110" />
-            <div className="relative p-4 bg-white rounded-3xl shadow-2xl">
-              <QRCodeSVG value={qrValue} size={180} level="H" fgColor="#14532d" />
+      {/* ── En-tête fixe ── */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: "1px solid hsl(145 40% 14%)" }}>
+        <div className="min-w-0">
+          <p className="text-[9px] text-accent font-semibold tracking-widest uppercase leading-none mb-0.5">Billet électronique</p>
+          <h2 className="font-bold font-display text-sm leading-tight truncate">{order.event?.title ?? "Événement"}</h2>
+          <p className="text-[11px] text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
+        </div>
+        <button onClick={onClose}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground bg-white/5 active:bg-white/15 text-xl leading-none shrink-0 ml-3">×</button>
+      </div>
+
+      {/* ── QR centré — jamais défilé ── */}
+      <div ref={modalQrRef} className="flex-1 flex flex-col items-center justify-center px-6 gap-3">
+        <div className="relative">
+          <div className="absolute inset-0 bg-emerald-500/25 rounded-3xl blur-2xl scale-110" />
+          <div className="relative p-4 bg-white rounded-3xl shadow-2xl">
+            <QRCodeSVG value={qrValue} size={180} level="H" fgColor="#14532d" />
+          </div>
+        </div>
+        {eventDate && (
+          <p className="text-xs text-muted-foreground text-center">
+            {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
+          </p>
+        )}
+        <div className="flex gap-2 w-full max-w-xs">
+          {[
+            { label: "Clé", value: ticketKey },
+            { label: "Confirmation", value: confirmCode },
+            { label: "N° billet", value: ticketNumber },
+          ].map((c) => (
+            <div key={c.label} className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
+              style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}>
+              <span className="text-[7px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+              <span className="font-mono font-bold text-[11px] tracking-widest text-white">{c.value}</span>
             </div>
-          </div>
-          {eventDate && (
-            <p className="text-xs text-muted-foreground text-center mb-3">
-              {format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}
-            </p>
-          )}
-          {/* Security codes */}
-          <div className="flex gap-2 w-full max-w-xs">
-            {[
-              { label: "Clé", value: ticketKey },
-              { label: "Confirmation", value: confirmCode },
-              { label: "N° billet", value: ticketNumber },
-            ].map((c) => (
-              <div key={c.label} className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
-                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}>
-                <span className="text-[7px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
-                <span className="font-mono font-bold text-[11px] tracking-widest text-white">{c.value}</span>
-              </div>
-            ))}
-          </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Actions + partage ── */}
+      <div className="shrink-0 px-4 pt-3 pb-6 space-y-3"
+        style={{ borderTop: "1px solid hsl(145 40% 14%)" }}>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
+            <Download className="w-3.5 h-3.5" /> Télécharger
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
+            <Printer className="w-3.5 h-3.5" /> Imprimer
+          </Button>
         </div>
 
-        {/* Bas fixe : boutons + partage */}
-        <div className="shrink-0 px-4 pb-6 pt-3 space-y-3" style={{ borderTop: "1px solid hsl(145 40% 14%)" }}>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}>
-              <Download className="w-3.5 h-3.5" /> Télécharger
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}>
-              <Printer className="w-3.5 h-3.5" /> Imprimer
-            </Button>
+        {showLinkFor ? (
+          <div className="rounded-xl p-3" style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <button onClick={() => setShowLinkFor(null)}
+                className="text-[10px] text-muted-foreground hover:text-white">← Retour</button>
+              <p className="text-xs text-muted-foreground">
+                Copiez dans <span className="text-white font-semibold">{showLinkFor}</span> :
+              </p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <input ref={linkInputRef} readOnly value={shareUrl}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none" />
+              <button onClick={handleCopyLink} className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: copied ? "#16a34a" : "hsl(145 60% 30%)", color: "white" }}>
+                {copied ? "✓ Copié" : "Copier"}
+              </button>
+            </div>
+            {copied && <p className="text-[10px] text-accent mt-1.5">Lien copié !</p>}
           </div>
+        ) : (
           <div>
             <p className="text-[10px] text-muted-foreground mb-2 font-medium">Partager via</p>
             <div className="grid grid-cols-4 gap-2">
-              {SOCIAL.map((s) => {
-                const isActive = showLinkFor === s.label;
-                return (
-                  <button key={s.label} onClick={() => handleSocial(s)}
-                    className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all active:scale-95"
-                    style={{ background: isActive ? `${s.color}30` : `${s.color}18`, border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}` }}>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
-                      <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {showLinkFor && (
-              <div className="rounded-xl p-3 mt-2"
-                style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Copiez dans <span className="text-white font-semibold">{showLinkFor}</span> :
-                </p>
-                <div className="flex gap-2 items-center">
-                  <input ref={linkInputRef} readOnly value={shareUrl}
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none" />
-                  <button onClick={handleCopyLink} className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold"
-                    style={{ background: copied ? "#16a34a" : "hsl(145 60% 30%)", color: "white" }}>
-                    {copied ? "✓ Copié" : "Copier"}
-                  </button>
-                </div>
-                {copied && <p className="text-[10px] text-accent mt-1.5">Lien copié !</p>}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ══ DESKTOP : modal centré ══ */}
-      <div
-        className="hidden sm:flex fixed inset-0 z-[100] items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
-        onClick={onClose}
-      >
-        <div
-          className="relative w-full max-w-sm rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ background: "hsl(150 15% 6%)", border: "1.5px solid hsl(145 60% 25% / 0.5)", maxHeight: "90vh" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="px-5 pt-5 pb-3 flex items-start justify-between shrink-0">
-            <div>
-              <p className="text-[10px] text-accent font-semibold tracking-widest uppercase mb-0.5">Billet électronique</p>
-              <h2 className="font-bold font-display text-base leading-tight">{order.event?.title ?? "Événement"}</h2>
-              <p className="text-xs text-muted-foreground">{order.ticketType?.name} · ×{order.quantity}</p>
-            </div>
-            <button onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xl shrink-0 ml-2">×</button>
-          </div>
-          <div className="mx-5 border-t border-dashed border-accent/20 mb-4 shrink-0" />
-          {/* QR */}
-          <div className="flex flex-col items-center px-5 mb-4 shrink-0" ref={modalQrRef}>
-            <div className="relative mb-2">
-              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
-              <div className="relative p-3 bg-white rounded-2xl shadow-xl">
-                <QRCodeSVG value={qrValue} size={180} level="H" fgColor="#14532d" />
-              </div>
-            </div>
-            {eventDate && <p className="text-xs text-muted-foreground text-center mb-2">{format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}</p>}
-            <div className="flex gap-2 w-full">
-              {[{ label: "Clé", value: ticketKey }, { label: "Confirmation", value: confirmCode }, { label: "N° billet", value: ticketNumber }].map((c) => (
-                <div key={c.label} className="flex-1 flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1"
-                  style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.6)" }}>
-                  <span className="text-[8px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
-                  <span className="font-mono font-bold text-xs tracking-widest text-white">{c.value}</span>
-                </div>
+              {SOCIAL.map((s) => (
+                <button key={s.label} onClick={() => handleSocial(s)}
+                  className="flex flex-col items-center gap-1 py-2 rounded-xl active:scale-95 transition-transform"
+                  style={{ background: `${s.color}18`, border: `1.5px solid ${s.color}33` }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
+                    <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
+                </button>
               ))}
             </div>
           </div>
-          {/* Scrollable bottom */}
-          <div className="overflow-y-auto px-5 pb-5 space-y-3">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handleDownload}><Download className="w-3.5 h-3.5" /> Télécharger</Button>
-              <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={handlePrint}><Printer className="w-3.5 h-3.5" /> Imprimer</Button>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Partager via</p>
-              <div className="grid grid-cols-4 gap-2">
-                {SOCIAL.map((s) => {
-                  const isActive = showLinkFor === s.label;
-                  return (
-                    <button key={s.label} onClick={() => handleSocial(s)}
-                      className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
-                      style={{ background: isActive ? `${s.color}30` : `${s.color}18`, border: `1.5px solid ${isActive ? s.color + "88" : s.color + "33"}` }}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: s.color }}>
-                        <img src={s.icon} alt={s.label} className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[9px] text-muted-foreground font-medium">{s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {showLinkFor && (
-                <div className="rounded-xl p-3 mt-2" style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 20% / 0.5)" }}>
-                  <p className="text-xs text-muted-foreground mb-2">Copiez dans <span className="text-white font-semibold">{showLinkFor}</span> :</p>
-                  <div className="flex gap-2 items-center">
-                    <input ref={linkInputRef} readOnly value={shareUrl} onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="flex-1 text-xs bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-muted-foreground font-mono truncate outline-none focus:border-accent/50 cursor-text" />
-                    <button onClick={handleCopyLink} className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={{ background: copied ? "#16a34a" : "hsl(145 60% 30%)", color: "white" }}>
-                      {copied ? "✓ Copié" : "Copier"}
-                    </button>
-                  </div>
-                  {copied && <p className="text-[10px] text-accent mt-1.5">Lien copié ! Ouvrez {showLinkFor} et collez-le.</p>}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
