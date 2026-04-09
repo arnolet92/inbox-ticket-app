@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "wouter";
@@ -7,37 +7,29 @@ import { useQueryClient } from "@tanstack/react-query";
 import { OrganizerLayout } from "@/components/layout";
 import { Card, Button, Input, Badge, Dialog, Select, Textarea, Label } from "@/components/ui";
 import { getCategoryEmoji, getCategoryImage } from "@/components/EventCard";
-import {
-  useListEvents, useCreateEvent, getListEventsQueryKey, type ListEventsStatus,
-} from "@workspace/api-client-react";
-import { useOrganizer, getEventOrgMap, linkEventToOrganizer } from "@/context/OrganizerContext";
+import { useListEvents, useCreateEvent, useDeleteEvent, getListEventsQueryKey, type ListEventsStatus } from "@workspace/api-client-react";
 
 export default function OrganizerEvents() {
-  const { organizer } = useOrganizer();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState<ListEventsStatus | "">("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const { data: allEvents, isLoading } = useListEvents({
+  const { data: events, isLoading } = useListEvents({
     category: category || undefined,
     search: search || undefined,
     status: (status as ListEventsStatus) || undefined,
   });
 
   const createEvent = useCreateEvent();
-
-  const events = React.useMemo(() => {
-    if (!allEvents) return [];
-    return allEvents;
-  }, [allEvents]);
+  const deleteEvent = useDeleteEvent();
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     try {
-      const created = await createEvent.mutateAsync({
+      await createEvent.mutateAsync({
         data: {
           title: fd.get("title") as string,
           description: fd.get("description") as string,
@@ -50,14 +42,18 @@ export default function OrganizerEvents() {
           imageUrl: (fd.get("imageUrl") as string) || null,
         },
       });
-      if (organizer) {
-        linkEventToOrganizer(created.id, organizer.id);
-      }
       queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
       setIsCreateOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la création de l'événement");
+      alert("Erreur lors de la création");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+      await deleteEvent.mutateAsync({ id });
+      queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
     }
   };
 
@@ -67,9 +63,7 @@ export default function OrganizerEvents() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold font-display text-white mb-2">Mes Événements</h1>
-          <p className="text-muted-foreground">
-            {organizer ? `${organizer.company} — ` : ""}Gérez vos événements et billetteries.
-          </p>
+          <p className="text-muted-foreground">Gérez vos événements et billetteries.</p>
         </div>
         <Button variant="accent" onClick={() => setIsCreateOpen(true)}>
           <Plus className="w-5 h-5 mr-2" /> Nouvel événement
@@ -95,7 +89,7 @@ export default function OrganizerEvents() {
           <option value="Conférence">🎯 Conférence</option>
           <option value="Soirée">🌙 Soirée</option>
         </Select>
-        <Select value={status} onChange={(e) => setStatus(e.target.value as ListEventsStatus | "")} className="md:w-44">
+        <Select value={status} onChange={(e) => setStatus(e.target.value as any)} className="md:w-44">
           <option value="">Tous les statuts</option>
           <option value="upcoming">À venir</option>
           <option value="ongoing">En cours</option>
@@ -106,34 +100,47 @@ export default function OrganizerEvents() {
       {/* Events Grid */}
       {isLoading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="h-80 bg-card rounded-2xl animate-pulse" />
           ))}
         </div>
-      ) : events.length === 0 ? (
+      ) : events?.length === 0 ? (
         <div className="text-center py-24 bg-card rounded-2xl border border-dashed border-border">
-          <div className="text-6xl mb-4">📅</div>
+          <div className="text-6xl mb-4">🏜️</div>
           <h3 className="text-2xl font-bold font-display mb-2">Aucun événement</h3>
-          <p className="text-muted-foreground mb-6">
-            Vous n'avez pas encore d'événement associé à votre compte.
-          </p>
+          <p className="text-muted-foreground mb-6">Créez votre premier événement pour commencer.</p>
           <Button variant="accent" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Créer mon premier événement
+            <Plus className="w-4 h-4 mr-2" /> Créer un événement
           </Button>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => {
+          {events?.map((event) => {
             const imageSrc = event.imageUrl || getCategoryImage(event.category);
-            const fillPct = event.totalCapacity > 0
-              ? Math.round((event.soldTickets / event.totalCapacity) * 100)
-              : 0;
+            const fillPct = event.totalCapacity > 0 ? Math.round((event.soldTickets / event.totalCapacity) * 100) : 0;
             const lowestPrice = event.ticketTypes?.length
               ? Math.min(...event.ticketTypes.map((t) => parseFloat(String(t.price))))
               : null;
 
             return (
               <div key={event.id} className="group relative">
+                {/* Action buttons — appear on hover */}
+                <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-black/70 backdrop-blur border border-white/10 hover:bg-blue-500/80 transition-colors"
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4 text-white" />
+                  </button>
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-black/70 backdrop-blur border border-white/10 hover:bg-red-500/80 transition-colors"
+                    title="Supprimer"
+                    onClick={() => handleDelete(event.id)}
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+
                 <Card className="h-full flex flex-col border-transparent hover:border-accent/40 hover:shadow-accent/10 hover:-translate-y-1 overflow-hidden transition-all duration-300">
                   {/* Image */}
                   <div className="relative h-48 w-full overflow-hidden shrink-0">
@@ -174,13 +181,15 @@ export default function OrganizerEvents() {
                       <h3 className="font-bold font-display text-lg leading-tight line-clamp-2 mb-1">
                         {event.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground">📍 {event.location}, {event.city}</p>
+                      <p className="text-sm text-muted-foreground">
+                        📍 {event.location}, {event.city}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         🗓 {format(new Date(event.startDate), "EEEE d MMMM yyyy", { locale: fr })}
                       </p>
                     </div>
 
-                    {/* Progress */}
+                    {/* Sales progress */}
                     <div>
                       <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
                         <span>{event.soldTickets} billets vendus</span>
@@ -192,9 +201,11 @@ export default function OrganizerEvents() {
                           style={{
                             width: `${fillPct}%`,
                             background:
-                              fillPct >= 90 ? "hsl(0 70% 50%)"
-                              : fillPct >= 60 ? "hsl(38 95% 50%)"
-                              : "hsl(145 60% 35%)",
+                              fillPct >= 90
+                                ? "hsl(0 70% 50%)"
+                                : fillPct >= 60
+                                ? "hsl(38 95% 50%)"
+                                : "hsl(145 60% 35%)",
                           }}
                         />
                       </div>
@@ -229,7 +240,7 @@ export default function OrganizerEvents() {
         </div>
       )}
 
-      {/* Create Dialog */}
+      {/* Create dialog */}
       <Dialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Créer un événement">
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="space-y-2">
@@ -249,7 +260,7 @@ export default function OrganizerEvents() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Capacité totale</Label>
+              <Label>Capacité Totale</Label>
               <Input name="totalCapacity" type="number" required min="1" placeholder="Ex: 5000" />
             </div>
           </div>
