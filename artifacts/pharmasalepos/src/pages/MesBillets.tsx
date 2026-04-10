@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { QRCodeSVG } from "qrcode.react";
 import { InboxQRCode } from "@/components/InboxQRCode";
 import { format, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -172,23 +171,25 @@ function TicketCard({ order }: { order: Order }) {
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const isComing = eventDate ? isFuture(eventDate) : false;
   const qrValue = `INBOXTICKET-ORD-${order.id}-${order.customerPhone}`;
+  const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
+  const isConfirmed = order.status === "confirmed";
 
   return (
     <>
       {showModal && <QRModal order={order} qrValue={qrValue} onClose={() => setShowModal(false)} />}
       <Card className={`overflow-hidden border transition-all duration-300 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 ${isComing ? "border-primary/30" : "border-border/40 opacity-75"}`}>
+        {/* Top accent bar */}
         <div className={`h-1 w-full ${isComing ? "bg-gradient-to-r from-emerald-500 to-emerald-700" : "bg-muted"}`} />
+
         <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap gap-2 mb-2">
-                <StatusBadge status={order.status} />
-                {isComing
-                  ? <span className="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">À venir</span>
-                  : <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Passé</span>
-                }
-              </div>
-              <h3 className="font-bold text-base line-clamp-2 leading-tight">{order.event?.title}</h3>
+          {/* Header: badges + price */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={order.status} />
+              {isComing
+                ? <span className="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">À venir</span>
+                : <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Passé</span>
+              }
             </div>
             <div className="text-right shrink-0">
               <div className="font-display font-bold text-accent">{formatMGA(order.totalAmount)}</div>
@@ -196,22 +197,59 @@ function TicketCard({ order }: { order: Order }) {
             </div>
           </div>
 
-          <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
-            {eventDate && <div className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-accent shrink-0" />{format(eventDate, "d MMMM yyyy 'à' HH:mm", { locale: fr })}</div>}
-            <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-accent shrink-0" />{order.event?.location}, {order.event?.city}</div>
+          {/* Main content: info left, QR right */}
+          <div className={`flex gap-4 ${isConfirmed ? "" : ""}`}>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-base line-clamp-2 leading-tight mb-3">{order.event?.title}</h3>
+              <div className="space-y-1.5 text-sm text-muted-foreground mb-3">
+                {eventDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                    {format(eventDate, "d MMM yyyy, HH:mm", { locale: fr })}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="truncate">{order.event?.location}, {order.event?.city}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground py-2 border-t border-border/40">
+                <span className="font-semibold text-foreground">{order.ticketType?.name}</span>
+                <span className="font-mono">#{String(order.id).padStart(6, "0")}</span>
+              </div>
+            </div>
+
+            {/* QR code inline — only for confirmed */}
+            {isConfirmed && (
+              <div className="shrink-0 flex flex-col items-center gap-1.5">
+                <div className="relative cursor-pointer" onClick={() => setShowModal(true)}>
+                  <div className="absolute inset-0 bg-emerald-500/15 rounded-xl blur-md" />
+                  <div className="relative p-2 bg-white rounded-xl shadow-md border border-emerald-200/30">
+                    <InboxQRCode value={qrValue} size={90} fgColor="#14532d" />
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground font-medium">Tap pour agrandir</span>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-4 py-3 border-t border-border/40">
-            <span>Billet: <span className="font-semibold text-foreground">{order.ticketType?.name}</span></span>
-            <span className="font-mono text-xs">#{String(order.id).padStart(6, "0")}</span>
-          </div>
-
-          {order.status === "confirmed" && (
-            <button onClick={() => setShowModal(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-accent/30 text-accent font-semibold text-sm hover:bg-accent/10 transition-all">
-              <QRCodeSVG value={qrValue} size={18} fgColor="currentColor" />
-              Afficher le QR Code
-            </button>
+          {/* Codes row — only for confirmed */}
+          {isConfirmed && (
+            <div className="flex gap-1.5 mt-3 pt-3 border-t border-border/40">
+              {[{ label: "Clé", value: ticketKey }, { label: "Confirm.", value: confirmCode }, { label: "N° billet", value: ticketNumber }].map(c => (
+                <div key={c.label} className="flex-1 flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-lg" style={{ background: "hsl(145 20% 9%)", border: "1px solid hsl(145 40% 18% / 0.5)" }}>
+                  <span className="text-[8px] text-muted-foreground uppercase tracking-wider leading-none">{c.label}</span>
+                  <span className="font-mono font-bold text-[11px] tracking-widest text-white">{c.value}</span>
+                </div>
+              ))}
+              <button
+                onClick={() => setShowModal(true)}
+                className="shrink-0 flex items-center justify-center w-10 rounded-lg border border-accent/30 text-accent hover:bg-accent/10 transition-all"
+                title="Télécharger / Partager"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       </Card>
