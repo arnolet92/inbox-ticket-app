@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "wouter";
-import { QRCodeSVG } from "qrcode.react";
+import { InboxQRCode } from "@/components/InboxQRCode";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CheckCircle, Download, Calendar, MapPin, Ticket, Share2, ArrowRight, Star } from "lucide-react";
@@ -142,7 +142,7 @@ export default function OrderConfirmation() {
 
           <div className="flex flex-col items-center" ref={qrRef}>
             <div className="p-4 bg-white rounded-2xl shadow-lg mb-4">
-              <QRCodeSVG value={qrValue} size={180} level="H" fgColor="#14532d" />
+              <InboxQRCode value={qrValue} size={180} fgColor="#14532d" />
             </div>
             <div className="flex gap-2 w-full">
               {[

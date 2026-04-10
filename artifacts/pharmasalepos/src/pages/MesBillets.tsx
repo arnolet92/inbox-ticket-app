@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
+import { InboxQRCode } from "@/components/InboxQRCode";
 import { format, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -114,7 +115,7 @@ function QRModal({ order, qrValue, onClose }: { order: Order; qrValue: string; o
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
               <div className="relative p-3 bg-white rounded-2xl shadow-xl">
-                <QRCodeSVG value={qrValue} size={200} level="H" fgColor="#14532d" />
+                <InboxQRCode value={qrValue} size={200} fgColor="#14532d" />
               </div>
             </div>
             {eventDate && <p className="text-xs text-muted-foreground text-center mt-2">{format(eventDate, "EEE d MMM yyyy, HH:mm", { locale: fr })}</p>}

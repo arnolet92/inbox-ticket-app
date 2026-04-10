@@ -1,6 +1,6 @@
 import React from "react";
 import { useSearch } from "wouter";
-import { QRCodeSVG } from "qrcode.react";
+import { InboxQRCode } from "@/components/InboxQRCode";
 import { Link } from "wouter";
 import { PublicLayout } from "@/components/layout";
 import { Button } from "@/components/ui";
@@ -23,7 +23,7 @@ export default function BilletPublic() {
         {code ? (
           <div className="flex flex-col items-center gap-6">
             <div className="p-5 bg-white rounded-2xl shadow-xl border border-accent/20">
-              <QRCodeSVG value={decodeURIComponent(code)} size={220} level="H" fgColor="#14532d" />
+              <InboxQRCode value={decodeURIComponent(code)} size={220} fgColor="#14532d" />
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 px-4 py-2 rounded-full">
               <Shield className="w-3.5 h-3.5 text-accent" /> Billet sécurisé — Inbox Ticket
