@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { AdminLayout } from "@/components/layout";
-import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge } from "@/components/ui";
+import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge, Dialog, DeleteModal } from "@/components/ui";
 import {
   Building2, Plus, Trash2, Pencil, Phone, Mail, Globe, Search,
-  X, AlertTriangle, CheckCircle, XCircle, Users2,
+  AlertTriangle, CheckCircle, XCircle, Users2, Lock, User,
 } from "lucide-react";
 import { STATIC_ORGANIZERS } from "@/data/static";
 
@@ -249,78 +249,78 @@ export default function AdminOrganizers() {
         )}
       </Card>
 
-      {modal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 className="text-lg font-bold font-display">{modal === "add" ? "Nouvel organisateur" : "Modifier l'organisateur"}</h2>
-              <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-muted transition-colors"><X className="h-5 w-5" /></button>
+      <Dialog
+        isOpen={!!modal}
+        onClose={() => setModal(null)}
+        title={modal === "add" ? "Nouvel organisateur" : "Modifier l'organisateur"}
+        subtitle={modal === "add" ? "Créez un compte organisateur avec accès au portail" : `Modification de ${editTarget?.name ?? ""}`}
+        icon={<Building2 className="w-5 h-5" />}
+      >
+        <div className="space-y-3">
+          {/* Fields */}
+          {[
+            { label: "Nom complet", key: "name", placeholder: "Jean Rakoto", type: "text", icon: <User className="w-3.5 h-3.5 text-accent" />, required: true },
+            { label: "Société / Organisation", key: "company", placeholder: "Event Pro Madagascar", type: "text", icon: <Building2 className="w-3.5 h-3.5 text-accent" />, required: true },
+            { label: "Téléphone", key: "phone", placeholder: "034 XX XXX XX", type: "tel", icon: <Phone className="w-3.5 h-3.5 text-accent" />, required: true },
+            { label: "Email", key: "email", placeholder: "contact@societe.mg", type: "email", icon: <Mail className="w-3.5 h-3.5 text-accent" />, required: false },
+            { label: "Mot de passe portail", key: "password", placeholder: "Mot de passe organisateur", type: "text", icon: <Lock className="w-3.5 h-3.5 text-accent" />, required: false },
+            { label: "Site web", key: "website", placeholder: "www.societe.mg", type: "text", icon: <Globe className="w-3.5 h-3.5 text-accent" />, required: false },
+          ].map(({ label, key, placeholder, type, icon: fieldIcon, required }) => (
+            <div key={key} className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                {fieldIcon} {label}{required && <span className="text-accent/70">*</span>}
+              </label>
+              <input
+                type={type}
+                placeholder={placeholder}
+                value={(form as any)[key]}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                className="flex h-11 w-full rounded-xl px-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+                style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+              />
             </div>
-            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              {[
-                { label: "Nom complet *", key: "name", placeholder: "Jean Rakoto", type: "text" },
-                { label: "Société / Organisation *", key: "company", placeholder: "Event Pro Madagascar", type: "text" },
-                { label: "Téléphone *", key: "phone", placeholder: "034 XX XXX XX", type: "tel" },
-                { label: "Email (connexion organisateur)", key: "email", placeholder: "contact@societe.mg", type: "email" },
-                { label: "Mot de passe portail organisateur", key: "password", placeholder: "Mot de passe pour l'espace organisateur", type: "text" },
-                { label: "Site web", key: "website", placeholder: "www.societe.mg", type: "text" },
-              ].map(({ label, key, placeholder, type }) => (
-                <div key={key}>
-                  <label className="block text-sm font-semibold mb-1.5">{label}</label>
-                  <input
-                    type={type}
-                    placeholder={placeholder}
-                    value={(form as any)[key]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-              ))}
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Statut</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as OrgStatus })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  <option value="pending">En attente</option>
-                  <option value="active">Actif</option>
-                  <option value="suspended">Suspendu</option>
-                </select>
-              </div>
-              {formError && (
-                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                  <AlertTriangle className="h-4 w-4 shrink-0" /> {formError}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-3 p-6 pt-0">
-              <button onClick={() => setModal(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors">Annuler</button>
-              <button onClick={handleSave} className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">
-                {modal === "add" ? "Créer" : "Enregistrer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          ))}
 
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl p-6">
-            <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-400" />
+          {/* Statut */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <CheckCircle className="w-3.5 h-3.5 text-accent" /> Statut
+            </label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as OrgStatus })}
+              className="flex h-11 w-full rounded-xl px-4 text-sm focus-visible:outline-none transition-colors appearance-none"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            >
+              <option value="pending">⏳ En attente</option>
+              <option value="active">✅ Actif</option>
+              <option value="suspended">🚫 Suspendu</option>
+            </select>
+          </div>
+
+          {formError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm rounded-xl px-4 py-3" style={{ background: "hsl(0 60% 10%)", border: "1.5px solid hsl(0 60% 25% / 0.5)" }}>
+              <AlertTriangle className="h-4 w-4 shrink-0" /> {formError}
             </div>
-            <h2 className="text-lg font-bold font-display text-center mb-2">Supprimer cet organisateur ?</h2>
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              <strong>{deleteTarget.name}</strong> ({deleteTarget.company}) sera définitivement supprimé.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors">Annuler</button>
-              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Supprimer</button>
-            </div>
+          )}
+
+          <div className="pt-3 flex gap-3 border-t" style={{ borderColor: "hsl(145 40% 14%)" }}>
+            <button onClick={() => setModal(null)} className="flex-1 h-11 rounded-xl text-sm font-semibold transition-all hover:bg-white/5" style={{ border: "1.5px solid hsl(145 30% 16%)", color: "hsl(145 20% 70%)" }}>Annuler</button>
+            <button onClick={handleSave} className="flex-1 h-11 rounded-xl text-sm font-semibold text-black transition-all hover:opacity-90 flex items-center justify-center gap-2" style={{ background: "hsl(145 80% 42%)" }}>
+              <Building2 className="w-4 h-4" />
+              {modal === "add" ? "Créer l'organisateur" : "Enregistrer"}
+            </button>
           </div>
         </div>
-      )}
+      </Dialog>
+
+      <DeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        title="Supprimer cet organisateur ?"
+        description={<><strong className="text-white">{deleteTarget?.name}</strong> ({deleteTarget?.company}) sera définitivement supprimé.</>}
+      />
     </AdminLayout>
   );
 }

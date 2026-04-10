@@ -16,7 +16,7 @@ import {
   ResponsiveContainer, Legend, AreaChart, Area, ReferenceLine, Cell,
 } from "recharts";
 import { AdminLayout } from "@/components/layout";
-import { Card, Button, Badge, Dialog, Input, Label, Select, Textarea,
+import { Card, Button, Badge, Dialog, DeleteModal, Input, Label, Select, Textarea,
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
 import { getCategoryImage } from "@/components/EventCard";
@@ -182,6 +182,9 @@ export default function AdminEventDetail() {
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
   const [editTicketType, setEditTicketType] = useState<TicketType | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [staffForm, setStaffForm] = useState({ name: "", role: "", phone: "", status: "pending" as "confirmed" | "pending" });
+  const [staffFormError, setStaffFormError] = useState("");
   const [ventePhoneError, setVentePhoneError] = useState(false);
   const [shopProducts, setShopProducts] = useState<ShopProduct[]>(SHOP_PRODUCTS_INITIAL);
   const [shopStores] = useState<ShopStore[]>(SHOP_STORES_INITIAL);
@@ -1431,7 +1434,7 @@ export default function AdminEventDetail() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="font-bold font-display text-xl">Équipe staff ({STAFF_ROLES.length} membres)</h3>
-            <Button variant="accent" size="sm"><Plus className="w-4 h-4 mr-2" /> Ajouter un membre</Button>
+            <Button variant="accent" size="sm" onClick={() => { setStaffForm({ name: "", role: "", phone: "", status: "pending" }); setStaffFormError(""); setIsAddStaffOpen(true); }}><Plus className="w-4 h-4 mr-2" /> Ajouter un membre</Button>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             {STAFF_ROLES.map((member) => (
@@ -1891,6 +1894,87 @@ export default function AdminEventDetail() {
           </div>
         </>
       )}
+      {/* ─── STAFF ADD MODAL ─── */}
+      <Dialog
+        isOpen={isAddStaffOpen}
+        onClose={() => setIsAddStaffOpen(false)}
+        title="Ajouter un membre staff"
+        subtitle="Assignez un agent à l'équipe de cet événement"
+        icon={<Users className="w-5 h-5" />}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Users className="w-3.5 h-3.5 text-accent" /> Nom complet *
+            </label>
+            <input
+              type="text" placeholder="Jean Rakoto" value={staffForm.name}
+              onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
+              className="flex h-11 w-full rounded-xl px-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Tag className="w-3.5 h-3.5 text-accent" /> Rôle / Poste *
+            </label>
+            <input
+              type="text" placeholder="Ex: Agent de sécurité, Hôte, Technicien..." value={staffForm.role}
+              onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
+              className="flex h-11 w-full rounded-xl px-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Phone className="w-3.5 h-3.5 text-accent" /> Numéro de téléphone
+            </label>
+            <input
+              type="tel" placeholder="032 XX XXX XX" value={staffForm.phone}
+              onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
+              className="flex h-11 w-full rounded-xl px-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <CheckCircle className="w-3.5 h-3.5 text-accent" /> Statut de confirmation
+            </label>
+            <select
+              value={staffForm.status}
+              onChange={(e) => setStaffForm({ ...staffForm, status: e.target.value as "confirmed" | "pending" })}
+              className="flex h-11 w-full rounded-xl px-4 text-sm focus-visible:outline-none transition-colors appearance-none"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            >
+              <option value="pending">⏳ En attente de confirmation</option>
+              <option value="confirmed">✅ Confirmé</option>
+            </select>
+          </div>
+          {staffFormError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm rounded-xl px-4 py-3" style={{ background: "hsl(0 60% 10%)", border: "1.5px solid hsl(0 60% 25% / 0.5)" }}>
+              <XCircle className="h-4 w-4 shrink-0" /> {staffFormError}
+            </div>
+          )}
+          <div className="pt-3 flex gap-3 border-t" style={{ borderColor: "hsl(145 40% 14%)" }}>
+            <button onClick={() => setIsAddStaffOpen(false)} className="flex-1 h-11 rounded-xl text-sm font-semibold transition-all hover:bg-white/5"
+              style={{ border: "1.5px solid hsl(145 30% 16%)", color: "hsl(145 20% 70%)" }}>Annuler</button>
+            <button
+              onClick={() => {
+                if (!staffForm.name.trim() || !staffForm.role.trim()) {
+                  setStaffFormError("Le nom et le rôle sont obligatoires.");
+                  return;
+                }
+                setStaffFormError("");
+                setIsAddStaffOpen(false);
+              }}
+              className="flex-1 h-11 rounded-xl text-sm font-semibold text-black transition-all hover:opacity-90 flex items-center justify-center gap-2"
+              style={{ background: "hsl(145 80% 42%)" }}>
+              <UserCheck className="w-4 h-4" /> Ajouter au staff
+            </button>
+          </div>
+        </div>
+      </Dialog>
+
     </AdminLayout>
   );
 }

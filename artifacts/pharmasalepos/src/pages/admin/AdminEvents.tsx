@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Search, CalendarPlus, Tag, Users, MapPin, Calendar, Image, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "wouter";
@@ -199,59 +199,96 @@ export default function AdminEvents() {
         </div>
       )}
 
-      <Dialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Créer un événement">
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Nouvel événement"
+        subtitle="Remplissez les informations pour créer un nouvel événement"
+        icon={<CalendarPlus className="w-5 h-5" />}
+      >
         <form onSubmit={handleCreate} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Titre de l'événement</label>
-            <Input name="title" required placeholder="Ex: Festival des Couleurs" />
+          {/* Titre */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <FileText className="w-3.5 h-3.5 text-accent" /> Titre de l'événement
+            </label>
+            <Input name="title" required placeholder="Ex: Festival des Couleurs 2026" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Catégorie</label>
+
+          {/* Catégorie + Capacité */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Tag className="w-3.5 h-3.5 text-accent" /> Catégorie
+              </label>
               <Select name="category" required>
-                <option value="Concert">Concert</option>
-                <option value="Festival">Festival</option>
-                <option value="Sport">Sport</option>
-                <option value="Conférence">Conférence</option>
-                <option value="Soirée">Soirée</option>
+                <option value="Concert">🎵 Concert</option>
+                <option value="Festival">🎪 Festival</option>
+                <option value="Sport">⚽ Sport</option>
+                <option value="Conférence">🎤 Conférence</option>
+                <option value="Soirée">🎉 Soirée</option>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Capacité Totale</label>
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Users className="w-3.5 h-3.5 text-accent" /> Capacité totale
+              </label>
               <Input name="totalCapacity" type="number" required min="1" placeholder="Ex: 5000" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Ville</label>
+
+          {/* Lieu */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <MapPin className="w-3.5 h-3.5 text-accent" /> Ville
+              </label>
               <Input name="city" required placeholder="Ex: Antananarivo" />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Lieu exact</label>
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <MapPin className="w-3.5 h-3.5 text-accent" /> Lieu exact
+              </label>
               <Input name="location" required placeholder="Ex: Palais des Sports" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Date de début</label>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Calendar className="w-3.5 h-3.5 text-accent" /> Début
+              </label>
               <Input name="startDate" type="datetime-local" required />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Date de fin</label>
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Calendar className="w-3.5 h-3.5 text-accent" /> Fin
+              </label>
               <Input name="endDate" type="datetime-local" required />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">URL de l'image (optionnel)</label>
+
+          {/* Image URL */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Image className="w-3.5 h-3.5 text-accent" /> URL de l'image <span className="text-muted-foreground/50 normal-case font-normal">(optionnel)</span>
+            </label>
             <Input name="imageUrl" type="url" placeholder="https://..." />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Description</label>
-            <Textarea name="description" required placeholder="Description détaillée de l'événement..." />
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <FileText className="w-3.5 h-3.5 text-accent" /> Description
+            </label>
+            <Textarea name="description" required placeholder="Décrivez l'événement, ses points forts, le programme..." />
           </div>
-          <div className="pt-4 flex justify-end gap-3">
+
+          {/* Séparateur + actions */}
+          <div className="pt-3 border-t flex justify-end gap-3" style={{ borderColor: "hsl(145 40% 14%)" }}>
             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
-            <Button type="submit" variant="accent">Créer l'événement</Button>
+            <Button type="submit" variant="accent" className="gap-2"><CalendarPlus className="w-4 h-4" /> Créer l'événement</Button>
           </div>
         </form>
       </Dialog>

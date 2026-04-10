@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { AdminLayout } from "@/components/layout";
-import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge } from "@/components/ui";
+import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge, Dialog, DeleteModal } from "@/components/ui";
 import {
   Users, Plus, Trash2, ShieldCheck, Shield, UserCog,
-  Phone, X, Eye, EyeOff, AlertTriangle,
+  Phone, Eye, EyeOff, AlertTriangle, UserPlus, Lock,
 } from "lucide-react";
 
 type AdminRole = "super_admin" | "admin" | "staff";
@@ -184,70 +184,91 @@ export default function AdminUsers() {
         </Table>
       </Card>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 className="text-lg font-bold font-display">Nouvel administrateur</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 rounded-lg hover:bg-muted transition-colors"><X className="h-5 w-5" /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Nom complet</label>
-                <input type="text" placeholder="Jean Rakoto" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Numéro de téléphone</label>
-                <input type="tel" placeholder="034 XX XXX XX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Rôle</label>
-                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
-                  <option value="super_admin">Super Admin</option>
-                  <option value="admin">Administrateur</option>
-                  <option value="staff">Staff</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Mot de passe</label>
-                <div className="relative">
-                  <input type={showPassword ? "text" : "password"} placeholder="Mot de passe" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 pr-11 rounded-xl border border-border bg-muted/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              {formError && (
-                <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                  <AlertTriangle className="h-4 w-4 shrink-0" /> {formError}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-3 p-6 pt-0">
-              <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors">Annuler</button>
-              <button onClick={handleAdd} className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">Créer le compte</button>
+      <Dialog
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Nouvel administrateur"
+        subtitle="Créez un compte avec accès à l'espace admin"
+        icon={<UserPlus className="w-5 h-5" />}
+      >
+        <div className="space-y-4">
+          {/* Nom */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Users className="w-3.5 h-3.5 text-accent" /> Nom complet
+            </label>
+            <input
+              type="text" placeholder="Jean Rakoto" value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="flex h-12 w-full rounded-xl px-4 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            />
+          </div>
+          {/* Téléphone */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Phone className="w-3.5 h-3.5 text-accent" /> Numéro de téléphone
+            </label>
+            <input
+              type="tel" placeholder="034 XX XXX XX" value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="flex h-12 w-full rounded-xl px-4 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            />
+          </div>
+          {/* Rôle */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Shield className="w-3.5 h-3.5 text-accent" /> Rôle
+            </label>
+            <select
+              value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}
+              className="flex h-12 w-full rounded-xl px-4 py-2 text-sm focus-visible:outline-none transition-colors appearance-none"
+              style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+            >
+              <option value="super_admin">⭐ Super Admin</option>
+              <option value="admin">🛡️ Administrateur</option>
+              <option value="staff">👤 Staff</option>
+            </select>
+          </div>
+          {/* Mot de passe */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Lock className="w-3.5 h-3.5 text-accent" /> Mot de passe
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"} placeholder="Mot de passe sécurisé"
+                value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="flex h-12 w-full rounded-xl px-4 pr-11 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none transition-colors"
+                style={{ background: "hsl(145 20% 9%)", border: "2px solid hsl(145 40% 16%)", color: "inherit" }}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
+          {formError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm rounded-xl px-4 py-3" style={{ background: "hsl(0 60% 10%)", border: "1.5px solid hsl(0 60% 25% / 0.5)" }}>
+              <AlertTriangle className="h-4 w-4 shrink-0" /> {formError}
+            </div>
+          )}
+          <div className="pt-3 flex gap-3 border-t" style={{ borderColor: "hsl(145 40% 14%)" }}>
+            <button onClick={() => setShowModal(false)} className="flex-1 h-11 rounded-xl text-sm font-semibold transition-all hover:bg-white/5" style={{ border: "1.5px solid hsl(145 30% 16%)", color: "hsl(145 20% 70%)" }}>Annuler</button>
+            <button onClick={handleAdd} className="flex-1 h-11 rounded-xl text-sm font-semibold text-black transition-all hover:opacity-90 flex items-center justify-center gap-2" style={{ background: "hsl(145 80% 42%)" }}>
+              <UserPlus className="w-4 h-4" /> Créer le compte
+            </button>
+          </div>
         </div>
-      )}
+      </Dialog>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl p-6">
-            <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-400" />
-            </div>
-            <h2 className="text-lg font-bold font-display text-center mb-2">Supprimer cet admin ?</h2>
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              Le compte de <strong>{deleteTarget.name}</strong> sera définitivement supprimé.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors">Annuler</button>
-              <button onClick={() => handleDelete(deleteTarget)} className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Supprimer</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        title="Supprimer cet admin ?"
+        description={<>Le compte de <strong className="text-white">{deleteTarget?.name}</strong> sera définitivement supprimé.</>}
+      />
     </AdminLayout>
   );
 }
