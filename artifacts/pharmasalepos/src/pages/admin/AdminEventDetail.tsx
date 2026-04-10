@@ -594,11 +594,11 @@ export default function AdminEventDetail() {
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "overview",  label: "Vue d'ensemble", icon: <TrendingUp className="w-4 h-4" /> },
-    { key: "finance",   label: "Finances",        icon: <BarChart2 className="w-4 h-4" /> },
-    { key: "depenses",  label: "Dépenses",        icon: <Receipt className="w-4 h-4" /> },
+    // { key: "finance",   label: "Finances",        icon: <BarChart2 className="w-4 h-4" /> },
+    // { key: "depenses",  label: "Dépenses",        icon: <Receipt className="w-4 h-4" /> },
     { key: "tickets",   label: "Billets",         icon: <Ticket className="w-4 h-4" /> },
     { key: "orders",    label: "Commandes",       icon: <ShoppingCart className="w-4 h-4" /> },
-    { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
+    // { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
     { key: "staff",     label: "Staff",           icon: <Users className="w-4 h-4" /> },
     { key: "vente",     label: "Vente",           icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan",      label: "Scan billet",     icon: <ScanLine className="w-4 h-4" /> },
