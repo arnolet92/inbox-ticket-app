@@ -3,16 +3,10 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AdminLayout } from "@/components/layout";
 import { Card, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, Badge } from "@/components/ui";
-import { formatMGA, formatPaymentMethod } from "@/lib/utils";
+import { formatMGA } from "@/lib/utils";
 import { STATIC_ORDERS } from "@/data/static";
 import { getBilletCodes } from "@/lib/billetCodes";
-
-const METHOD_BADGE: Record<string, React.ReactNode> = {
-  orange_money: <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">🟠 Orange Money</span>,
-  mvola:        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">🔴 MVola</span>,
-  mastercard:   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">💳 Mastercard</span>,
-  especes:      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">💵 Espèces</span>,
-};
+import { PaymentBadge } from "@/components/PaymentBadge";
 
 const payments = STATIC_ORDERS.map((o, i) => {
   const codes = getBilletCodes(o.id);
@@ -20,7 +14,8 @@ const payments = STATIC_ORDERS.map((o, i) => {
     id: 1000 + i,
     orderId: o.id,
     method: o.paymentMethod,
-    phone: o.customerPhone,
+    phoneNumber: o.customerPhone,
+    cardLast4: null as string | null,
     amount: o.totalAmount,
     status: o.status === "confirmed" ? "success" : o.status === "pending" ? "pending" : "failed",
     createdAt: o.createdAt,
@@ -33,6 +28,7 @@ function getStatusBadge(status: string) {
     case "success":  return <Badge variant="success">Succès</Badge>;
     case "pending":  return <Badge variant="warning">En attente</Badge>;
     case "failed":   return <Badge variant="destructive">Échoué</Badge>;
+    case "refunded": return <Badge variant="outline">Remboursé</Badge>;
     default:         return <Badge>{status}</Badge>;
   }
 }
@@ -52,7 +48,7 @@ export default function AdminPayments() {
               <TableHead>Réf. Transaction</TableHead>
               <TableHead>Commande Liée</TableHead>
               <TableHead>Méthode</TableHead>
-              <TableHead>Numéro</TableHead>
+              <TableHead>Détails Compte/Carte</TableHead>
               <TableHead>Montant</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Statut</TableHead>
@@ -61,17 +57,21 @@ export default function AdminPayments() {
           <TableBody>
             {payments.map((payment) => (
               <TableRow key={payment.id}>
-                <TableCell className="font-mono text-xs">{payment.transactionRef}</TableCell>
-                <TableCell className="text-muted-foreground text-sm font-mono">
-                  #{payment.orderId.toString().padStart(6, "0")}
+                <TableCell className="font-mono text-xs">
+                  {payment.transactionRef}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  <span className="font-mono">#{payment.orderId.toString().padStart(6, "0")}</span>
                 </TableCell>
                 <TableCell>
-                  {METHOD_BADGE[payment.method] ?? <span className="text-xs text-muted-foreground">{formatPaymentMethod(payment.method)}</span>}
+                  <PaymentBadge method={payment.method} size="sm" />
                 </TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
-                  {payment.phone || "N/A"}
+                  {payment.phoneNumber || (payment.cardLast4 ? `**** **** **** ${payment.cardLast4}` : "N/A")}
                 </TableCell>
-                <TableCell className="font-bold text-white">{formatMGA(payment.amount)}</TableCell>
+                <TableCell className="font-bold text-white">
+                  {formatMGA(payment.amount)}
+                </TableCell>
                 <TableCell className="text-sm">
                   {format(new Date(payment.createdAt), "dd MMM yyyy HH:mm", { locale: fr })}
                 </TableCell>

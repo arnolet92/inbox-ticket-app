@@ -8,19 +8,21 @@ import { STATIC_ORDERS } from "@/data/static";
 import { getBilletCodes } from "@/lib/billetCodes";
 import { Search, X, ShieldCheck, Key, ScanLine } from "lucide-react";
 
-type StatusFilter = "all" | "confirmed" | "pending" | "cancelled";
+type StatusFilter = "all" | "confirmed" | "pending" | "cancelled" | "refunded";
 
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: "all",       label: "Toutes" },
   { key: "confirmed", label: "Confirmées" },
   { key: "pending",   label: "En attente" },
   { key: "cancelled", label: "Annulées" },
+  { key: "refunded",  label: "Remboursées" },
 ];
 
 const STATUS_BADGE: Record<string, React.ReactNode> = {
   confirmed: <Badge variant="success">Confirmé</Badge>,
   pending:   <Badge variant="warning">En attente</Badge>,
   cancelled: <Badge variant="destructive">Annulé</Badge>,
+  refunded:  <Badge variant="outline">Remboursé</Badge>,
 };
 
 function hl(text: string, q: string) {
@@ -91,7 +93,7 @@ export default function AdminOrders() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           <div className="sm:col-span-2 xl:col-span-1">
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
-              <Search className="h-3.5 w-3.5" /> Nom / Tél. / N° commande
+              <Search className="h-3.5 w-3.5" /> Nom / Tél. / N° commande / Email
             </label>
             <div className="relative">
               <input

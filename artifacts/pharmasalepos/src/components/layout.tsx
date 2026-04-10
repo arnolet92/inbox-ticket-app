@@ -204,20 +204,28 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-t border-border/50 space-y-2">
           <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/40 border border-border/60">
-            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold font-display text-sm shrink-0">
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold font-display text-sm shrink-0 shadow-md shadow-primary/20">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold truncate">{user?.name ?? "Administrateur"}</div>
+              <div className="text-sm font-bold truncate text-foreground">{user?.name ?? "Administrateur"}</div>
               <div className="text-xs text-muted-foreground truncate">{user?.phone ?? "Admin"}</div>
             </div>
           </div>
-          <Link href="/" className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
-            <Ticket className="h-4 w-4 shrink-0" /> Retour au site
+          <Link
+            href="/"
+            className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+          >
+            <Ticket className="h-4 w-4 shrink-0" />
+            Retour au site
           </Link>
           {user && (
-            <button onClick={() => { logout(); window.location.href = "/"; }} className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all">
-              <LogOut className="h-4 w-4 shrink-0" /> Se déconnecter
+            <button
+              onClick={() => { logout(); window.location.href = "/"; }}
+              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Se déconnecter
             </button>
           )}
         </div>
@@ -228,8 +236,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <button className="lg:hidden text-foreground" onClick={() => setIsSidebarOpen(true)}>
             <Menu className="h-6 w-6" />
           </button>
-          <div className="ml-auto">
-            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+          <div className="ml-auto flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold font-display text-sm shadow-md shadow-primary/20">
               {initials}
             </div>
           </div>
