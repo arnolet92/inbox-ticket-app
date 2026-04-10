@@ -1,0 +1,98 @@
+import React from "react";
+
+const METHOD_CONFIG: Record<string, {
+  label: string;
+  color: string;
+  bg: string;
+  logoBg: string;
+  logo: string;
+}> = {
+  orange_money: {
+    label: "Orange Money",
+    color: "#ff6600",
+    bg: "#ff660018",
+    logoBg: "#1a0d00",
+    logo: "images/om_logo.png",
+  },
+  mvola: {
+    label: "MVola",
+    color: "#16a34a",
+    bg: "#16a34a18",
+    logoBg: "#0a1f0a",
+    logo: "images/mvola_logo.jpg",
+  },
+  mastercard: {
+    label: "Visa / Mastercard",
+    color: "#2563eb",
+    bg: "#2563eb18",
+    logoBg: "#ffffff",
+    logo: "images/visa_mastercard_logo.jpg",
+  },
+};
+
+type Size = "sm" | "md" | "lg";
+
+interface PaymentBadgeProps {
+  method: string;
+  size?: Size;
+  showLabel?: boolean;
+}
+
+export function PaymentBadge({ method, size = "md", showLabel = true }: PaymentBadgeProps) {
+  const base = import.meta.env.BASE_URL;
+  const cfg = METHOD_CONFIG[method];
+
+  if (!cfg) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
+        <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
+        {method ?? "—"}
+      </span>
+    );
+  }
+
+  const logoSize = size === "sm" ? 20 : size === "lg" ? 32 : 24;
+  const logoImgSize = size === "sm" ? 14 : size === "lg" ? 22 : 16;
+  const fontSize = size === "sm" ? "text-[11px]" : size === "lg" ? "text-sm" : "text-xs";
+  const gap = size === "sm" ? "gap-1.5" : "gap-2";
+  const px = size === "sm" ? "px-2 py-0.5" : size === "lg" ? "px-3.5 py-2" : "px-2.5 py-1";
+  const radius = size === "lg" ? "rounded-xl" : "rounded-lg";
+
+  return (
+    <span
+      className={`inline-flex items-center ${gap} ${px} ${radius} font-semibold ${fontSize}`}
+      style={{
+        background: cfg.bg,
+        border: `1px solid ${cfg.color}44`,
+        color: cfg.color,
+      }}
+    >
+      <span
+        className="rounded-md overflow-hidden flex items-center justify-center shrink-0"
+        style={{
+          width: logoSize,
+          height: logoSize,
+          background: cfg.logoBg,
+          minWidth: logoSize,
+        }}
+      >
+        <img
+          src={`${base}${cfg.logo}`}
+          alt={cfg.label}
+          style={{ width: logoImgSize, height: logoImgSize, objectFit: "contain" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      </span>
+      {showLabel && <span>{cfg.label}</span>}
+    </span>
+  );
+}
+
+/** Just the color for charts/indicators */
+export function getPaymentColor(method: string): string {
+  return METHOD_CONFIG[method]?.color ?? "#888888";
+}
+
+export function getPaymentLabel(method: string): string {
+  return METHOD_CONFIG[method]?.label ?? method;
+}
