@@ -172,7 +172,9 @@ export default function OrganizerEventDetail() {
   useEffect(() => { if (event) setTicketTypes(event.ticketTypes); }, [event]);
 
   const [isAddTicketOpen, setIsAddTicketOpen] = useState(false);
+  const [editTicketType, setEditTicketType] = useState<TicketType | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [ventePhoneError, setVentePhoneError] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
 
@@ -315,7 +317,14 @@ export default function OrganizerEventDetail() {
   const handleAddTicket = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    setTicketTypes(prev => [...prev, { id: Date.now(), eventId, name: fd.get("name") as string, description: (fd.get("description") as string) || undefined, price: Number(fd.get("price")), quantity: Number(fd.get("quantity")), soldCount: 0 }]);
+    if (editTicketType) {
+      setTicketTypes(prev => prev.map(t => t.id === editTicketType.id
+        ? { ...t, name: fd.get("name") as string, description: (fd.get("description") as string) || undefined, price: Number(fd.get("price")), quantity: Number(fd.get("quantity")) }
+        : t));
+      setEditTicketType(null);
+    } else {
+      setTicketTypes(prev => [...prev, { id: Date.now(), eventId, name: fd.get("name") as string, description: (fd.get("description") as string) || undefined, price: Number(fd.get("price")), quantity: Number(fd.get("quantity")), soldCount: 0 }]);
+    }
     setIsAddTicketOpen(false);
   };
 
@@ -800,7 +809,7 @@ export default function OrganizerEventDetail() {
                         <div className="flex items-start justify-between mb-2">
                           <div><h4 className="text-lg font-bold font-display">{tt.name}</h4><p className="text-sm text-muted-foreground">{tt.description}</p></div>
                           <div className="flex gap-2 shrink-0">
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0"><Edit className="w-3.5 h-3.5 text-blue-400" /></Button>
+                            <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditTicketType(tt); setIsAddTicketOpen(true); }}><Edit className="w-3.5 h-3.5 text-blue-400" /></Button>
                             <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setTicketTypes(prev => prev.filter(t => t.id !== tt.id))}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                           </div>
                         </div>
@@ -819,15 +828,15 @@ export default function OrganizerEventDetail() {
               })}
             </div>
           )}
-          <Dialog isOpen={isAddTicketOpen} onClose={() => setIsAddTicketOpen(false)} title="Nouveau type de billet">
+          <Dialog isOpen={isAddTicketOpen} onClose={() => { setIsAddTicketOpen(false); setEditTicketType(null); }} title={editTicketType ? "Modifier le billet" : "Nouveau type de billet"}>
             <form onSubmit={handleAddTicket} className="space-y-4">
-              <div className="space-y-2"><Label>Nom du billet</Label><Input name="name" required placeholder="Ex: VIP, Standard, Économique" /></div>
+              <div className="space-y-2"><Label>Nom du billet</Label><Input key={editTicketType?.id ?? "new"} name="name" required placeholder="Ex: VIP, Standard, Économique" defaultValue={editTicketType?.name ?? ""} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Prix (Ar)</Label><Input name="price" type="number" required min="0" /></div>
-                <div className="space-y-2"><Label>Quantité disponible</Label><Input name="quantity" type="number" required min="1" /></div>
+                <div className="space-y-2"><Label>Prix (Ar)</Label><Input name="price" type="number" required min="0" defaultValue={editTicketType?.price ?? ""} /></div>
+                <div className="space-y-2"><Label>Quantité disponible</Label><Input name="quantity" type="number" required min="1" defaultValue={editTicketType?.quantity ?? ""} /></div>
               </div>
-              <div className="space-y-2"><Label>Description</Label><Textarea name="description" placeholder="Description des avantages..." /></div>
-              <div className="pt-4 flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setIsAddTicketOpen(false)}>Annuler</Button><Button type="submit" variant="accent">Créer le billet</Button></div>
+              <div className="space-y-2"><Label>Description</Label><Textarea name="description" placeholder="Description des avantages..." defaultValue={editTicketType?.description ?? ""} /></div>
+              <div className="pt-4 flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => { setIsAddTicketOpen(false); setEditTicketType(null); }}>Annuler</Button><Button type="submit" variant="accent">{editTicketType ? "Enregistrer" : "Créer le billet"}</Button></div>
             </form>
           </Dialog>
         </div>
@@ -1204,7 +1213,13 @@ export default function OrganizerEventDetail() {
                         ))}
                       </div>
                     </div>
-                    <button onClick={() => { if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; } setVenteConfirmOpen(true); }} className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
+                    {ventePhoneError && (
+                      <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-sm font-semibold animate-in slide-in-from-top-2 fade-in duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-red-400"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Veuillez saisir le numéro de téléphone du client
+                      </div>
+                    )}
+                    <button onClick={() => { if (!venteCustomerPhone.trim()) { setVentePhoneError(true); setTimeout(() => setVentePhoneError(false), 3000); return; } setVentePhoneError(false); setVenteConfirmOpen(true); }} className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent/80 text-black font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent/20">
                       <CreditCard className="w-5 h-5" /> Encaisser {formatMGA(cartTotal)}
                     </button>
                   </>
@@ -1279,7 +1294,13 @@ export default function OrganizerEventDetail() {
                   <input value={venteCustomerPhone} onChange={e => setVenteCustomerPhone(e.target.value)} placeholder="Téléphone *" className="w-full px-4 py-3 text-sm bg-card border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-accent/50" />
                 </div>
                 <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
-                  <button onClick={() => { if (!venteCustomerPhone.trim()) { alert("Veuillez saisir le numéro de téléphone"); return; } setVenteMobileStep("paiement"); }} className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2">Choisir le paiement →</button>
+                  {ventePhoneError && (
+                    <div className="mb-3 flex items-center gap-2.5 p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-sm font-semibold animate-in slide-in-from-top-2 fade-in duration-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-red-400"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      Veuillez saisir le numéro de téléphone du client
+                    </div>
+                  )}
+                  <button onClick={() => { if (!venteCustomerPhone.trim()) { setVentePhoneError(true); setTimeout(() => setVentePhoneError(false), 3000); return; } setVentePhoneError(false); setVenteMobileStep("paiement"); }} className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg flex items-center justify-center gap-2">Choisir le paiement →</button>
                 </div>
               </div>
             )}

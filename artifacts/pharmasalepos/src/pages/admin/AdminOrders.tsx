@@ -209,7 +209,7 @@ export default function AdminOrders() {
                 </TableCell>
               </TableRow>
             ) : filtered.map((order) => (
-              <TableRow key={order.id} className={order.status === "confirmed" ? "hover:bg-primary/5" : ""}>
+              <TableRow key={order.id} className={order.status === "confirmed" ? "border-l-2 border-l-emerald-500/40 bg-emerald-950/10 hover:bg-emerald-950/20 transition-colors" : ""}>
                 <TableCell className="font-mono text-sm font-bold">
                   {hl(`#${order.id.toString().padStart(6, "0")}`, search.replace(/^#/, ""))}
                 </TableCell>

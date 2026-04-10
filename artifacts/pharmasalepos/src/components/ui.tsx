@@ -127,14 +127,25 @@ export function Badge({
 export function Dialog({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <h2 className="text-2xl font-bold font-display mb-6">{title}</h2>
-        {children}
-        <button onClick={onClose} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
-          &times;
-        </button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div
+        className="absolute inset-0 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+      <div className="relative z-50 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl bg-card overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 border border-border/50">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-accent/70 to-transparent" />
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50 bg-gradient-to-r from-card to-card/80">
+          <h2 className="text-xl font-bold font-display tracking-tight">{title}</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-muted/60 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-150 shrink-0 group"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:rotate-90 transition-transform duration-200"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div className="px-6 py-5 max-h-[80vh] overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );
