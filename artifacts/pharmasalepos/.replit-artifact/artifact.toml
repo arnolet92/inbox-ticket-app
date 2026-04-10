@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/pharmasalepos/"
-title = "INBOX TICKET TEMPLATE"
+title = "InBox"
 version = "1.0.0"
 id = "artifacts/pharmasalepos"
 router = "path"

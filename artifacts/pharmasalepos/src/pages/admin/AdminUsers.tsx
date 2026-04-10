@@ -16,7 +16,7 @@ type AdminAccount = {
   createdAt: string;
 };
 
-const ADMINS_KEY = "pharmasalepos_admins";
+const ADMINS_KEY = "inbox_admins";
 
 const ROLE_CONFIG: Record<AdminRole, { label: string; color: string; icon: React.ElementType; variant: "success" | "warning" | "outline" }> = {
   super_admin: { label: "Super Admin",    color: "text-accent",           icon: ShieldCheck, variant: "success" },

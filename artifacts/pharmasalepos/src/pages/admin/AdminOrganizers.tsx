@@ -21,7 +21,7 @@ type Organizer = {
   createdAt: string;
 };
 
-const ORGS_KEY = "pharmasalepos_organizers";
+const ORGS_KEY = "inbox_organizers";
 
 const STATUS_CONFIG: Record<OrgStatus, { label: string; variant: "success" | "destructive" | "warning"; icon: React.ElementType }> = {
   active:    { label: "Actif",      variant: "success",     icon: CheckCircle },
