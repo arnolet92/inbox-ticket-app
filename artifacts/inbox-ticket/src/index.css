@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+}
+
+:root {
+  --background: 150 10% 4%;
+  --foreground: 0 0% 98%;
+  --card: 150 12% 7%;
+  --card-foreground: 0 0% 98%;
+  --border: 150 20% 15%;
+  --input: 150 20% 12%;
+  --primary: 145 48% 20%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 145 60% 35%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 70% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --muted: 150 10% 15%;
+  --muted-foreground: 150 5% 65%;
+}
+
+@layer base {
+  html, body, #root {
+    min-height: 100%;
+    height: 100%;
+  }
+  #root {
+    display: flex;
+    flex-direction: column;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-accent selection:text-white;
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+    background-image:
+      /* Top-right radial glow */
+      radial-gradient(ellipse at 95% 5%, hsl(145 48% 20% / 0.25) 0%, transparent 45%),
+      /* Bottom-left radial glow */
+      radial-gradient(ellipse at 5% 95%, hsl(145 60% 35% / 0.15) 0%, transparent 45%),
+      /* Authentic Kente-inspired geometric pattern */
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cdefs%3E%3Cpattern id='kente' x='0' y='0' width='80' height='80' patternUnits='userSpaceOnUse'%3E%3C!-- Kente outer border lines --%3E%3Crect x='0' y='0' width='80' height='2' fill='%23ffffff' opacity='0.06'/%3E%3Crect x='0' y='78' width='80' height='2' fill='%23ffffff' opacity='0.06'/%3E%3Crect x='0' y='0' width='2' height='80' fill='%23ffffff' opacity='0.06'/%3E%3Crect x='78' y='0' width='2' height='80' fill='%23ffffff' opacity='0.06'/%3E%3C!-- Central Adinkra Gye Nyame inspired diamond --%3E%3Cpolygon points='40,10 60,40 40,70 20,40' fill='none' stroke='%234caf50' stroke-width='1.2' opacity='0.12'/%3E%3Cpolygon points='40,22 52,40 40,58 28,40' fill='none' stroke='%234caf50' stroke-width='0.8' opacity='0.1'/%3E%3C!-- Corner Adinkra dots --%3E%3Ccircle cx='10' cy='10' r='3' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.08'/%3E%3Ccircle cx='70' cy='10' r='3' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.08'/%3E%3Ccircle cx='10' cy='70' r='3' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.08'/%3E%3Ccircle cx='70' cy='70' r='3' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.08'/%3E%3C!-- Cross-hatch bogolan lines --%3E%3Cline x1='0' y1='0' x2='80' y2='80' stroke='%23ffffff' stroke-width='0.5' opacity='0.04'/%3E%3Cline x1='80' y1='0' x2='0' y2='80' stroke='%23ffffff' stroke-width='0.5' opacity='0.04'/%3E%3C!-- Kente horizontal band marks --%3E%3Crect x='0' y='38' width='80' height='4' fill='%234caf50' opacity='0.04'/%3E%3Crect x='38' y='0' width='4' height='80' fill='%234caf50' opacity='0.04'/%3E%3C!-- Corner triangles (Kente corner decoration) --%3E%3Cpolygon points='0,0 12,0 0,12' fill='%23ffffff' opacity='0.04'/%3E%3Cpolygon points='80,0 68,0 80,12' fill='%23ffffff' opacity='0.04'/%3E%3Cpolygon points='0,80 12,80 0,68' fill='%23ffffff' opacity='0.04'/%3E%3Cpolygon points='80,80 68,80 80,68' fill='%23ffffff' opacity='0.04'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23kente)'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight;
+  }
+}
+
+/* African Kente Pattern — used as section accent */
+.african-pattern-bg {
+  position: relative;
+}
+.african-pattern-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpolygon points='30,2 58,30 30,58 2,30' fill='none' stroke='%234caf50' stroke-width='1.5'/%3E%3Cpolygon points='30,14 46,30 30,46 14,30' fill='none' stroke='%234caf50' stroke-width='1'/%3E%3Ccircle cx='30' cy='30' r='4' fill='%234caf50'/%3E%3Cline x1='0' y1='30' x2='60' y2='30' stroke='%23ffffff' stroke-width='0.6'/%3E%3Cline x1='30' y1='0' x2='30' y2='60' stroke='%23ffffff' stroke-width='0.6'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+/* Kente stripe overlay — horizontal band accent */
+.kente-stripe {
+  position: relative;
+  overflow: hidden;
+}
+.kente-stripe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 18px,
+    hsl(145 60% 35% / 0.07) 18px,
+    hsl(145 60% 35% / 0.07) 20px,
+    transparent 20px,
+    transparent 38px,
+    hsl(0 0% 100% / 0.03) 38px,
+    hsl(0 0% 100% / 0.03) 40px
+  );
+  pointer-events: none;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  @apply bg-card/60 backdrop-blur-xl border border-border shadow-2xl shadow-black/50;
+}
+
+/* Payment processing keyframes */
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(36px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(36px) rotate(-360deg); }
+}
+@keyframes orbit-reverse {
+  from { transform: rotate(0deg) translateX(56px) rotate(0deg); }
+  to   { transform: rotate(-360deg) translateX(56px) rotate(360deg); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes letter-wave {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes shimmer-bar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
