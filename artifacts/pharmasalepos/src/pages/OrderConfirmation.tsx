@@ -10,9 +10,18 @@ import { formatMGA } from "@/lib/utils";
 import { getBilletCodes } from "@/lib/billetCodes";
 import { getOrderById } from "@/data/static";
 
-const CONFETTI_COLORS = ["#22c55e", "#16a34a", "#f59e0b", "#f97316", "#ffffff", "#86efac", "#fde68a", "#bbf7d0", "#6ee7b7", "#fbbf24"];
+const CONFETTI_COLORS = [
+  "#22c55e", "#16a34a", "#f59e0b", "#f97316", "#ffffff",
+  "#86efac", "#fde68a", "#bbf7d0", "#6ee7b7", "#fbbf24",
+];
 
-type Particle = { id: number; x: number; y: number; vx: number; vy: number; color: string; size: number; rotation: number; rotationSpeed: number; shape: "circle" | "rect"; opacity: number };
+type Particle = {
+  id: number; x: number; y: number;
+  vx: number; vy: number; color: string;
+  size: number; rotation: number; rotationSpeed: number;
+  shape: "circle" | "rect" | "ticket";
+  opacity: number;
+};
 
 function useConfetti(active: boolean) {
   const [particles, setParticles] = useState<Particle[]>([]);
@@ -29,21 +38,29 @@ function useConfetti(active: boolean) {
         vx: Math.cos(angle) * speed * (0.4 + Math.random()),
         vy: Math.sin(angle) * speed * (0.4 + Math.random()) - 4,
         color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-        size: 5 + Math.random() * 10, rotation: Math.random() * 360,
+        size: 5 + Math.random() * 10,
+        rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * 12,
-        shape: Math.random() > 0.5 ? "circle" : "rect", opacity: 1,
+        shape: (["circle", "rect", "ticket"] as const)[Math.floor(Math.random() * 3)],
+        opacity: 1,
       };
     });
     setParticles(burst);
+
     const animate = (ts: number) => {
       if (!startRef.current) startRef.current = ts;
       const elapsed = ts - startRef.current;
-      setParticles((prev) => prev.map((p) => ({
-        ...p, x: p.x + p.vx * 0.4, y: p.y + p.vy * 0.4 + 0.15,
-        vy: p.vy + 0.18, rotation: p.rotation + p.rotationSpeed,
-        opacity: Math.max(0, 1 - elapsed / 3000),
-      })));
-      if (elapsed < 3000) rafRef.current = requestAnimationFrame(animate);
+      setParticles((prev) =>
+        prev.map((p) => ({
+          ...p,
+          x: p.x + p.vx * 0.4,
+          y: p.y + p.vy * 0.4 + 0.15,
+          vy: p.vy + 0.18,
+          rotation: p.rotation + p.rotationSpeed,
+          opacity: Math.max(0, 1 - elapsed / 3000),
+        })).filter((p) => p.opacity > 0)
+      );
+      if (elapsed < 3200) rafRef.current = requestAnimationFrame(animate);
     };
     rafRef.current = requestAnimationFrame(animate);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
@@ -55,8 +72,16 @@ function useConfetti(active: boolean) {
 export default function OrderConfirmation() {
   const { id } = useParams();
   const order = getOrderById(Number(id));
-  const particles = useConfetti(!!order);
+  const [animPhase, setAnimPhase] = useState<"burst" | "settle" | "done">("burst");
+  const particles = useConfetti(animPhase === "burst");
   const qrRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!order) return;
+    const t1 = setTimeout(() => setAnimPhase("settle"), 600);
+    const t2 = setTimeout(() => setAnimPhase("done"), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [order]);
 
   if (!order) {
     return (
@@ -94,85 +119,256 @@ export default function OrderConfirmation() {
     img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
   };
 
+  const paymentLabel =
+    order.paymentMethod === "orange_money" ? "Orange Money"
+    : order.paymentMethod === "mvola" ? "MVola"
+    : order.paymentMethod === "mastercard" ? "Mastercard" : "—";
+
   return (
     <PublicLayout>
-      <div className="relative overflow-hidden pointer-events-none" style={{ height: 0 }}>
-        <svg className="absolute inset-0 w-full h-screen" style={{ zIndex: 100, pointerEvents: "none" }}>
-          {particles.map((p) => (
-            p.shape === "circle"
-              ? <circle key={p.id} cx={`${p.x}%`} cy={`${p.y}%`} r={p.size / 2} fill={p.color} opacity={p.opacity} />
-              : <rect key={p.id} x={`${p.x}%`} y={`${p.y}%`} width={p.size} height={p.size / 1.5} fill={p.color} opacity={p.opacity} transform={`rotate(${p.rotation} ${p.x} ${p.y})`} />
-          ))}
-        </svg>
+      <style>{`
+        @keyframes ringExpand {
+          0%   { transform: scale(0); opacity: 0.8; }
+          100% { transform: scale(3.5); opacity: 0; }
+        }
+        @keyframes checkPop {
+          0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+          60%  { transform: scale(1.2) rotate(4deg); opacity: 1; }
+          80%  { transform: scale(0.92) rotate(-2deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes checkShimmer {
+          0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+          70%  { box-shadow: 0 0 0 30px rgba(34,197,94,0); }
+          100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(32px); opacity: 0; }
+          to   { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes starSpin {
+          from { transform: rotate(0deg) scale(1); }
+          50%  { transform: rotate(180deg) scale(1.3); }
+          to   { transform: rotate(360deg) scale(1); }
+        }
+        @keyframes floatUp {
+          0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(-120px) rotate(20deg); opacity: 0; }
+        }
+        @keyframes successGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(34,197,94,0.3); }
+          50%       { box-shadow: 0 0 60px rgba(34,197,94,0.7), 0 0 100px rgba(34,197,94,0.3); }
+        }
+        .ring1 { animation: ringExpand 1s ease-out 0.1s both; }
+        .ring2 { animation: ringExpand 1s ease-out 0.3s both; }
+        .ring3 { animation: ringExpand 1s ease-out 0.5s both; }
+        .check-icon { animation: checkPop 0.7s cubic-bezier(.36,.07,.19,.97) 0.2s both, checkShimmer 2s 0.9s infinite; }
+        .text-slide-1 { animation: slideUp 0.6s ease-out 0.7s both; }
+        .text-slide-2 { animation: slideUp 0.6s ease-out 0.9s both; }
+        .card-slide   { animation: slideUp 0.7s ease-out 1.1s both; }
+        .card-slide-2 { animation: slideUp 0.7s ease-out 1.3s both; }
+        .star-spin    { animation: starSpin 3s linear infinite; }
+        .success-glow { animation: successGlow 2.5s ease-in-out 0.5s infinite; }
+      `}</style>
+
+      {/* Confetti layer */}
+      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: p.size,
+              height: p.shape === "rect" ? p.size * 0.5 : p.size,
+              background: p.color,
+              borderRadius: p.shape === "circle" ? "50%" : p.shape === "ticket" ? "2px" : "1px",
+              transform: `rotate(${p.rotation}deg)`,
+              opacity: p.opacity,
+              transition: "none",
+            }}
+          />
+        ))}
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-16">
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6 border-2 border-accent/40">
-            <CheckCircle className="w-10 h-10 text-accent" />
-          </div>
-          <h1 className="text-4xl font-bold font-display mb-2 text-white">Commande confirmée !</h1>
-          <p className="text-muted-foreground">Commande #{orderId} · {formatMGA(order.totalAmount)}</p>
-        </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
 
-        <Card className="p-6 mb-6">
-          <div className="flex items-start gap-4 mb-6">
-            <Ticket className="w-6 h-6 text-accent shrink-0 mt-1" />
-            <div>
-              <h2 className="font-bold text-lg">{order.event.title}</h2>
-              <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                <div className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-accent" />{format(new Date(order.event.startDate), "EEEE d MMMM yyyy à HH:mm", { locale: fr })}</div>
-                <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-accent" />{order.event.location}, {order.event.city}</div>
-              </div>
-            </div>
-          </div>
+        {/* Hero success section */}
+        <div className="text-center mb-14">
+          <div className="relative inline-flex items-center justify-center mb-8">
+            <div className="ring1 absolute w-24 h-24 rounded-full border-2 border-emerald-400/50" />
+            <div className="ring2 absolute w-24 h-24 rounded-full border-2 border-emerald-300/40" />
+            <div className="ring3 absolute w-24 h-24 rounded-full border-2 border-emerald-200/30" />
 
-          <div className="grid grid-cols-3 gap-3 mb-6 text-sm">
-            {[
-              { label: "Type", value: order.ticketType.name },
-              { label: "Quantité", value: `×${order.quantity}` },
-              { label: "Total", value: formatMGA(order.totalAmount) },
-            ].map((item, i) => (
-              <div key={i} className="p-3 rounded-xl bg-muted/30 text-center">
-                <div className="text-xs text-muted-foreground mb-0.5">{item.label}</div>
-                <div className="font-bold">{item.value}</div>
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <div
+                key={deg}
+                className="absolute"
+                style={{
+                  animation: `floatUp 2s ease-out ${0.5 + deg / 600}s both`,
+                  left: `calc(50% + ${Math.cos((deg * Math.PI) / 180) * 55}px - 8px)`,
+                  top: `calc(50% + ${Math.sin((deg * Math.PI) / 180) * 55}px - 8px)`,
+                }}
+              >
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
               </div>
             ))}
+
+            <div className="check-icon success-glow relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-2xl">
+              <CheckCircle className="w-12 h-12 text-white" strokeWidth={2.5} />
+            </div>
           </div>
 
-          <div className="flex flex-col items-center" ref={qrRef}>
-            <div className="p-4 bg-white rounded-2xl shadow-lg mb-4">
-              <InboxQRCode value={qrValue} size={180} fgColor="#14532d" />
-            </div>
-            <div className="flex gap-2 w-full">
-              {[
-                { label: "Clé de sécurité", value: ticketKey },
-                { label: "Confirmation", value: confirmCode },
-                { label: "N° billet", value: ticketNumber },
-              ].map((c) => (
-                <div key={c.label} className="flex-1 p-2 rounded-xl text-center border border-border/40 bg-muted/20">
-                  <div className="text-[9px] text-muted-foreground uppercase tracking-wider">{c.label}</div>
-                  <div className="font-mono font-bold text-sm tracking-wider">{c.value}</div>
+          <div className="text-slide-1">
+            <h1 className="text-4xl md:text-6xl font-bold font-display mb-3 bg-gradient-to-r from-emerald-400 via-white to-emerald-300 bg-clip-text text-transparent">
+              Paiement Réussi !
+            </h1>
+          </div>
+          <div className="text-slide-2">
+            <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+              Félicitations <span className="text-white font-semibold">{order.customerName}</span> 🎉{" "}
+              Votre billet est confirmé et prêt à l'usage.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-5 gap-8 items-start">
+
+          {/* Main ticket card */}
+          <div className="card-slide md:col-span-3">
+            <Card className="overflow-hidden border-2 border-accent/30 shadow-2xl" style={{ boxShadow: "0 0 40px rgba(34,197,94,0.08)" }}>
+              {/* Ticket header */}
+              <div className="bg-gradient-to-r from-primary via-primary/80 to-primary/50 p-6 relative overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-10"
+                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpolygon points='10 0 20 10 10 20 0 10'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "20px" }}
+                />
+                <div className="relative">
+                  <Badge variant="outline" className="text-white border-white/30 mb-2 text-xs">
+                    Commande #{orderId}
+                  </Badge>
+                  <h2 className="text-2xl font-bold font-display text-white">{order.event.title}</h2>
+                  <p className="text-white/60 text-sm mt-1">{order.ticketType.name}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Perforated separator */}
+              <div className="relative flex items-center px-6 py-0">
+                <div className="absolute -left-4 w-8 h-8 rounded-full bg-background border border-border" />
+                <div className="flex-1 border-t-2 border-dashed border-border/60 mx-4" />
+                <div className="absolute -right-4 w-8 h-8 rounded-full bg-background border border-border" />
+              </div>
+
+              <div className="p-8 space-y-5 bg-card">
+                <div className="flex items-start gap-4">
+                  <Calendar className="w-5 h-5 text-accent mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Date & Heure</div>
+                    <div className="font-medium">
+                      {format(new Date(order.event.startDate), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <MapPin className="w-5 h-5 text-accent mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Lieu</div>
+                    <div className="font-medium">{order.event.location}, {order.event.city}</div>
+                  </div>
+                </div>
+
+                <div className="h-px border-t border-dashed border-border/60" />
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Titulaire</div>
+                    <div className="font-semibold">{order.customerName}</div>
+                    <div className="text-sm text-muted-foreground">{order.customerPhone}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Billet</div>
+                    <div className="font-semibold">{order.quantity}× {order.ticketType.name}</div>
+                    <div className="font-display font-bold text-2xl text-accent mt-1">{formatMGA(order.totalAmount)}</div>
+                  </div>
+                </div>
+
+                <div className="h-px border-t border-dashed border-border/60" />
+
+                {/* Codes */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "Clé de sécurité", value: ticketKey },
+                    { label: "Confirmation", value: confirmCode },
+                    { label: "N° billet", value: ticketNumber },
+                  ].map((c) => (
+                    <div key={c.label} className="flex flex-col items-center p-2 rounded-xl text-center border border-border/40 bg-muted/20">
+                      <div className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">{c.label}</div>
+                      <div className="font-mono font-bold text-xs tracking-wider">{c.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-emerald-400 font-semibold">Paiement confirmé</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">{paymentLabel}</span>
+                </div>
+              </div>
+            </Card>
           </div>
 
-          <div className="flex gap-3 mt-6">
-            <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={handleDownload}>
-              <Download className="w-4 h-4" /> Télécharger
-            </Button>
-            <Link href="/mes-billets" className="flex-1">
-              <Button variant="accent" size="sm" className="w-full gap-2">
-                <Ticket className="w-4 h-4" /> Mes billets
+          {/* QR + actions */}
+          <div className="card-slide-2 md:col-span-2 space-y-4">
+            <Card className="p-6 flex flex-col items-center text-center border-accent/20">
+              <div className="relative mb-4" ref={qrRef}>
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl scale-110" />
+                <div className="relative p-3 bg-white rounded-2xl shadow-xl">
+                  <InboxQRCode value={qrValue} size={160} fgColor="#14532d" />
+                </div>
+              </div>
+              <h3 className="font-bold text-lg mb-1">Billet Électronique</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                Présentez ce QR code à l'entrée. Il sera scanné par le staff.
+              </p>
+              <Button variant="accent" className="w-full mb-3" onClick={handleDownload}>
+                <Download className="w-4 h-4 mr-2" /> Télécharger le billet
               </Button>
-            </Link>
-          </div>
-        </Card>
+              <Link href="/mes-billets" className="w-full">
+                <Button variant="outline" className="w-full">
+                  <Ticket className="w-4 h-4 mr-2" /> Mes billets
+                </Button>
+              </Link>
+            </Card>
 
-        <div className="text-center">
-          <Link href="/events" className="inline-flex items-center gap-2 text-accent font-semibold hover:underline">
-            Découvrir d'autres événements <ArrowRight className="w-4 h-4" />
+            {/* Quick tips */}
+            <Card className="p-5 border-primary/30 bg-primary/5">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-accent" /> À savoir
+              </h4>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Arrivez 30 minutes avant le début</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Présentez le QR code sur votre téléphone</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Une pièce d'identité peut être demandée</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Billet non remboursable, non échangeable</li>
+              </ul>
+            </Card>
+          </div>
+        </div>
+
+        {/* Bottom actions */}
+        <div className="card-slide-2 mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href="/mes-billets">
+            <Button variant="accent" size="lg" className="gap-2">
+              <Ticket className="w-5 h-5" /> Voir tous mes billets <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+          <Link href="/events">
+            <Button variant="outline" size="lg">
+              Explorer d'autres événements
+            </Button>
           </Link>
         </div>
       </div>
