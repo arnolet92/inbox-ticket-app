@@ -1,9 +1,8 @@
 import React from "react";
 import { QRCodeSVG } from "qrcode.react";
 
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="28" viewBox="0 0 64 28">
-  <rect width="64" height="28" rx="5" fill="#0a0f0b"/>
-  <text x="32" y="20" font-family="'Inter',ui-sans-serif,system-ui,sans-serif" font-size="12" font-weight="800" fill="#22c55e" text-anchor="middle" letter-spacing="1.5">INBOX</text>
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="16" viewBox="0 0 60 16">
+  <text x="30" y="13" font-family="'Inter',ui-sans-serif,system-ui,sans-serif" font-size="13" font-weight="900" fill="#14532d" text-anchor="middle" letter-spacing="2">INBOX</text>
 </svg>`;
 
 const LOGO_URL = `data:image/svg+xml;base64,${btoa(LOGO_SVG)}`;
@@ -16,8 +15,8 @@ interface InboxQRCodeProps {
 }
 
 export function InboxQRCode({ value, size = 200, fgColor = "#14532d", className }: InboxQRCodeProps) {
-  const logoW = Math.round(size * 0.31);
-  const logoH = Math.round(logoW * (28 / 64));
+  const logoW = Math.round(size * 0.30);
+  const logoH = Math.round(logoW * (16 / 60));
   return (
     <QRCodeSVG
       value={value}
