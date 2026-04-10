@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { logoInboxTransparent, omLogo, mvolaLogo, visaMastercardLogo } from "@/assets/images";
 
 const STEPS = [
   "Connexion sécurisée...",
@@ -24,25 +25,23 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
     };
   }, []);
 
-  const BASE = import.meta.env.BASE_URL;
-
   const METHOD_CONFIG: Record<string, { color: string; label: string; logo: string; logoBg: string }> = {
     orange_money: {
       color: "#ff6600",
       label: "Orange Money",
-      logo: `${BASE}images/om_logo.png`,
+      logo: omLogo,
       logoBg: "#1a0d00",
     },
     mvola: {
       color: "#16a34a",
       label: "MVola",
-      logo: `${BASE}images/mvola_logo.jpg`,
+      logo: mvolaLogo,
       logoBg: "#0a1f0a",
     },
     mastercard: {
       color: "#2563eb",
       label: "Visa / Mastercard",
-      logo: `${BASE}images/visa_mastercard_logo.jpg`,
+      logo: visaMastercardLogo,
       logoBg: "#ffffff",
     },
   };
@@ -134,7 +133,7 @@ export function PaymentProcessing({ paymentMethod }: { paymentMethod: string }) 
           }}
         >
           <img
-            src={`${import.meta.env.BASE_URL}images/logo-inbox-transparent.png`}
+            src={logoInboxTransparent}
             alt="inbox"
             style={{
               width: 88,

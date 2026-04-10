@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Card, Badge } from "@/components/ui";
 import type { Event } from "@/data/static";
+import { eventConcert, eventFestival, eventSport, eventConference, eventSoiree, heroBg } from "@/assets/images";
 
 export function getCategoryEmoji(category: string) {
   const map: Record<string, string> = {
@@ -18,15 +19,14 @@ export function getCategoryEmoji(category: string) {
 }
 
 export function getCategoryImage(category: string) {
-  const base = import.meta.env.BASE_URL;
   const map: Record<string, string> = {
-    "Concert": `${base}images/event-concert.png`,
-    "Festival": `${base}images/event-festival.png`,
-    "Sport": `${base}images/event-sport.png`,
-    "Conférence": `${base}images/event-conference.png`,
-    "Soirée": `${base}images/event-soiree.png`,
+    "Concert": eventConcert,
+    "Festival": eventFestival,
+    "Sport": eventSport,
+    "Conférence": eventConference,
+    "Soirée": eventSoiree,
   };
-  return map[category] || `${base}images/hero-bg.png`;
+  return map[category] || heroBg;
 }
 
 export function EventCard({ event }: { event: Event }) {
@@ -46,7 +46,7 @@ export function EventCard({ event }: { event: Event }) {
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = `${import.meta.env.BASE_URL}images/hero-bg.png`;
+              (e.target as HTMLImageElement).src = heroBg;
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent opacity-80" />

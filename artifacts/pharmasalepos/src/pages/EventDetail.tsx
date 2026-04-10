@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, MapPin, Users, Info, ChevronRight, Ticket as TicketIcon, Plus, Minus, ShoppingCart, X } from "lucide-react";
+import { heroBg } from "@/assets/images";
 import { motion, AnimatePresence } from "framer-motion";
 import { PublicLayout } from "@/components/layout";
 import { Button, Card, Badge } from "@/components/ui";
@@ -76,7 +77,7 @@ export default function EventDetail() {
     <PublicLayout>
       <div className="relative h-[55vh] min-h-[420px] w-full overflow-hidden">
         <img src={heroBg} alt={event.title} className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = `${import.meta.env.BASE_URL}images/hero-bg.png`; }} />
+          onError={(e) => { (e.target as HTMLImageElement).src = heroBg; }} />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/70 to-transparent" />
 

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Building2, ScanLine, ShoppingCart, Eye, EyeOff } from "lucide-react";
 import { useOrganizer } from "@/context/OrganizerContext";
 import { Logo } from "@/components/layout";
+import { heroBg } from "@/assets/images";
 import { STATIC_ORGANIZERS } from "@/data/static";
 
 export default function OrganizerLogin() {
@@ -28,7 +29,7 @@ export default function OrganizerLogin() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-cover bg-center opacity-5 pointer-events-none" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-bg.png)` }} />
+      <div className="absolute inset-0 bg-cover bg-center opacity-5 pointer-events-none" style={{ backgroundImage: `url(${heroBg})` }} />
       <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-accent/5 blur-3xl pointer-events-none" />
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { omLogo, mvolaLogo, visaMastercardLogo } from "@/assets/images";
 
 const METHOD_CONFIG: Record<string, {
   label: string;
@@ -12,21 +13,21 @@ const METHOD_CONFIG: Record<string, {
     color: "#ff6600",
     bg: "#ff660018",
     logoBg: "#1a0d00",
-    logo: "images/om_logo.png",
+    logo: omLogo,
   },
   mvola: {
     label: "MVola",
     color: "#16a34a",
     bg: "#16a34a18",
     logoBg: "#0a1f0a",
-    logo: "images/mvola_logo.jpg",
+    logo: mvolaLogo,
   },
   mastercard: {
     label: "Visa / Mastercard",
     color: "#2563eb",
     bg: "#2563eb18",
     logoBg: "#ffffff",
-    logo: "images/visa_mastercard_logo.jpg",
+    logo: visaMastercardLogo,
   },
   especes: {
     label: "Espèces",
@@ -46,7 +47,6 @@ interface PaymentBadgeProps {
 }
 
 export function PaymentBadge({ method, size = "md", showLabel = true }: PaymentBadgeProps) {
-  const base = import.meta.env.BASE_URL;
   const cfg = METHOD_CONFIG[method];
 
   if (!cfg) {
@@ -85,7 +85,7 @@ export function PaymentBadge({ method, size = "md", showLabel = true }: PaymentB
           }}
         >
           <img
-            src={`${base}${cfg.logo}`}
+            src={cfg.logo}
             alt={cfg.label}
             style={{ width: logoImgSize, height: logoImgSize, objectFit: "contain" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

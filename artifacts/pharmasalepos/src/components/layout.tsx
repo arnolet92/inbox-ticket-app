@@ -4,12 +4,13 @@ import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRi
 import { useAuth } from "@/context/AuthContext";
 import { useOrganizer } from "@/context/OrganizerContext";
 import { cn } from "@/lib/utils";
+import { logoInboxTransparent } from "@/assets/images";
 
 export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-1 group transition-opacity hover:opacity-90">
       <img
-        src={`${import.meta.env.BASE_URL}images/logo-inbox-transparent.png`}
+        src={logoInboxTransparent}
         alt="inbox"
         className="h-10 w-auto transition-transform group-hover:scale-105 group-active:scale-95"
         style={{ filter: "drop-shadow(0 0 6px hsl(145 60% 35% / 0.35))" }}

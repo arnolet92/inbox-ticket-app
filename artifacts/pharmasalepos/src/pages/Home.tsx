@@ -7,6 +7,7 @@ import { Button, Input, Select } from "@/components/ui";
 import { EventCard } from "@/components/EventCard";
 import { QueueIllustration } from "@/components/QueueIllustration";
 import { useListEvents } from "@/data/static";
+import { heroBg } from "@/assets/images";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -32,7 +33,7 @@ export default function Home() {
         {/* Background Image Setup */}
         <div className="absolute inset-0 z-0">
           <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            src={heroBg}
             alt="Hero background"
             className="w-full h-full object-cover opacity-30"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

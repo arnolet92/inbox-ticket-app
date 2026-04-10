@@ -7,13 +7,12 @@ import { formatMGA } from "@/lib/utils";
 import { PaymentProcessing } from "@/components/PaymentProcessing";
 import { useGetEvent, useCreateOrderSimulated } from "@/data/static";
 import { useAuth } from "@/context/AuthContext";
-
-const BASE = import.meta.env.BASE_URL;
+import { omLogo, mvolaLogo, visaMastercardLogo } from "@/assets/images";
 
 const PAYMENT_OPTIONS = [
-  { id: "orange_money", label: "Orange Money", sublabel: "Paiement mobile", logo: `${BASE}images/om_logo.png`, logoFallback: "OM", accent: "#ff6600", needsPhone: false },
-  { id: "mvola", label: "MVola", sublabel: "Telma Mobile", logo: `${BASE}images/mvola_logo.jpg`, logoFallback: "M", accent: "#16a34a", needsPhone: true },
-  { id: "mastercard", label: "Carte Bancaire", sublabel: "Visa / Mastercard", logo: `${BASE}images/visa_mastercard_logo.jpg`, logoFallback: "CB", accent: "#2563eb", needsPhone: false },
+  { id: "orange_money", label: "Orange Money", sublabel: "Paiement mobile", logo: omLogo, logoFallback: "OM", accent: "#ff6600", needsPhone: false },
+  { id: "mvola", label: "MVola", sublabel: "Telma Mobile", logo: mvolaLogo, logoFallback: "M", accent: "#16a34a", needsPhone: true },
+  { id: "mastercard", label: "Carte Bancaire", sublabel: "Visa / Mastercard", logo: visaMastercardLogo, logoFallback: "CB", accent: "#2563eb", needsPhone: false },
 ];
 
 export default function Checkout() {

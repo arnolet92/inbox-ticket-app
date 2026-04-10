@@ -7,6 +7,7 @@ import { AdminLayout } from "@/components/layout";
 import { Card, Button, Input, Badge, Dialog, Select, Textarea } from "@/components/ui";
 import { getCategoryEmoji, getCategoryImage } from "@/components/EventCard";
 import { useListEvents } from "@/data/static";
+import { heroBg } from "@/assets/images";
 
 export default function AdminEvents() {
   const [search, setSearch] = useState("");
@@ -117,7 +118,7 @@ export default function AdminEvents() {
                       alt={event.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `${import.meta.env.BASE_URL}images/hero-bg.png`;
+                        (e.target as HTMLImageElement).src = heroBg;
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
