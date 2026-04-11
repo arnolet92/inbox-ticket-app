@@ -896,7 +896,11 @@ export default function AdminEventDetail() {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
+      {activeTab === "staff" && (
+        <div className="space-y-6">
           <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
               <div>
@@ -928,49 +932,6 @@ export default function AdminEventDetail() {
               <div className="rounded-xl p-4 bg-orange-500/5 border border-orange-500/15">
                 <div className="text-xs text-muted-foreground mb-1">Utilisations max</div>
                 <div className="text-lg font-bold font-display text-orange-300">{referralUsesLimit}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-xl p-4 bg-muted/10 border border-border/40">
-                <div className="text-sm font-semibold mb-3">Paramètres de lancement</div>
-                <div className="space-y-3">
-                  <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>Programme actif</span>
-                    <input type="checkbox" checked={referralEnabled} onChange={e => setReferralEnabled(e.target.checked)} />
-                  </label>
-                  <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>Type de récompense</span>
-                    <select value={referralRewardType} onChange={e => setReferralRewardType(e.target.value as "cash" | "discount")} className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent w-40">
-                      <option value="discount">Réduction</option>
-                      <option value="cash">Cashback</option>
-                    </select>
-                  </label>
-                  <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>Valeur de la récompense</span>
-                    <Input type="number" value={referralRewardValue} onChange={e => setReferralRewardValue(Number(e.target.value))} />
-                  </label>
-                  <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>Montant minimum</span>
-                    <Input type="number" value={referralMinOrder} onChange={e => setReferralMinOrder(Number(e.target.value))} />
-                  </label>
-                  <label className="flex items-center justify-between gap-4 text-sm">
-                    <span>Nombre max de parrainages</span>
-                    <Input type="number" value={referralUsesLimit} onChange={e => setReferralUsesLimit(Number(e.target.value))} />
-                  </label>
-                </div>
-              </div>
-              <div className="rounded-xl p-4 bg-muted/10 border border-border/40">
-                <div className="text-sm font-semibold mb-3">Recommandation produit</div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Récompense simple, lisible et immédiate</li>
-                  <li>• Partage via lien ou code personnel</li>
-                  <li>• Suivi des gains dans le compte utilisateur</li>
-                  <li>• Anti-abus : limite par compte et commande minimum</li>
-                </ul>
-                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-200">
-                  Pour un lancement, je recommande une réduction plutôt qu’un cashback: plus simple à comprendre et à activer.
-                </div>
               </div>
             </div>
           </Card>
