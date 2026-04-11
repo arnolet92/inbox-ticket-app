@@ -23,6 +23,7 @@ import OrganizerEvents from "@/pages/organizer/OrganizerEvents";
 import OrganizerEventDetail from "@/pages/organizer/OrganizerEventDetail";
 import PaymentFailure from "@/pages/PaymentFailure";
 import NotFound from "@/pages/not-found";
+import { PageLoader } from "@/components/PageLoader";
 
 function Router() {
   return (
@@ -57,6 +58,7 @@ function App() {
     <AuthProvider>
       <OrganizerProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <PageLoader />
           <Router />
         </WouterRouter>
       </OrganizerProvider>
