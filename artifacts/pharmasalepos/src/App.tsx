@@ -21,6 +21,7 @@ import BilletPublic from "@/pages/BilletPublic";
 import OrganizerLogin from "@/pages/organizer/OrganizerLogin";
 import OrganizerEvents from "@/pages/organizer/OrganizerEvents";
 import OrganizerEventDetail from "@/pages/organizer/OrganizerEventDetail";
+import PaymentFailure from "@/pages/PaymentFailure";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/organizer/login" component={OrganizerLogin} />
       <Route path="/organizer/events" component={OrganizerEvents} />
       <Route path="/organizer/events/:id" component={OrganizerEventDetail} />
+      <Route path="/payment-failure" component={PaymentFailure} />
       <Route component={NotFound} />
     </Switch>
   );

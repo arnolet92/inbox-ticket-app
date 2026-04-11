@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { InboxQRCode } from "@/components/InboxQRCode";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CheckCircle, Download, Calendar, MapPin, Ticket, Share2, ArrowRight, Star } from "lucide-react";
+import { CheckCircle, Download, Calendar, MapPin, Ticket, Share2, ArrowRight, Star, XCircle } from "lucide-react";
 import { PublicLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
 import { formatMGA } from "@/lib/utils";
@@ -233,130 +233,18 @@ export default function OrderConfirmation() {
           </div>
         </div>
 
+        {/* ============================================================
+          SECTION TICKET + QR (désactivée temporairement)
+          ============================================================
         <div className="grid md:grid-cols-5 gap-8 items-start">
-
-          {/* Main ticket card */}
           <div className="card-slide md:col-span-3">
-            <Card className="overflow-hidden border-2 border-accent/30 shadow-2xl" style={{ boxShadow: "0 0 40px rgba(34,197,94,0.08)" }}>
-              {/* Ticket header */}
-              <div className="bg-gradient-to-r from-primary via-primary/80 to-primary/50 p-6 relative overflow-hidden">
-                <div
-                  className="absolute inset-0 opacity-10"
-                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpolygon points='10 0 20 10 10 20 0 10'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "20px" }}
-                />
-                <div className="relative">
-                  <Badge variant="outline" className="text-white border-white/30 mb-2 text-xs">
-                    Commande #{orderId}
-                  </Badge>
-                  <h2 className="text-2xl font-bold font-display text-white">{order.event.title}</h2>
-                  <p className="text-white/60 text-sm mt-1">{order.ticketType.name}</p>
-                </div>
-              </div>
-
-              {/* Perforated separator */}
-              <div className="relative flex items-center px-6 py-0">
-                <div className="absolute -left-4 w-8 h-8 rounded-full bg-background border border-border" />
-                <div className="flex-1 border-t-2 border-dashed border-border/60 mx-4" />
-                <div className="absolute -right-4 w-8 h-8 rounded-full bg-background border border-border" />
-              </div>
-
-              <div className="p-8 space-y-5 bg-card">
-                <div className="flex items-start gap-4">
-                  <Calendar className="w-5 h-5 text-accent mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Date & Heure</div>
-                    <div className="font-medium">
-                      {format(new Date(order.event.startDate), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <MapPin className="w-5 h-5 text-accent mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Lieu</div>
-                    <div className="font-medium">{order.event.location}, {order.event.city}</div>
-                  </div>
-                </div>
-
-                <div className="h-px border-t border-dashed border-border/60" />
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Titulaire</div>
-                    <div className="font-semibold">{order.customerName}</div>
-                    <div className="text-sm text-muted-foreground">{order.customerPhone}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Billet</div>
-                    <div className="font-semibold">{order.quantity}× {order.ticketType.name}</div>
-                    <div className="font-display font-bold text-2xl text-accent mt-1">{formatMGA(order.totalAmount)}</div>
-                  </div>
-                </div>
-
-                <div className="h-px border-t border-dashed border-border/60" />
-
-                {/* Codes */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: "Clé de sécurité", value: ticketKey },
-                    { label: "Confirmation", value: confirmCode },
-                    { label: "N° billet", value: ticketNumber },
-                  ].map((c) => (
-                    <div key={c.label} className="flex flex-col items-center p-2 rounded-xl text-center border border-border/40 bg-muted/20">
-                      <div className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">{c.label}</div>
-                      <div className="font-mono font-bold text-xs tracking-wider">{c.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-emerald-400 font-semibold">Paiement confirmé</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-muted-foreground">{paymentLabel}</span>
-                </div>
-              </div>
-            </Card>
+            ... ticket card ...
           </div>
-
-          {/* QR + actions */}
           <div className="card-slide-2 md:col-span-2 space-y-4">
-            <Card className="p-6 flex flex-col items-center text-center border-accent/20">
-              <div className="relative mb-4" ref={qrRef}>
-                <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl scale-110" />
-                <div className="relative p-3 bg-white rounded-2xl shadow-xl">
-                  <InboxQRCode value={qrValue} size={160} fgColor="#14532d" />
-                </div>
-              </div>
-              <h3 className="font-bold text-lg mb-1">Billet Électronique</h3>
-              <p className="text-sm text-muted-foreground mb-5">
-                Présentez ce QR code à l'entrée. Il sera scanné par le staff.
-              </p>
-              <Button variant="accent" className="w-full mb-3" onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" /> Télécharger le billet
-              </Button>
-              <Link href="/mes-billets" className="w-full">
-                <Button variant="outline" className="w-full">
-                  <Ticket className="w-4 h-4 mr-2" /> Mes billets
-                </Button>
-              </Link>
-            </Card>
-
-            {/* Quick tips */}
-            <Card className="p-5 border-primary/30 bg-primary/5">
-              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <Ticket className="w-4 h-4 text-accent" /> À savoir
-              </h4>
-              <ul className="space-y-2 text-xs text-muted-foreground">
-                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Arrivez 30 minutes avant le début</li>
-                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Présentez le QR code sur votre téléphone</li>
-                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Une pièce d'identité peut être demandée</li>
-                <li className="flex items-start gap-2"><span className="text-accent font-bold mt-0.5">✓</span> Billet non remboursable, non échangeable</li>
-              </ul>
-            </Card>
+            ... QR + actions ...
           </div>
         </div>
+        ============================================================ */}
 
         {/* Bottom actions */}
         <div className="card-slide-2 mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -365,9 +253,14 @@ export default function OrderConfirmation() {
               <Ticket className="w-5 h-5" /> Voir tous mes billets <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href="/events">
-            <Button variant="outline" size="lg">
-              Explorer d'autres événements
+          <Link href="/payment-failure">
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2 border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-400 hover:text-red-300 transition-colors"
+            >
+              <XCircle className="w-5 h-5" />
+              Echec de paiement
             </Button>
           </Link>
         </div>
