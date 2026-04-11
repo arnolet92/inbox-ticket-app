@@ -36,7 +36,17 @@ function QRModal({ order, qrValue, onClose }: { order: Order; qrValue: string; o
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
 
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const shareUrl = `${window.location.origin}${base}/billet?code=${encodeURIComponent(qrValue)}`;
+  // Build share URL with all ticket info embedded as query params
+  const shareParams = new URLSearchParams({
+    code: qrValue,
+    event: order.event?.title ?? "",
+    ...(eventDate ? { date: eventDate.toISOString() } : {}),
+    key: ticketKey,
+    confirm: confirmCode,
+    ticket: ticketNumber,
+    order: orderId,
+  });
+  const shareUrl = `${window.location.origin}${base}/billet?${shareParams.toString()}`;
   const shareMsg = encodeURIComponent(
     `🎫 Mon billet — ${order.event?.title ?? "Inbox Ticket"}\n` +
     (eventDate ? `📅 ${format(eventDate, "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` : "") +
