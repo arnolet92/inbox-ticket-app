@@ -104,40 +104,44 @@ export function PageLoader() {
         }}
       />
 
-      <div className="flex flex-col items-center gap-3 select-none">
+      <div className="flex flex-col items-center gap-2 select-none px-6 w-full max-w-sm sm:max-w-none">
 
-        {/* InBox — chars drop in one by one */}
-        <div className="flex items-baseline gap-0 leading-none">
-          {WORD1.split("").map((ch, i) => (
-            <span
-              key={i}
-              className="inline-block font-black font-display text-7xl md:text-8xl text-white"
-              style={{
-                animation: `charDrop 0.45s cubic-bezier(0.34,1.2,0.64,1) ${i * 55}ms both`,
-              }}
-            >
-              {ch}
-            </span>
-          ))}
+        {/* InBox + Ticket — stacked on mobile, inline on larger */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-baseline gap-1 sm:gap-0 leading-none">
 
-          {/* Blinking cursor between words */}
+          {/* InBox — chars drop in one by one */}
+          <div className="flex items-baseline">
+            {WORD1.split("").map((ch, i) => (
+              <span
+                key={i}
+                className="inline-block font-black font-display text-[clamp(2.8rem,12vw,6rem)] text-white"
+                style={{
+                  animation: `charDrop 0.45s cubic-bezier(0.34,1.2,0.64,1) ${i * 55}ms both`,
+                }}
+              >
+                {ch}
+              </span>
+            ))}
+          </div>
+
+          {/* Blinking cursor — hidden on mobile */}
           <span
-            className="inline-block w-[3px] mx-3 self-stretch rounded-full"
+            className="hidden sm:inline-block w-[3px] mx-3 rounded-full"
             style={{
               background: "hsl(145 70% 55%)",
               animation: "cursorBlink 0.7s step-start 300ms 3",
-              minHeight: "0.85em",
+              height: "0.75em",
               alignSelf: "center",
             }}
           />
 
-          {/* Ticket — slides in with letter spacing */}
+          {/* Ticket — slides in */}
           <span
-            className="inline-block font-light font-display text-7xl md:text-8xl"
+            className="inline-block font-light font-display text-[clamp(2.8rem,12vw,6rem)]"
             style={{
               color: "hsl(145 60% 55%)",
               animation: `word2Slide 0.5s cubic-bezier(0.22,1,0.36,1) ${WORD1.length * 55 + 80}ms both`,
-              letterSpacing: "0.18em",
+              letterSpacing: "0.12em",
             }}
           >
             {WORD2}
@@ -146,7 +150,7 @@ export function PageLoader() {
 
         {/* Tagline */}
         <p
-          className="loader-sub text-xs tracking-[0.35em] uppercase"
+          className="loader-sub text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.35em] uppercase text-center"
           style={{ color: "hsl(145 25% 40%)" }}
         >
           Vivez l'événementiel autrement
