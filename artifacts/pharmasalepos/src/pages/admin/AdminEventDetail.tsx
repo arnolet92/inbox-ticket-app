@@ -640,7 +640,7 @@ export default function AdminEventDetail() {
     { key: "orders",    label: "Commandes",       icon: <ShoppingCart className="w-4 h-4" /> },
     // { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
     { key: "staff",     label: "Staff",           icon: <Users className="w-4 h-4" /> },
-    { key: "referral",  label: "Parrainage",      icon: <Users className="w-4 h-4" /> },
+    { key: "referral",  label: "Parrainage organisateur", icon: <Users className="w-4 h-4" /> },
     { key: "vente",     label: "Vente",           icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan",      label: "Scan billet",     icon: <ScanLine className="w-4 h-4" /> },
   ];
