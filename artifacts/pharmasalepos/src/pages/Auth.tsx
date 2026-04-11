@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -97,6 +97,9 @@ function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () 
   const [globalError, setGlobalError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Sync when IP-based detection resolves (overrides timezone guess)
+  useEffect(() => { setPhoneCountry(detectedCode); }, [detectedCode]);
+
   const country = COUNTRIES.find((c) => c.code === phoneCountry) ?? COUNTRIES[0];
 
   async function handleSubmit(e: React.FormEvent) {
@@ -194,6 +197,9 @@ function RegisterForm({ onSwitchToLogin, redirectTo }: { onSwitchToLogin: () => 
   const [globalError, setGlobalError] = useState("");
   const [loading, setLoading] = useState(false);
   const strength = passwordStrength(password);
+
+  // Sync when IP-based detection resolves (overrides timezone guess)
+  useEffect(() => { setPhoneCountry(detectedCode); }, [detectedCode]);
 
   const country = COUNTRIES.find((c) => c.code === phoneCountry) ?? COUNTRIES[0];
 

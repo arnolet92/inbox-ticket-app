@@ -117,13 +117,25 @@ const TZ_MAP: Record<string, string> = {
   "Asia/Tokyo": "JP", "Australia/Sydney": "AU",
 };
 
-function detectCountry(): string {
+function detectCountryByTimezone(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (TZ_MAP[tz]) return TZ_MAP[tz];
     const entry = Object.entries(TZ_MAP).find(([k]) => k.split("/")[0] === tz.split("/")[0]);
     return entry ? entry[1] : "MG";
   } catch { return "MG"; }
+}
+
+async function detectCountryByIP(): Promise<string> {
+  try {
+    const res = await fetch("https://ipapi.co/json/", {
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await res.json();
+    const code: string = data?.country_code ?? "";
+    if (code && COUNTRIES.find((c) => c.code === code)) return code;
+  } catch { /* ignore */ }
+  return detectCountryByTimezone();
 }
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
@@ -141,7 +153,14 @@ export function validatePhone(country: Country, digits: string): string | null {
 }
 
 export function useDetectedCountry() {
-  return useMemo(() => detectCountry(), []);
+  // Start with timezone-based detection (instant), then refine with IP (async)
+  const [code, setCode] = useState<string>(() => detectCountryByTimezone());
+  useEffect(() => {
+    detectCountryByIP().then((detected) => {
+      setCode(detected);
+    });
+  }, []);
+  return code;
 }
 
 // ─── PhoneField ───────────────────────────────────────────────────────────────
