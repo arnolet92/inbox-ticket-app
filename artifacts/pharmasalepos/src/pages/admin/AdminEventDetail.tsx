@@ -144,11 +144,13 @@ const methodColors: Record<string, string> = {
   orange_money: "#ff6600",
   mvola: "#16a34a",
   mastercard: "#2563eb",
+  especes: "#a855f7",
 };
 const methodLabels: Record<string, string> = {
   orange_money: "Orange Money",
   mvola: "MVola",
   mastercard: "Mastercard",
+  especes: "Espèces",
 };
 
 const CHART_TOOLTIP_STYLE = {
@@ -228,6 +230,11 @@ export default function AdminEventDetail() {
   const [scanHistory, setScanHistory] = useState<Array<{
     input: string; status: string; customerName?: string; time: Date;
   }>>([]);
+
+  const [inboxCommissionPct, setInboxCommissionPct] = useState(5);
+  const [settlementStatus, setSettlementStatus] = useState<"pending" | "paid">("pending");
+  const [settlementRef, setSettlementRef] = useState("");
+  const [settlementDate, setSettlementDate] = useState("");
 
   const [ordSearch,    setOrdSearch]    = useState("");
   const [ordKey,       setOrdKey]       = useState("");
@@ -333,12 +340,15 @@ export default function AdminEventDetail() {
   [ticketTypes]);
 
   const revenueByMethod = useMemo(() =>
-    ["orange_money", "mvola", "mastercard"].map((method) => {
+    ["orange_money", "mvola", "mastercard", "especes"].map((method) => {
       const methodOrders = confirmedOrders.filter((o) => o.paymentMethod === method);
       const amount = methodOrders.reduce((s, o) => s + o.totalAmount, 0);
       return { method, amount, count: methodOrders.length };
     }),
   [confirmedOrders]);
+
+  const commissionAmt  = Math.round(totalRevenue * inboxCommissionPct / 100);
+  const netToOrganizer = totalRevenue - commissionAmt;
 
   const totalExpenses  = expenses.reduce((s, e) => s + e.amount, 0);
   const paidExpenses   = expenses.filter((e) => e.status === "paid").reduce((s, e) => s + e.amount, 0);
@@ -698,18 +708,18 @@ export default function AdminEventDetail() {
 
           <div>
             <h3 className="font-bold font-display text-lg mb-4">Chiffre d'affaires par mode de paiement</h3>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {revenueByMethod.map(({ method, amount, count }) => (
-                <Card key={method} className="p-6 relative overflow-hidden">
+                <Card key={method} className="p-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ background: methodColors[method] }} />
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <PaymentBadge method={method} size="lg" showLabel={false} />
                     <div>
-                      <div className="font-bold">{methodLabels[method]}</div>
+                      <div className="font-bold text-sm">{methodLabels[method]}</div>
                       <div className="text-xs text-muted-foreground">{count} paiement{count > 1 ? "s" : ""}</div>
                     </div>
                   </div>
-                  <div className="text-3xl font-display font-bold" style={{ color: methodColors[method] }}>{formatMGA(amount)}</div>
+                  <div className="text-2xl font-display font-bold" style={{ color: methodColors[method] }}>{formatMGA(amount)}</div>
                   <div className="text-xs text-muted-foreground mt-1">{totalRevenue > 0 ? Math.round((amount / totalRevenue) * 100) : 0}% du total</div>
                 </Card>
               ))}
@@ -730,6 +740,99 @@ export default function AdminEventDetail() {
                 <div className="text-sm text-muted-foreground mb-1">Total billets vendus</div>
                 <div className="text-2xl font-bold">{totalTickets}</div>
               </div>
+            </div>
+          </Card>
+
+          {/* ── Règlement organisateur ── */}
+          <Card className="p-6 border border-violet-500/20 bg-gradient-to-br from-violet-950/20 to-transparent">
+            <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+              <div>
+                <h3 className="font-bold font-display text-lg flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-violet-400" /> Règlement organisateur
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Commission InBox déduite du CA total</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {settlementStatus === "paid" ? (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <CheckCircle className="w-3.5 h-3.5" /> Réglé
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <Clock className="w-3.5 h-3.5" /> En attente
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
+                <div className="text-xs text-muted-foreground mb-1">CA collecté</div>
+                <div className="text-xl font-bold font-display text-accent">{formatMGA(totalRevenue)}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/20">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  Commission InBox
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" min={0} max={100} step={0.5}
+                    value={inboxCommissionPct}
+                    onChange={e => setInboxCommissionPct(Number(e.target.value))}
+                    className="w-14 bg-transparent border-b border-violet-400/50 text-violet-300 font-bold text-lg text-center focus:outline-none"
+                  />
+                  <span className="text-violet-300 font-bold">%</span>
+                </div>
+                <div className="text-xs text-violet-400 mt-1">{formatMGA(commissionAmt)}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/20 md:col-span-2">
+                <div className="text-xs text-muted-foreground mb-1">Net à verser à l'organisateur</div>
+                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(netToOrganizer)}</div>
+                <div className="text-xs text-muted-foreground mt-1">après déduction de {inboxCommissionPct}% ({formatMGA(commissionAmt)})</div>
+              </div>
+            </div>
+
+            {settlementStatus === "paid" && (settlementRef || settlementDate) && (
+              <div className="mb-4 flex flex-wrap gap-4 text-sm">
+                {settlementDate && <span className="text-muted-foreground">Date : <span className="text-foreground font-medium">{settlementDate}</span></span>}
+                {settlementRef  && <span className="text-muted-foreground">Réf. : <span className="text-foreground font-mono font-medium">{settlementRef}</span></span>}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              {settlementStatus === "pending" ? (
+                <>
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <input
+                      type="date"
+                      value={settlementDate}
+                      onChange={e => setSettlementDate(e.target.value)}
+                      className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent"
+                    />
+                    <input
+                      type="text" placeholder="Réf. virement…"
+                      value={settlementRef}
+                      onChange={e => setSettlementRef(e.target.value)}
+                      className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent w-44"
+                    />
+                  </div>
+                  <Button
+                    variant="accent" size="sm"
+                    onClick={() => { if (settlementDate) setSettlementStatus("paid"); }}
+                    className="gap-1.5"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Marquer comme réglé
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => { setSettlementStatus("pending"); setSettlementRef(""); setSettlementDate(""); }}
+                  className="gap-1.5 text-muted-foreground"
+                >
+                  <XCircle className="w-4 h-4" /> Annuler le règlement
+                </Button>
+              )}
             </div>
           </Card>
         </div>

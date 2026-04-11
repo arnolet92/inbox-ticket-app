@@ -125,8 +125,8 @@ const MOVEMENTS_INITIAL: StockMovement[] = [
   { id: 5, type: "transfert", productId: 8, fromStoreId: 1, toStoreId: 3, qty: 15, date: "2026-03-25" },
 ];
 
-const methodColors: Record<string, string> = { orange_money: "#ff6600", mvola: "#e02020", mastercard: "#2563eb" };
-const methodLabels: Record<string, string> = { orange_money: "Orange Money", mvola: "MVola", mastercard: "Mastercard" };
+const methodColors: Record<string, string> = { orange_money: "#ff6600", mvola: "#e02020", mastercard: "#2563eb", especes: "#a855f7" };
+const methodLabels: Record<string, string> = { orange_money: "Orange Money", mvola: "MVola", mastercard: "Mastercard", especes: "Espèces" };
 
 const CHART_TOOLTIP_STYLE = {
   backgroundColor: "hsl(150 10% 6%)",
@@ -269,7 +269,10 @@ export default function OrganizerEventDetail() {
   }, [confirmedOrders]);
 
   const ticketSalesData = useMemo(() => ticketTypes.map(tt => ({ name: tt.name, vendus: tt.soldCount ?? 0, restants: tt.quantity - (tt.soldCount ?? 0), revenus: (tt.soldCount ?? 0) * tt.price })), [ticketTypes]);
-  const revenueByMethod = useMemo(() => ["orange_money", "mvola", "mastercard"].map(method => { const mo = confirmedOrders.filter(o => o.paymentMethod === method); return { method, amount: mo.reduce((s, o) => s + o.totalAmount, 0), count: mo.length }; }), [confirmedOrders]);
+  const revenueByMethod = useMemo(() => ["orange_money", "mvola", "mastercard", "especes"].map(method => { const mo = confirmedOrders.filter(o => o.paymentMethod === method); return { method, amount: mo.reduce((s, o) => s + o.totalAmount, 0), count: mo.length }; }), [confirmedOrders]);
+  const INBOX_COMMISSION_PCT = 5;
+  const commissionAmt  = Math.round(totalRevenue * INBOX_COMMISSION_PCT / 100);
+  const netToOrganizer = totalRevenue - commissionAmt;
 
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const paidExpenses = expenses.filter(e => e.status === "paid").reduce((s, e) => s + e.amount, 0);
@@ -499,15 +502,15 @@ export default function OrganizerEventDetail() {
 
           <div>
             <h3 className="font-bold font-display text-lg mb-4">Chiffre d'affaires par mode de paiement</h3>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {revenueByMethod.map(({ method, amount, count }) => (
-                <Card key={method} className="p-6 relative overflow-hidden">
+                <Card key={method} className="p-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ background: methodColors[method] }} />
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <PaymentBadge method={method} size="lg" />
                     <div className="text-xs text-muted-foreground">{count} paiement{count > 1 ? "s" : ""}</div>
                   </div>
-                  <div className="text-3xl font-display font-bold" style={{ color: methodColors[method] }}>{formatMGA(amount)}</div>
+                  <div className="text-2xl font-display font-bold" style={{ color: methodColors[method] }}>{formatMGA(amount)}</div>
                   <div className="text-xs text-muted-foreground mt-1">{totalRevenue > 0 ? Math.round((amount / totalRevenue) * 100) : 0}% du total</div>
                 </Card>
               ))}
@@ -527,6 +530,35 @@ export default function OrganizerEventDetail() {
               <div className="text-right">
                 <div className="text-sm text-muted-foreground mb-1">Total billets vendus</div>
                 <div className="text-2xl font-bold">{totalTickets}</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* ── Règlement organisateur (lecture seule) ── */}
+          <Card className="p-6 border border-violet-500/20 bg-gradient-to-br from-violet-950/20 to-transparent">
+            <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+              <div>
+                <h3 className="font-bold font-display text-lg flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-violet-400" /> Règlement à recevoir
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Commission InBox ({INBOX_COMMISSION_PCT}%) déduite du CA total</p>
+              </div>
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <Clock className="w-3.5 h-3.5" /> En attente de règlement
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
+                <div className="text-xs text-muted-foreground mb-1">CA collecté</div>
+                <div className="text-xl font-bold font-display text-accent">{formatMGA(totalRevenue)}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/20">
+                <div className="text-xs text-muted-foreground mb-1">Commission InBox ({INBOX_COMMISSION_PCT}%)</div>
+                <div className="text-xl font-bold font-display text-violet-400">- {formatMGA(commissionAmt)}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/20 col-span-2 md:col-span-1">
+                <div className="text-xs text-muted-foreground mb-1">Net à recevoir</div>
+                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(netToOrganizer)}</div>
               </div>
             </div>
           </Card>

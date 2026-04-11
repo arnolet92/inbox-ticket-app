@@ -311,6 +311,32 @@ export const STATIC_ORDERS: Order[] = [
     ticketType: STATIC_EVENTS[4].ticketTypes[0],
     createdAt: "2026-04-06T08:00:00.000Z",
   },
+  {
+    id: 1007,
+    customerPhone: "+261341234570",
+    customerName: "Fanja Andriamanana",
+    customerAddress: "Antananarivo, Analamanga",
+    paymentMethod: "especes",
+    status: "confirmed",
+    quantity: 2,
+    totalAmount: 30000,
+    event: STATIC_EVENTS[0],
+    ticketType: STATIC_EVENTS[0].ticketTypes[0],
+    createdAt: "2026-04-07T10:30:00.000Z",
+  },
+  {
+    id: 1008,
+    customerPhone: "+261331234570",
+    customerName: "Mamy Rakotoarison",
+    customerAddress: "Toamasina, Atsinanana",
+    paymentMethod: "especes",
+    status: "confirmed",
+    quantity: 1,
+    totalAmount: 50000,
+    event: STATIC_EVENTS[1],
+    ticketType: STATIC_EVENTS[1].ticketTypes[1],
+    createdAt: "2026-04-07T14:00:00.000Z",
+  },
 ];
 
 export const STATIC_USERS: AdminUser[] = [
