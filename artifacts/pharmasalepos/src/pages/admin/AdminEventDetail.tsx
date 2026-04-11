@@ -640,7 +640,7 @@ export default function AdminEventDetail() {
     { key: "orders",    label: "Commandes",       icon: <ShoppingCart className="w-4 h-4" /> },
     // { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
     { key: "staff",     label: "Staff",           icon: <Users className="w-4 h-4" /> },
-    { key: "referral",  label: "Parrainage organisateur", icon: <Users className="w-4 h-4" /> },
+    { key: "referral",  label: "Parrainage",      icon: <Users className="w-4 h-4" /> },
     { key: "vente",     label: "Vente",           icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan",      label: "Scan billet",     icon: <ScanLine className="w-4 h-4" /> },
   ];
@@ -900,7 +900,7 @@ export default function AdminEventDetail() {
         </div>
       )}
 
-      {activeTab === "referral" && (
+      {activeTab === "staff" && (
         <div className="space-y-6">
           <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
