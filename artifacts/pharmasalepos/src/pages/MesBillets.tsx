@@ -308,8 +308,8 @@ function TicketCard({ order }: { order: Order }) {
   const [showModal, setShowModal] = React.useState(false);
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
   const isComing = eventDate ? isFuture(eventDate) : false;
-  const qrValue = `INBOXTICKET-ORD-${order.id}-${order.customerPhone}`;
   const { ticketKey, confirmCode, ticketNumber } = getBilletCodes(order.id);
+  const qrValue = `${ticketKey}-${confirmCode}`;
   const isConfirmed = order.status === "confirmed";
 
   return (
