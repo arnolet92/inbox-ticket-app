@@ -640,6 +640,7 @@ export default function AdminEventDetail() {
     { key: "orders",    label: "Commandes",       icon: <ShoppingCart className="w-4 h-4" /> },
     // { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
     { key: "staff",     label: "Staff",           icon: <Users className="w-4 h-4" /> },
+    { key: "referral",  label: "Parrainage",      icon: <Users className="w-4 h-4" /> },
     { key: "vente",     label: "Vente",           icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan",      label: "Scan billet",     icon: <ScanLine className="w-4 h-4" /> },
   ];
@@ -899,13 +900,13 @@ export default function AdminEventDetail() {
         </div>
       )}
 
-      {activeTab === "staff" && (
+      {activeTab === "referral" && (
         <div className="space-y-6">
           <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
               <div>
                 <h3 className="font-bold font-display text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5 text-emerald-400" /> Programme de parrainage
+                  <Users className="w-5 h-5 text-emerald-400" /> Programme de parrainage organisateur
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Idéal pour lancer les ventes avec un bouche-à-oreille récompensé</p>
               </div>
