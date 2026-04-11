@@ -201,11 +201,9 @@ export default function AdminEventDetail() {
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [referralEnabled, setReferralEnabled] = useState(true);
-  const [referralRewardType, setReferralRewardType] = useState<"cash" | "discount">("discount");
-  const [referralRewardValue, setReferralRewardValue] = useState(5);
-  const [referralMinOrder, setReferralMinOrder] = useState(20000);
-  const [referralUsesLimit, setReferralUsesLimit] = useState(3);
+  const [referralRewardPct, setReferralRewardPct] = useState(0.25);
   const [referralCode, setReferralCode] = useState("INBOX-2026");
+  const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/organizer/signup?ref=${encodeURIComponent(referralCode)}`;
   const [settlementStatus, setSettlementStatus] = useState<"pending" | "paid">("pending");
   const [settlementRef, setSettlementRef] = useState("");
   const [settlementDate, setSettlementDate] = useState("");
@@ -902,37 +900,64 @@ export default function AdminEventDetail() {
 
       {activeTab === "staff" && (
         <div className="space-y-6">
-          <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-transparent">
+          <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-transparent to-violet-950/20">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
               <div>
                 <h3 className="font-bold font-display text-lg flex items-center gap-2">
                   <Users className="w-5 h-5 text-emerald-400" /> Programme de parrainage organisateur
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Idéal pour lancer les ventes avec un bouche-à-oreille récompensé</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Un organisateur peut recommander un autre organisateur et toucher une commission sur son activité</p>
               </div>
               <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${referralEnabled ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-muted/20 text-muted-foreground border-border/40"}`}>
                 {referralEnabled ? "Actif" : "Désactivé"}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
-                <div className="text-xs text-muted-foreground mb-1">Code de campagne</div>
-                <div className="text-lg font-bold font-display">{referralCode}</div>
-              </div>
-              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/15">
-                <div className="text-xs text-muted-foreground mb-1">Récompense</div>
-                <div className="text-lg font-bold font-display text-emerald-400">
-                  {referralRewardType === "cash" ? `${formatMGA(referralRewardValue)}` : `${referralRewardValue}%`}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+              <div className="rounded-2xl p-5 bg-black/20 border border-emerald-500/15">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Votre lien de parrainage</div>
+                <div className="font-mono text-xs text-emerald-300 break-all bg-black/30 border border-white/5 rounded-xl p-3">{referralLink}</div>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" variant="accent" onClick={() => navigator.clipboard?.writeText(referralLink)}>Copier le lien</Button>
                 </div>
               </div>
-              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/15">
-                <div className="text-xs text-muted-foreground mb-1">Achat minimum</div>
-                <div className="text-lg font-bold font-display text-violet-300">{formatMGA(referralMinOrder)}</div>
+
+              <div className="rounded-2xl p-5 bg-violet-500/5 border border-violet-500/15">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Récompense premium</div>
+                <div className="text-4xl font-bold font-display text-violet-300">{referralRewardPct}%</div>
+                <div className="text-sm text-muted-foreground mt-2">Chaque organisateur inscrit via votre lien vous rapporte <span className="text-white font-semibold">0.25% de son chiffre d'affaires</span>.</div>
               </div>
-              <div className="rounded-xl p-4 bg-orange-500/5 border border-orange-500/15">
-                <div className="text-xs text-muted-foreground mb-1">Utilisations max</div>
-                <div className="text-lg font-bold font-display text-orange-300">{referralUsesLimit}</div>
+
+              <div className="rounded-2xl p-5 bg-emerald-500/5 border border-emerald-500/15">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Comment ça marche</div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>• Vous partagez votre lien de parrainage</li>
+                  <li>• Un autre organisateur s’inscrit avec ce lien</li>
+                  <li>• Il publie ses événements sur InBox</li>
+                  <li>• Vous recevez automatiquement 0.25% de son CA</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-2xl p-5 bg-muted/10 border border-border/40">
+                <div className="text-sm font-semibold mb-3">Paramètres de visibilité</div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">Programme actif</span>
+                  <input type="checkbox" checked={referralEnabled} onChange={e => setReferralEnabled(e.target.checked)} />
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">Code parrain</span>
+                  <span className="text-sm font-mono text-white">{referralCode}</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl p-5 bg-black/20 border border-white/5">
+                <div className="text-sm font-semibold mb-3">Message premium à afficher</div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Si un organisateur partage son lien pour inscrire un autre organisateur, et que ce dernier publie des événements,
+                  alors le parrain touche <span className="text-white font-semibold">0.25% du chiffre d'affaires</span> généré par ses événements.
+                </p>
               </div>
             </div>
           </Card>
