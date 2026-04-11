@@ -1,30 +1,22 @@
-import React, { useMemo } from "react";
-import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent, Coins, Target, Activity, Star, Zap } from "lucide-react";
+import React from "react";
+import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent } from "lucide-react";
 import { OrganizerLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
 import { useOrganizer } from "@/context/OrganizerContext";
-import { STATIC_EVENTS } from "@/data/static";
-import { formatMGA } from "@/lib/utils";
 
 export default function OrganizerReferral() {
   const { organizer } = useOrganizer();
+  const name = organizer?.name ?? "Organisateur";
+  const company = organizer?.company ?? "InBox Ticket";
   const code = organizer?.id ? `ORG-${String(organizer.id).toUpperCase()}` : "ORG-INVITE";
-  const organizerEvents = useMemo(
-    () => STATIC_EVENTS.filter(e => !organizer?.id || e.organizerId === organizer.id || organizer.id === "admin"),
-    [organizer?.id]
-  );
-  const totalRevenue = organizerEvents.reduce((sum, e) => sum + (e.soldTickets * (e.ticketTypes?.[0]?.price ?? 0)), 0);
   const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/organizer/login?ref=${encodeURIComponent(code)}`;
-  const referralEarnings = Math.round(totalRevenue * 0.0025);
-  const inviteCount = organizerEvents.length ? Math.max(1, Math.round(organizerEvents.length / 2)) : 0;
-  const conversionRate = organizerEvents.length ? Math.min(42, 18 + organizerEvents.length * 2) : 0;
-  const topEvent = organizerEvents[0];
-  const organizerName = organizer?.name ?? "Organisateur";
-  const organizerCompany = organizer?.company ?? "Inbox Ticket";
-  const displayRevenue = totalRevenue > 0 ? formatMGA(totalRevenue) : "125 000 Ar";
-  const displayEarnings = referralEarnings > 0 ? formatMGA(referralEarnings) : "312 Ar";
-  const displayInviteCount = inviteCount || 3;
-  const displayConversion = conversionRate || 24;
+
+  const stats = [
+    { label: "Commission", value: "0.25%", tone: "emerald" },
+    { label: "Mode", value: "Récurrent", tone: "violet" },
+    { label: "Revenus partagés", value: "125 000 Ar", tone: "blue" },
+    { label: "Organisateurs actifs", value: "3", tone: "emerald" },
+  ] as const;
 
   return (
     <OrganizerLayout>
@@ -45,7 +37,7 @@ export default function OrganizerReferral() {
                   Recommandez un organisateur. Générez une commission durable.
                 </h1>
                 <p className="mt-4 text-sm md:text-[15px] text-muted-foreground leading-7 max-w-2xl">
-                  {organizerName} de {organizerCompany}, partagez votre lien personnel pour inviter un autre organisateur à rejoindre InBox.
+                  {name} de {company}, partagez votre lien personnel pour inviter un autre organisateur à rejoindre InBox.
                   Dès qu’il publie des événements et réalise du chiffre d’affaires, vous percevez <span className="text-white font-semibold">0.25%</span> de ses revenus.
                 </p>
               </div>
@@ -86,38 +78,12 @@ export default function OrganizerReferral() {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="p-5 bg-white/3 border border-white/8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-300"><Coins className="w-5 h-5" /></div>
-              <Star className="w-4 h-4 text-yellow-300" />
-            </div>
-            <div className="text-xs text-muted-foreground">CA total estimé</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{displayRevenue}</div>
-          </Card>
-          <Card className="p-5 bg-white/3 border border-white/8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-300"><Activity className="w-5 h-5" /></div>
-              <Zap className="w-4 h-4 text-emerald-300" />
-            </div>
-            <div className="text-xs text-muted-foreground">Gains parrain</div>
-            <div className="text-2xl font-display font-bold text-violet-300 mt-1">{displayEarnings}</div>
-          </Card>
-          <Card className="p-5 bg-white/3 border border-white/8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-300"><Users className="w-5 h-5" /></div>
-              <Badge className="bg-blue-500/15 text-blue-200 border-blue-500/20">Invite</Badge>
-            </div>
-            <div className="text-xs text-muted-foreground">Événements actifs</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{displayInviteCount}</div>
-          </Card>
-          <Card className="p-5 bg-white/3 border border-white/8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-300"><Target className="w-5 h-5" /></div>
-              <Badge className="bg-emerald-500/15 text-emerald-200 border-emerald-500/20">Perf</Badge>
-            </div>
-            <div className="text-xs text-muted-foreground">Taux estimé</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{displayConversion}%</div>
-          </Card>
+          {stats.map((item) => (
+            <Card key={item.label} className="p-5 bg-white/3 border border-white/8">
+              <div className="text-xs text-muted-foreground">{item.label}</div>
+              <div className="text-2xl font-display font-bold text-white mt-1">{item.value}</div>
+            </Card>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -158,33 +124,6 @@ export default function OrganizerReferral() {
             <p className="text-sm text-muted-foreground leading-6">Un levier stratégique pour faire grandir votre réseau tout en valorisant vos recommandations.</p>
           </Card>
         </div>
-
-        <Card className="p-6 bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(8,15,25,0.92))] border border-emerald-500/15">
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-            <div>
-              <div className="text-sm font-semibold text-white">Aperçu de votre activité</div>
-              <div className="text-xs text-muted-foreground mt-1">Données dynamiques basées sur vos événements actuels</div>
-            </div>
-            {topEvent ? <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">{topEvent.title}</Badge> : <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">Données de démonstration</Badge>}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
-              <div className="text-xs text-muted-foreground">Ligne de performance</div>
-              <div className="text-lg font-bold text-white mt-1">{organizerEvents.length ? "Croissance continue" : "Données de démonstration"}</div>
-              <div className="text-sm text-muted-foreground mt-2">Chaque billet vendu augmente votre base de commission.</div>
-            </div>
-            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
-              <div className="text-xs text-muted-foreground">Recommandation</div>
-              <div className="text-lg font-bold text-white mt-1">Partagez votre lien dans vos canaux privés</div>
-              <div className="text-sm text-muted-foreground mt-2">WhatsApp, réseaux sociaux, partenaires et ambassadeurs.</div>
-            </div>
-            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
-              <div className="text-xs text-muted-foreground">Objectif</div>
-              <div className="text-lg font-bold text-white mt-1">Créer un réseau d’organisateurs rentables</div>
-              <div className="text-sm text-muted-foreground mt-2">Plus ils vendent, plus votre parrainage devient fort.</div>
-            </div>
-          </div>
-        </Card>
       </div>
     </OrganizerLayout>
   );
