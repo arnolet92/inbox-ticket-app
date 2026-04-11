@@ -8,6 +8,7 @@ import {
 import { Logo } from "@/components/layout";
 import { Button } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { PhoneField, validatePhone, buildFullPhone, useDetectedCountry, COUNTRIES } from "@/components/PhoneField";
 
 function passwordStrength(pwd: string) {
   let score = 0;
@@ -87,23 +88,29 @@ function BrandPanel() {
 function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () => void; redirectTo: string }) {
   const { login } = useAuth();
   const [, setLocation] = useLocation();
-  const [phone, setPhone] = useState("");
+  const detectedCode = useDetectedCountry();
+  const [phoneDigits, setPhoneDigits] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState(detectedCode);
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const country = COUNTRIES.find((c) => c.code === phoneCountry) ?? COUNTRIES[0];
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
-    if (!phone.trim()) newErrors.phone = "Le numéro de téléphone est requis.";
+    const phoneErr = validatePhone(country, phoneDigits);
+    if (phoneErr) newErrors.phone = phoneErr;
     if (!password) newErrors.password = "Le mot de passe est requis.";
     if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
     setErrors({});
     setGlobalError("");
     setLoading(true);
-    const result = await login(phone, password);
+    const fullPhone = buildFullPhone(country.dial, phoneDigits);
+    const result = await login(fullPhone, password);
     setLoading(false);
     if (!result.ok) { setGlobalError(result.error || "Erreur de connexion."); return; }
     setLocation(redirectTo || "/");
@@ -121,12 +128,12 @@ function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () 
         <p className="text-xs font-semibold text-accent uppercase tracking-wider">Compte démo client</p>
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm text-foreground/80 space-y-0.5">
-            <p><span className="text-muted-foreground">Tél :</span> <span className="font-mono font-medium">+261341234567</span></p>
+            <p><span className="text-muted-foreground">Tél :</span> <span className="font-mono font-medium">+261 34 12 34 567</span></p>
             <p><span className="text-muted-foreground">Mot de passe :</span> <span className="font-mono font-medium">demo123</span></p>
           </div>
           <button
             type="button"
-            onClick={() => { setPhone("+261341234567"); setPassword("demo123"); setErrors({}); setGlobalError(""); }}
+            onClick={() => { setPhoneDigits("341234567"); setPhoneCountry("MG"); setPassword("demo123"); setErrors({}); setGlobalError(""); }}
             className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent/20 text-accent hover:bg-accent/30 border border-accent/30 transition-all"
           >
             Remplir
@@ -140,8 +147,13 @@ function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () 
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Numéro de téléphone" icon={<Phone className="w-4 h-4" />} type="tel"
-          value={phone} onChange={setPhone} placeholder="+261 34 00 000 00" error={errors.phone} required />
+        <PhoneField
+          value={phoneDigits}
+          countryCode={phoneCountry}
+          onChange={(digits, code) => { setPhoneDigits(digits); setPhoneCountry(code); }}
+          error={errors.phone}
+          required
+        />
         <Field label="Mot de passe" icon={<Lock className="w-4 h-4" />} type={showPwd ? "text" : "password"}
           value={password} onChange={setPassword} placeholder="Votre mot de passe" error={errors.password} required
           rightEl={
@@ -169,9 +181,11 @@ function LoginForm({ onSwitchToRegister, redirectTo }: { onSwitchToRegister: () 
 function RegisterForm({ onSwitchToLogin, redirectTo }: { onSwitchToLogin: () => void; redirectTo: string }) {
   const { register } = useAuth();
   const [, setLocation] = useLocation();
+  const detectedCode = useDetectedCountry();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phoneDigits, setPhoneDigits] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState(detectedCode);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -181,17 +195,21 @@ function RegisterForm({ onSwitchToLogin, redirectTo }: { onSwitchToLogin: () => 
   const [loading, setLoading] = useState(false);
   const strength = passwordStrength(password);
 
+  const country = COUNTRIES.find((c) => c.code === phoneCountry) ?? COUNTRIES[0];
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = "Le nom complet est requis.";
     if (!address.trim()) newErrors.address = "L'adresse est requise.";
-    if (!phone.trim()) newErrors.phone = "Le numéro de téléphone est requis.";
+    const phoneErr = validatePhone(country, phoneDigits);
+    if (phoneErr) newErrors.phone = phoneErr;
     if (password.length < 6) newErrors.password = "Minimum 6 caractères.";
     if (password !== confirm) newErrors.confirm = "Les mots de passe ne correspondent pas.";
     if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
     setErrors({}); setGlobalError(""); setLoading(true);
-    const result = await register({ name, address, phone, password });
+    const fullPhone = buildFullPhone(country.dial, phoneDigits);
+    const result = await register({ name, address, phone: fullPhone, password });
     setLoading(false);
     if (!result.ok) { setGlobalError(result.error || "Erreur lors de la création."); return; }
     setLocation(redirectTo || "/");
@@ -216,7 +234,13 @@ function RegisterForm({ onSwitchToLogin, redirectTo }: { onSwitchToLogin: () => 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Nom complet" icon={<User className="w-4 h-4" />} value={name} onChange={setName} placeholder="Jean Rakoto" error={errors.name} required />
         <Field label="Adresse" icon={<MapPin className="w-4 h-4" />} value={address} onChange={setAddress} placeholder="Antananarivo, Analamanga" error={errors.address} required />
-        <Field label="Numéro de téléphone" icon={<Phone className="w-4 h-4" />} type="tel" value={phone} onChange={setPhone} placeholder="+261 34 00 000 00" error={errors.phone} required />
+        <PhoneField
+          value={phoneDigits}
+          countryCode={phoneCountry}
+          onChange={(digits, code) => { setPhoneDigits(digits); setPhoneCountry(code); }}
+          error={errors.phone}
+          required
+        />
         <div>
           <Field label="Mot de passe" icon={<Lock className="w-4 h-4" />} type={showPwd ? "text" : "password"}
             value={password} onChange={setPassword} placeholder="Minimum 6 caractères" error={errors.password} required
