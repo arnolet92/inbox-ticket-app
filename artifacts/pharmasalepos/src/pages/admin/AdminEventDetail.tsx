@@ -200,6 +200,18 @@ export default function AdminEventDetail() {
   const [shopCatFilter, setShopCatFilter] = useState<string>("all");
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [referralEnabled, setReferralEnabled] = useState(true);
+  const [referralRewardType, setReferralRewardType] = useState<"cash" | "discount">("discount");
+  const [referralRewardValue, setReferralRewardValue] = useState(5);
+  const [referralMinOrder, setReferralMinOrder] = useState(20000);
+  const [referralUsesLimit, setReferralUsesLimit] = useState(3);
+  const [referralCode, setReferralCode] = useState("INBOX-2026");
+  const [settlementStatus, setSettlementStatus] = useState<"pending" | "paid">("pending");
+  const [settlementRef, setSettlementRef] = useState("");
+  const [settlementDate, setSettlementDate] = useState("");
+  const [settlingMethod, setSettlingMethod] = useState<string | null>(null);
+  const [settlingRef, setSettlingRef] = useState("");
+  const [settlingDate, setSettlingDate] = useState("");
 
   const [usedTickets, setUsedTickets] = useState<Set<string>>(() => getUsedTickets());
 
@@ -238,9 +250,6 @@ export default function AdminEventDetail() {
     mastercard:   { status: "pending", ref: "", date: "" },
     especes:      { status: "pending", ref: "", date: "" },
   });
-  const [settlingMethod, setSettlingMethod] = useState<string | null>(null);
-  const [settlingRef, setSettlingRef] = useState("");
-  const [settlingDate, setSettlingDate] = useState("");
 
   const [ordSearch,    setOrdSearch]    = useState("");
   const [ordKey,       setOrdKey]       = useState("");
@@ -884,6 +893,84 @@ export default function AdminEventDetail() {
                 <div className="text-xs text-muted-foreground mb-1">Commission espèces à encaisser</div>
                 <div className="text-2xl font-bold font-display text-orange-400">{formatMGA(totalEspecesCommission)}</div>
                 <div className="text-xs text-muted-foreground mt-1">L'organisateur verse cette commission à InBox</div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-transparent">
+            <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+              <div>
+                <h3 className="font-bold font-display text-lg flex items-center gap-2">
+                  <Users className="w-5 h-5 text-emerald-400" /> Programme de parrainage
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Idéal pour lancer les ventes avec un bouche-à-oreille récompensé</p>
+              </div>
+              <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${referralEnabled ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-muted/20 text-muted-foreground border-border/40"}`}>
+                {referralEnabled ? "Actif" : "Désactivé"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
+                <div className="text-xs text-muted-foreground mb-1">Code de campagne</div>
+                <div className="text-lg font-bold font-display">{referralCode}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Récompense</div>
+                <div className="text-lg font-bold font-display text-emerald-400">
+                  {referralRewardType === "cash" ? `${formatMGA(referralRewardValue)}` : `${referralRewardValue}%`}
+                </div>
+              </div>
+              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Achat minimum</div>
+                <div className="text-lg font-bold font-display text-violet-300">{formatMGA(referralMinOrder)}</div>
+              </div>
+              <div className="rounded-xl p-4 bg-orange-500/5 border border-orange-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Utilisations max</div>
+                <div className="text-lg font-bold font-display text-orange-300">{referralUsesLimit}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl p-4 bg-muted/10 border border-border/40">
+                <div className="text-sm font-semibold mb-3">Paramètres de lancement</div>
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>Programme actif</span>
+                    <input type="checkbox" checked={referralEnabled} onChange={e => setReferralEnabled(e.target.checked)} />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>Type de récompense</span>
+                    <select value={referralRewardType} onChange={e => setReferralRewardType(e.target.value as "cash" | "discount")} className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent w-40">
+                      <option value="discount">Réduction</option>
+                      <option value="cash">Cashback</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>Valeur de la récompense</span>
+                    <Input type="number" value={referralRewardValue} onChange={e => setReferralRewardValue(Number(e.target.value))} />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>Montant minimum</span>
+                    <Input type="number" value={referralMinOrder} onChange={e => setReferralMinOrder(Number(e.target.value))} />
+                  </label>
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>Nombre max de parrainages</span>
+                    <Input type="number" value={referralUsesLimit} onChange={e => setReferralUsesLimit(Number(e.target.value))} />
+                  </label>
+                </div>
+              </div>
+              <div className="rounded-xl p-4 bg-muted/10 border border-border/40">
+                <div className="text-sm font-semibold mb-3">Recommandation produit</div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>• Récompense simple, lisible et immédiate</li>
+                  <li>• Partage via lien ou code personnel</li>
+                  <li>• Suivi des gains dans le compte utilisateur</li>
+                  <li>• Anti-abus : limite par compte et commande minimum</li>
+                </ul>
+                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-200">
+                  Pour un lancement, je recommande une réduction plutôt qu’un cashback: plus simple à comprendre et à activer.
+                </div>
               </div>
             </div>
           </Card>
