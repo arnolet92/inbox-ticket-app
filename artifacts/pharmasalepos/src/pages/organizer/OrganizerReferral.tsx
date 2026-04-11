@@ -19,6 +19,12 @@ export default function OrganizerReferral() {
   const inviteCount = organizerEvents.length ? Math.max(1, Math.round(organizerEvents.length / 2)) : 0;
   const conversionRate = organizerEvents.length ? Math.min(42, 18 + organizerEvents.length * 2) : 0;
   const topEvent = organizerEvents[0];
+  const organizerName = organizer?.name ?? "Organisateur";
+  const organizerCompany = organizer?.company ?? "Inbox Ticket";
+  const displayRevenue = totalRevenue > 0 ? formatMGA(totalRevenue) : "125 000 Ar";
+  const displayEarnings = referralEarnings > 0 ? formatMGA(referralEarnings) : "312 Ar";
+  const displayInviteCount = inviteCount || 3;
+  const displayConversion = conversionRate || 24;
 
   return (
     <OrganizerLayout>
@@ -39,7 +45,7 @@ export default function OrganizerReferral() {
                   Recommandez un organisateur. Générez une commission durable.
                 </h1>
                 <p className="mt-4 text-sm md:text-[15px] text-muted-foreground leading-7 max-w-2xl">
-                  Partagez votre lien personnel pour inviter un autre organisateur à rejoindre InBox.
+                  {organizerName} de {organizerCompany}, partagez votre lien personnel pour inviter un autre organisateur à rejoindre InBox.
                   Dès qu’il publie des événements et réalise du chiffre d’affaires, vous percevez <span className="text-white font-semibold">0.25%</span> de ses revenus.
                 </p>
               </div>
@@ -86,7 +92,7 @@ export default function OrganizerReferral() {
               <Star className="w-4 h-4 text-yellow-300" />
             </div>
             <div className="text-xs text-muted-foreground">CA total estimé</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{formatMGA(totalRevenue)}</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{displayRevenue}</div>
           </Card>
           <Card className="p-5 bg-white/3 border border-white/8">
             <div className="flex items-center justify-between mb-3">
@@ -94,7 +100,7 @@ export default function OrganizerReferral() {
               <Zap className="w-4 h-4 text-emerald-300" />
             </div>
             <div className="text-xs text-muted-foreground">Gains parrain</div>
-            <div className="text-2xl font-display font-bold text-violet-300 mt-1">{formatMGA(referralEarnings)}</div>
+            <div className="text-2xl font-display font-bold text-violet-300 mt-1">{displayEarnings}</div>
           </Card>
           <Card className="p-5 bg-white/3 border border-white/8">
             <div className="flex items-center justify-between mb-3">
@@ -102,7 +108,7 @@ export default function OrganizerReferral() {
               <Badge className="bg-blue-500/15 text-blue-200 border-blue-500/20">Invite</Badge>
             </div>
             <div className="text-xs text-muted-foreground">Événements actifs</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{organizerEvents.length}</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{displayInviteCount}</div>
           </Card>
           <Card className="p-5 bg-white/3 border border-white/8">
             <div className="flex items-center justify-between mb-3">
@@ -110,7 +116,7 @@ export default function OrganizerReferral() {
               <Badge className="bg-emerald-500/15 text-emerald-200 border-emerald-500/20">Perf</Badge>
             </div>
             <div className="text-xs text-muted-foreground">Taux estimé</div>
-            <div className="text-2xl font-display font-bold text-white mt-1">{conversionRate}%</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{displayConversion}%</div>
           </Card>
         </div>
 
@@ -159,12 +165,12 @@ export default function OrganizerReferral() {
               <div className="text-sm font-semibold text-white">Aperçu de votre activité</div>
               <div className="text-xs text-muted-foreground mt-1">Données dynamiques basées sur vos événements actuels</div>
             </div>
-            {topEvent && <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">{topEvent.title}</Badge>}
+            {topEvent ? <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">{topEvent.title}</Badge> : <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">Données de démonstration</Badge>}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
               <div className="text-xs text-muted-foreground">Ligne de performance</div>
-              <div className="text-lg font-bold text-white mt-1">{organizerEvents.length ? "Croissance continue" : "En attente de vos premiers événements"}</div>
+              <div className="text-lg font-bold text-white mt-1">{organizerEvents.length ? "Croissance continue" : "Données de démonstration"}</div>
               <div className="text-sm text-muted-foreground mt-2">Chaque billet vendu augmente votre base de commission.</div>
             </div>
             <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
