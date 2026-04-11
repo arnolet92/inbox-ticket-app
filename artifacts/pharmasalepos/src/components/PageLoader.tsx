@@ -1,6 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
+const LOADER_ROUTES = [
+  "/",
+  "/admin",
+  "/auth",
+  "/mes-billets",
+  "/organizer/login",
+  "/organizer/events",
+  "/agent-vente",
+  "/agent-scan",
+];
+
+function shouldShowLoader(path: string): boolean {
+  return LOADER_ROUTES.includes(path);
+}
+
 const WORD1 = "InBox";
 const WORD2 = "Ticket";
 
@@ -13,13 +28,15 @@ export function PageLoader() {
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    trigger();
+    if (shouldShowLoader(location)) trigger();
   }, []);
 
   useEffect(() => {
     if (prevLocation.current !== location) {
       prevLocation.current = location;
-      trigger();
+      if (shouldShowLoader(location)) {
+        trigger();
+      }
     }
   }, [location]);
 
