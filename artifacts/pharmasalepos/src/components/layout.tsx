@@ -261,6 +261,7 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
 
   const links = [
     { href: "/organizer/events", label: "Mes Événements", icon: Calendar },
+    { href: "/organizer/referral", label: "Parrainage", icon: Users },
   ];
 
   return (

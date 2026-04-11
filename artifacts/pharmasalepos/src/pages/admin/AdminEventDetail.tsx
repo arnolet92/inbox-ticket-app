@@ -200,10 +200,6 @@ export default function AdminEventDetail() {
   const [shopCatFilter, setShopCatFilter] = useState<string>("all");
   const [expenses, setExpenses] = useState<Expense[]>(EXPENSES_INITIAL);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
-  const [referralEnabled, setReferralEnabled] = useState(true);
-  const [referralRewardPct, setReferralRewardPct] = useState(0.25);
-  const [referralCode, setReferralCode] = useState("INBOX-2026");
-  const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/organizer/signup?ref=${encodeURIComponent(referralCode)}`;
   const [settlementStatus, setSettlementStatus] = useState<"pending" | "paid">("pending");
   const [settlementRef, setSettlementRef] = useState("");
   const [settlementDate, setSettlementDate] = useState("");
@@ -638,7 +634,6 @@ export default function AdminEventDetail() {
     { key: "orders",    label: "Commandes",       icon: <ShoppingCart className="w-4 h-4" /> },
     // { key: "shop",      label: "Shop",            icon: <Store className="w-4 h-4" /> },
     { key: "staff",     label: "Staff",           icon: <Users className="w-4 h-4" /> },
-    { key: "referral",  label: "Parrainage",      icon: <Users className="w-4 h-4" /> },
     { key: "vente",     label: "Vente",           icon: <ShoppingBag className="w-4 h-4" /> },
     { key: "scan",      label: "Scan billet",     icon: <ScanLine className="w-4 h-4" /> },
   ];
@@ -898,108 +893,6 @@ export default function AdminEventDetail() {
         </div>
       )}
 
-      {activeTab === "referral" && (
-        <div className="space-y-6">
-          <Card className="p-6 border border-emerald-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(168,85,247,0.15),_transparent_24%),linear-gradient(135deg,rgba(3,7,18,0.96),rgba(10,10,18,0.9))] shadow-2xl shadow-emerald-950/20">
-            <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
-              <div className="space-y-3 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-200 text-xs font-semibold uppercase tracking-[0.18em]">
-                  <Users className="w-3.5 h-3.5" /> Parrainage organisateur
-                </div>
-                <div>
-                  <h3 className="font-display text-2xl md:text-3xl font-bold leading-tight text-white">
-                    Développez votre réseau d’organisateurs avec un programme de recommandation premium
-                  </h3>
-                  <p className="text-sm md:text-[15px] text-muted-foreground mt-3 leading-7">
-                    Recommandez InBox à un autre organisateur, invitez-le avec votre lien personnel et suivez ses performances dans une logique simple,
-                    transparente et haut de gamme.
-                  </p>
-                </div>
-              </div>
-              <span className={`px-4 py-2 rounded-full text-xs font-bold border backdrop-blur ${referralEnabled ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-muted/20 text-muted-foreground border-border/40"}`}>
-                {referralEnabled ? "Programme actif" : "Programme désactivé"}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr_0.9fr] gap-4 mb-5">
-              <div className="rounded-3xl p-5 md:p-6 bg-black/30 border border-white/8 shadow-inner">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-2">Lien de parrainage</div>
-                <div className="font-mono text-xs md:text-sm text-emerald-300 break-all bg-black/40 border border-emerald-500/10 rounded-2xl p-4 leading-6">
-                  {referralLink}
-                </div>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Button size="sm" variant="accent" onClick={() => navigator.clipboard?.writeText(referralLink)}>Copier le lien</Button>
-                  <Button size="sm" variant="outline" className="text-muted-foreground">Partager</Button>
-                </div>
-              </div>
-
-              <div className="rounded-3xl p-5 md:p-6 bg-violet-500/8 border border-violet-500/15">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-2">Commission du parrain</div>
-                <div className="flex items-end gap-2">
-                  <div className="text-4xl md:text-5xl font-display font-bold text-violet-300">{referralRewardPct}%</div>
-                  <div className="text-xs text-muted-foreground pb-2">du chiffre d’affaires</div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-4 leading-6">
-                  Si l’organisateur invité publie des événements, le parrain perçoit automatiquement <span className="text-white font-semibold">0.25%</span> de ses revenus générés sur InBox.
-                </p>
-              </div>
-
-              <div className="rounded-3xl p-5 md:p-6 bg-emerald-500/6 border border-emerald-500/15">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-2">Résumé opérationnel</div>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-xs font-bold">1</div>
-                    <div className="text-muted-foreground">Vous partagez un lien unique dédié à votre profil organisateur.</div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-xs font-bold">2</div>
-                    <div className="text-muted-foreground">Un nouvel organisateur crée son compte via votre lien et commence à publier.</div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-xs font-bold">3</div>
-                    <div className="text-muted-foreground">Vous recevez <span className="text-white font-semibold">0.25% du CA</span> de ses événements, sans friction.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="rounded-3xl p-5 md:p-6 bg-white/3 border border-white/8">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div>
-                    <div className="text-sm font-semibold text-white">Paramètres du programme</div>
-                    <div className="text-xs text-muted-foreground mt-1">Activation, code et visibilité du parrainage</div>
-                  </div>
-                  <input type="checkbox" checked={referralEnabled} onChange={e => setReferralEnabled(e.target.checked)} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Code parrain</div>
-                    <div className="font-mono text-white text-sm">{referralCode}</div>
-                  </div>
-                  <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Statut</div>
-                    <div className={`text-sm font-semibold ${referralEnabled ? "text-emerald-300" : "text-muted-foreground"}`}>{referralEnabled ? "Visible dans l’espace organisateur" : "Masqué"}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-3xl p-5 md:p-6 bg-black/25 border border-white/8">
-                <div className="text-sm font-semibold text-white mb-3">Texte de présentation recommandé</div>
-                <p className="text-sm leading-7 text-muted-foreground">
-                  Offrez aux organisateurs un levier de croissance clair : partagez votre lien, invitez un autre professionnel à rejoindre la plateforme,
-                  et recevez une commission récurrente sur les événements qu’il publie.
-                </p>
-                <div className="mt-4 rounded-2xl border border-violet-500/15 bg-violet-500/8 p-4">
-                  <p className="text-sm leading-7 text-white/90">
-                    Chaque organisateur recommandé devient une opportunité long terme : s’il vend des billets, votre parrainage génère de la valeur.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* ─── FINANCE ─── */}
       {activeTab === "finance" && (

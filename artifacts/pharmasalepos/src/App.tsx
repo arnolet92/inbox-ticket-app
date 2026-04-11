@@ -48,6 +48,7 @@ function Router() {
       <Route path="/organizer/login" component={OrganizerLogin} />
       <Route path="/organizer/events" component={OrganizerEvents} />
       <Route path="/organizer/events/:id" component={OrganizerEventDetail} />
+      <Route path="/organizer/referral" component={() => null} />
       <Route path="/payment-failure" component={PaymentFailure} />
       <Route path="/admin/entreprise" component={AdminCompanyInfo} />
       <Route component={NotFound} />
