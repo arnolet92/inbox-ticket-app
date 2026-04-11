@@ -37,7 +37,14 @@ function QRModal({ order, qrValue, onClose }: { order: Order; qrValue: string; o
 
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const shareUrl = `${window.location.origin}${base}/billet?code=${encodeURIComponent(qrValue)}`;
-  const shareMsg = encodeURIComponent(`🎫 Mon billet pour ${order.event?.title ?? "l'événement"} — Inbox Ticket\nCommande #${orderId}\n${shareUrl}`);
+  const shareMsg = encodeURIComponent(
+    `🎫 Mon billet — ${order.event?.title ?? "Inbox Ticket"}\n` +
+    (eventDate ? `📅 ${format(eventDate, "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` : "") +
+    `🔑 Clé : ${ticketKey}\n` +
+    `✅ Confirmation : ${confirmCode}\n` +
+    `🎟️ N° billet : ${ticketNumber}\n` +
+    `🔗 ${shareUrl}`
+  );
 
   const [showLinkFor, setShowLinkFor] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
@@ -50,19 +57,140 @@ function QRModal({ order, qrValue, onClose }: { order: Order; qrValue: string; o
     { label: "TikTok",    color: "#010101", icon: "https://cdn.simpleicons.org/tiktok/ffffff",    link: null },
   ];
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const svg = modalQrRef.current?.querySelector("svg");
     if (!svg) return;
+
+    // 1. Convert QR SVG → Image
     const svgData = new XMLSerializer().serializeToString(svg);
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement("canvas"); c.width = 300; c.height = 300;
-      const ctx = c.getContext("2d")!; ctx.fillStyle = "#fff"; ctx.fillRect(0,0,300,300);
-      ctx.drawImage(img, 0, 0, 300, 300);
-      const a = document.createElement("a"); a.download = `billet-inbox-${orderId}.png`;
-      a.href = c.toDataURL("image/png"); a.click();
+    const qrImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+    });
+
+    // 2. Canvas dimensions
+    const W = 420, PAD = 28;
+    const QR_SIZE = 220;
+    const H = 620;
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d")!;
+
+    // Helper: rounded rect
+    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
     };
-    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+
+    // ── Background ──
+    rr(0, 0, W, H, 20);
+    ctx.fillStyle = "#0b1610";
+    ctx.fill();
+
+    // ── Top green gradient bar ──
+    const topGrad = ctx.createLinearGradient(0, 0, W, 0);
+    topGrad.addColorStop(0, "#16a34a");
+    topGrad.addColorStop(1, "#15803d");
+    ctx.fillStyle = topGrad;
+    rr(0, 0, W, 6, 0); ctx.fill();
+
+    // ── INBOX TICKET header ──
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#22c55e";
+    ctx.font = "bold 13px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText("INBOX  TICKET", W / 2, 32);
+
+    // ── Event title ──
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 17px ui-sans-serif, system-ui, sans-serif";
+    const title = order.event?.title ?? "Événement";
+    ctx.fillText(title.length > 40 ? title.slice(0, 38) + "…" : title, W / 2, 58);
+
+    // ── Date ──
+    if (eventDate) {
+      ctx.fillStyle = "#86efac";
+      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      ctx.fillText(
+        format(eventDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }),
+        W / 2, 78
+      );
+    }
+
+    // ── Dashed separator ──
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = "#1f4a2f";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, 96); ctx.lineTo(W - PAD, 96); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── QR code white frame ──
+    const qrX = (W - QR_SIZE) / 2;
+    const qrY = 112;
+    rr(qrX - 14, qrY - 14, QR_SIZE + 28, QR_SIZE + 28, 16);
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    ctx.drawImage(qrImg, qrX, qrY, QR_SIZE, QR_SIZE);
+
+    // ── Dashed separator ──
+    const sep2Y = qrY + QR_SIZE + 26;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = "#1f4a2f";
+    ctx.beginPath(); ctx.moveTo(PAD, sep2Y); ctx.lineTo(W - PAD, sep2Y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Code boxes ──
+    const codes = [
+      { label: "Clé", value: ticketKey },
+      { label: "Confirmation", value: confirmCode },
+      { label: "N° billet", value: ticketNumber },
+    ];
+    const boxY = sep2Y + 14;
+    const boxW = (W - PAD * 2 - 8 * 2) / 3;
+    codes.forEach((code, i) => {
+      const bx = PAD + i * (boxW + 8);
+      rr(bx, boxY, boxW, 52, 10);
+      ctx.fillStyle = "#0f2218"; ctx.fill();
+      ctx.strokeStyle = "#1f4a2f"; ctx.lineWidth = 1; ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#6b9e7a";
+      ctx.font = "9px ui-sans-serif, system-ui, sans-serif";
+      ctx.fillText(code.label.toUpperCase(), bx + boxW / 2, boxY + 16);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px ui-monospace, monospace";
+      ctx.fillText(code.value, bx + boxW / 2, boxY + 36);
+    });
+
+    // ── Order number ──
+    const orderY = boxY + 52 + 18;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#6b9e7a";
+    ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(`Commande  #${orderId}`, W / 2, orderY);
+
+    // ── QR value (small) ──
+    ctx.fillStyle = "#2a4a35";
+    ctx.font = "8px ui-monospace, monospace";
+    ctx.fillText(qrValue.length > 50 ? qrValue.slice(0, 48) + "…" : qrValue, W / 2, orderY + 18);
+
+    // ── Footer ──
+    ctx.fillStyle = "#1f4a2f";
+    ctx.fillRect(0, H - 36, W, 36);
+    ctx.fillStyle = "#22c55e";
+    ctx.font = "bold 11px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🔒  Billet sécurisé — Inbox Ticket", W / 2, H - 16);
+
+    // ── Download ──
+    const a = document.createElement("a");
+    a.download = `billet-inbox-${orderId}.png`;
+    a.href = c.toDataURL("image/png");
+    a.click();
   };
 
   const handlePrint = () => {
