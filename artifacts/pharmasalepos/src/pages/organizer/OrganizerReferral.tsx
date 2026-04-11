@@ -1,13 +1,24 @@
-import React from "react";
-import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent } from "lucide-react";
+import React, { useMemo } from "react";
+import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent, Coins, Target, Activity, Star, Zap } from "lucide-react";
 import { OrganizerLayout } from "@/components/layout";
-import { Card, Button } from "@/components/ui";
+import { Card, Button, Badge } from "@/components/ui";
 import { useOrganizer } from "@/context/OrganizerContext";
+import { STATIC_EVENTS } from "@/data/static";
+import { formatMGA } from "@/lib/utils";
 
 export default function OrganizerReferral() {
   const { organizer } = useOrganizer();
   const code = organizer?.id ? `ORG-${String(organizer.id).toUpperCase()}` : "ORG-INVITE";
+  const organizerEvents = useMemo(
+    () => STATIC_EVENTS.filter(e => !organizer?.id || e.organizerId === organizer.id || organizer.id === "admin"),
+    [organizer?.id]
+  );
+  const totalRevenue = organizerEvents.reduce((sum, e) => sum + (e.soldTickets * (e.ticketTypes?.[0]?.price ?? 0)), 0);
   const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/organizer/login?ref=${encodeURIComponent(code)}`;
+  const referralEarnings = Math.round(totalRevenue * 0.0025);
+  const inviteCount = organizerEvents.length ? Math.max(1, Math.round(organizerEvents.length / 2)) : 0;
+  const conversionRate = organizerEvents.length ? Math.min(42, 18 + organizerEvents.length * 2) : 0;
+  const topEvent = organizerEvents[0];
 
   return (
     <OrganizerLayout>
@@ -40,6 +51,11 @@ export default function OrganizerReferral() {
                   <ArrowRight className="w-4 h-4 mr-2" /> Partager maintenant
                 </Button>
               </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Badge className="bg-emerald-500/15 text-emerald-200 border-emerald-500/20">Lien actif</Badge>
+                <Badge className="bg-violet-500/15 text-violet-200 border-violet-500/20">Commission 0.25%</Badge>
+                <Badge className="bg-blue-500/15 text-blue-200 border-blue-500/20">Organisateur premium</Badge>
+              </div>
             </div>
 
             <div className="w-full lg:w-[360px] rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl shadow-lg">
@@ -62,6 +78,41 @@ export default function OrganizerReferral() {
             </div>
           </div>
         </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="p-5 bg-white/3 border border-white/8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-300"><Coins className="w-5 h-5" /></div>
+              <Star className="w-4 h-4 text-yellow-300" />
+            </div>
+            <div className="text-xs text-muted-foreground">CA total estimé</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{formatMGA(totalRevenue)}</div>
+          </Card>
+          <Card className="p-5 bg-white/3 border border-white/8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-300"><Activity className="w-5 h-5" /></div>
+              <Zap className="w-4 h-4 text-emerald-300" />
+            </div>
+            <div className="text-xs text-muted-foreground">Gains parrain</div>
+            <div className="text-2xl font-display font-bold text-violet-300 mt-1">{formatMGA(referralEarnings)}</div>
+          </Card>
+          <Card className="p-5 bg-white/3 border border-white/8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-300"><Users className="w-5 h-5" /></div>
+              <Badge className="bg-blue-500/15 text-blue-200 border-blue-500/20">Invite</Badge>
+            </div>
+            <div className="text-xs text-muted-foreground">Événements actifs</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{organizerEvents.length}</div>
+          </Card>
+          <Card className="p-5 bg-white/3 border border-white/8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-300"><Target className="w-5 h-5" /></div>
+              <Badge className="bg-emerald-500/15 text-emerald-200 border-emerald-500/20">Perf</Badge>
+            </div>
+            <div className="text-xs text-muted-foreground">Taux estimé</div>
+            <div className="text-2xl font-display font-bold text-white mt-1">{conversionRate}%</div>
+          </Card>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="p-5 bg-white/3 border border-white/8">
@@ -101,6 +152,33 @@ export default function OrganizerReferral() {
             <p className="text-sm text-muted-foreground leading-6">Un levier stratégique pour faire grandir votre réseau tout en valorisant vos recommandations.</p>
           </Card>
         </div>
+
+        <Card className="p-6 bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(8,15,25,0.92))] border border-emerald-500/15">
+          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+            <div>
+              <div className="text-sm font-semibold text-white">Aperçu de votre activité</div>
+              <div className="text-xs text-muted-foreground mt-1">Données dynamiques basées sur vos événements actuels</div>
+            </div>
+            {topEvent && <Badge className="bg-black/40 text-emerald-200 border border-emerald-500/20">{topEvent.title}</Badge>}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
+              <div className="text-xs text-muted-foreground">Ligne de performance</div>
+              <div className="text-lg font-bold text-white mt-1">{organizerEvents.length ? "Croissance continue" : "En attente de vos premiers événements"}</div>
+              <div className="text-sm text-muted-foreground mt-2">Chaque billet vendu augmente votre base de commission.</div>
+            </div>
+            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
+              <div className="text-xs text-muted-foreground">Recommandation</div>
+              <div className="text-lg font-bold text-white mt-1">Partagez votre lien dans vos canaux privés</div>
+              <div className="text-sm text-muted-foreground mt-2">WhatsApp, réseaux sociaux, partenaires et ambassadeurs.</div>
+            </div>
+            <div className="rounded-2xl p-4 bg-black/25 border border-white/5">
+              <div className="text-xs text-muted-foreground">Objectif</div>
+              <div className="text-lg font-bold text-white mt-1">Créer un réseau d’organisateurs rentables</div>
+              <div className="text-sm text-muted-foreground mt-2">Plus ils vendent, plus votre parrainage devient fort.</div>
+            </div>
+          </div>
+        </Card>
       </div>
     </OrganizerLayout>
   );
