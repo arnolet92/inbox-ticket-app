@@ -22,6 +22,7 @@ import OrganizerLogin from "@/pages/organizer/OrganizerLogin";
 import OrganizerEvents from "@/pages/organizer/OrganizerEvents";
 import OrganizerEventDetail from "@/pages/organizer/OrganizerEventDetail";
 import PaymentFailure from "@/pages/PaymentFailure";
+import AdminCompanyInfo from "@/pages/admin/AdminCompanyInfo";
 import NotFound from "@/pages/not-found";
 import { PageLoader } from "@/components/PageLoader";
 
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/organizer/events" component={OrganizerEvents} />
       <Route path="/organizer/events/:id" component={OrganizerEventDetail} />
       <Route path="/payment-failure" component={PaymentFailure} />
+      <Route path="/admin/entreprise" component={AdminCompanyInfo} />
       <Route component={NotFound} />
     </Switch>
   );
