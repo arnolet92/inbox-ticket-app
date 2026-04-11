@@ -271,8 +271,17 @@ export default function OrganizerEventDetail() {
   const ticketSalesData = useMemo(() => ticketTypes.map(tt => ({ name: tt.name, vendus: tt.soldCount ?? 0, restants: tt.quantity - (tt.soldCount ?? 0), revenus: (tt.soldCount ?? 0) * tt.price })), [ticketTypes]);
   const revenueByMethod = useMemo(() => ["orange_money", "mvola", "mastercard", "especes"].map(method => { const mo = confirmedOrders.filter(o => o.paymentMethod === method); return { method, amount: mo.reduce((s, o) => s + o.totalAmount, 0), count: mo.length }; }), [confirmedOrders]);
   const INBOX_COMMISSION_PCT = 5;
-  const commissionAmt  = Math.round(totalRevenue * INBOX_COMMISSION_PCT / 100);
-  const netToOrganizer = totalRevenue - commissionAmt;
+  const settlementData = revenueByMethod.map(({ method, amount }) => {
+    const commission = Math.round(amount * INBOX_COMMISSION_PCT / 100);
+    const isEspeces  = method === "especes";
+    return {
+      method, amount, commission,
+      net:       isEspeces ? commission : Math.max(0, amount - commission),
+      direction: isEspeces ? "org_to_inbox" as const : "inbox_to_org" as const,
+    };
+  });
+  const totalToOrgNet          = settlementData.filter(d => d.direction === "inbox_to_org").reduce((s, d) => s + d.net, 0);
+  const totalEspecesCommission = settlementData.filter(d => d.direction === "org_to_inbox").reduce((s, d) => s + d.net, 0);
 
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
   const paidExpenses = expenses.filter(e => e.status === "paid").reduce((s, e) => s + e.amount, 0);
@@ -534,31 +543,69 @@ export default function OrganizerEventDetail() {
             </div>
           </Card>
 
-          {/* ── Règlement organisateur (lecture seule) ── */}
+          {/* ── Règlement par mode de paiement (lecture seule) ── */}
           <Card className="p-6 border border-violet-500/20 bg-gradient-to-br from-violet-950/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
               <div>
                 <h3 className="font-bold font-display text-lg flex items-center gap-2">
                   <Wallet className="w-5 h-5 text-violet-400" /> Règlement à recevoir
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Commission InBox ({INBOX_COMMISSION_PCT}%) déduite du CA total</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Commission InBox {INBOX_COMMISSION_PCT}% par mode de paiement</p>
               </div>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                <Clock className="w-3.5 h-3.5" /> En attente de règlement
-              </span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
-                <div className="text-xs text-muted-foreground mb-1">CA collecté</div>
-                <div className="text-xl font-bold font-display text-accent">{formatMGA(totalRevenue)}</div>
+
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-4">
+              <span className="flex items-center gap-1.5 text-emerald-400"><ArrowDownCircle className="w-3.5 h-3.5" /> InBox vous verse (net des paiements digitaux)</span>
+              <span className="flex items-center gap-1.5 text-orange-400"><ArrowUpCircle className="w-3.5 h-3.5" /> Vous versez à InBox (commission sur espèces)</span>
+            </div>
+
+            <div className="space-y-2">
+              {settlementData.map(({ method, amount, commission, net, direction }) => {
+                const dirColor = direction === "inbox_to_org" ? "text-emerald-400" : "text-orange-400";
+                return (
+                  <div key={method} className={`rounded-xl border p-4 bg-muted/10 ${direction === "inbox_to_org" ? "border-emerald-500/15" : "border-orange-500/20"}`}>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <div className="w-32">
+                        <span className="font-bold text-sm" style={{ color: methodColors[method] }}>{methodLabels[method]}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm flex-wrap flex-1">
+                        <span className="text-muted-foreground">{formatMGA(amount)}</span>
+                        <span className="text-muted-foreground text-xs">CA</span>
+                        <Minus className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-violet-400">{formatMGA(commission)}</span>
+                        <span className="text-muted-foreground text-xs">comm.</span>
+                        <span className="text-muted-foreground">=</span>
+                        <span className={`font-bold flex items-center gap-1 ${dirColor}`}>
+                          {direction === "inbox_to_org" ? <ArrowDownCircle className="w-3.5 h-3.5" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
+                          {formatMGA(net)}
+                        </span>
+                        {net === 0 ? (
+                          <span className="text-xs text-muted-foreground italic">Néant</span>
+                        ) : (
+                          <span className={`text-xs ${dirColor} opacity-70`}>
+                            {direction === "inbox_to_org" ? "InBox → vous" : "Vous → InBox"}
+                          </span>
+                        )}
+                      </div>
+                      <span className="flex items-center gap-1 text-xs font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/25 px-2.5 py-1 rounded-full">
+                        <Clock className="w-3 h-3" /> En attente
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-border/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Total net à recevoir d'InBox</div>
+                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(totalToOrgNet)}</div>
+                <div className="text-xs text-muted-foreground mt-1">Orange Money + MVola + Mastercard</div>
               </div>
-              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/20">
-                <div className="text-xs text-muted-foreground mb-1">Commission InBox ({INBOX_COMMISSION_PCT}%)</div>
-                <div className="text-xl font-bold font-display text-violet-400">- {formatMGA(commissionAmt)}</div>
-              </div>
-              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/20 col-span-2 md:col-span-1">
-                <div className="text-xs text-muted-foreground mb-1">Net à recevoir</div>
-                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(netToOrganizer)}</div>
+              <div className="rounded-xl p-4 bg-orange-500/5 border border-orange-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Commission espèces à verser à InBox</div>
+                <div className="text-2xl font-bold font-display text-orange-400">{formatMGA(totalEspecesCommission)}</div>
+                <div className="text-xs text-muted-foreground mt-1">Sur les encaissements cash</div>
               </div>
             </div>
           </Card>

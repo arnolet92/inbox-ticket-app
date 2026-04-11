@@ -232,9 +232,15 @@ export default function AdminEventDetail() {
   }>>([]);
 
   const [inboxCommissionPct, setInboxCommissionPct] = useState(5);
-  const [settlementStatus, setSettlementStatus] = useState<"pending" | "paid">("pending");
-  const [settlementRef, setSettlementRef] = useState("");
-  const [settlementDate, setSettlementDate] = useState("");
+  const [settlementRows, setSettlementRows] = useState<Record<string, { status: "pending" | "paid"; ref: string; date: string }>>({
+    orange_money: { status: "pending", ref: "", date: "" },
+    mvola:        { status: "pending", ref: "", date: "" },
+    mastercard:   { status: "pending", ref: "", date: "" },
+    especes:      { status: "pending", ref: "", date: "" },
+  });
+  const [settlingMethod, setSettlingMethod] = useState<string | null>(null);
+  const [settlingRef, setSettlingRef] = useState("");
+  const [settlingDate, setSettlingDate] = useState("");
 
   const [ordSearch,    setOrdSearch]    = useState("");
   const [ordKey,       setOrdKey]       = useState("");
@@ -347,8 +353,20 @@ export default function AdminEventDetail() {
     }),
   [confirmedOrders]);
 
-  const commissionAmt  = Math.round(totalRevenue * inboxCommissionPct / 100);
-  const netToOrganizer = totalRevenue - commissionAmt;
+  const settlementData = revenueByMethod.map(({ method, amount }) => {
+    const commission = Math.round(amount * inboxCommissionPct / 100);
+    const isEspeces  = method === "especes";
+    return {
+      method,
+      amount,
+      commission,
+      net:       isEspeces ? commission : Math.max(0, amount - commission),
+      direction: isEspeces ? "org_to_inbox" as const : "inbox_to_org" as const,
+      ...(settlementRows[method] ?? { status: "pending" as const, ref: "", date: "" }),
+    };
+  });
+  const totalToOrgNet        = settlementData.filter(d => d.direction === "inbox_to_org").reduce((s, d) => s + d.net, 0);
+  const totalEspecesCommission = settlementData.filter(d => d.direction === "org_to_inbox").reduce((s, d) => s + d.net, 0);
 
   const totalExpenses  = expenses.reduce((s, e) => s + e.amount, 0);
   const paidExpenses   = expenses.filter((e) => e.status === "paid").reduce((s, e) => s + e.amount, 0);
@@ -743,96 +761,130 @@ export default function AdminEventDetail() {
             </div>
           </Card>
 
-          {/* ── Règlement organisateur ── */}
+          {/* ── Règlement organisateur par mode de paiement ── */}
           <Card className="p-6 border border-violet-500/20 bg-gradient-to-br from-violet-950/20 to-transparent">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
               <div>
                 <h3 className="font-bold font-display text-lg flex items-center gap-2">
                   <Wallet className="w-5 h-5 text-violet-400" /> Règlement organisateur
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Commission InBox déduite du CA total</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Détail par mode de paiement — commission par virement</p>
               </div>
-              <div className="flex items-center gap-2">
-                {settlementStatus === "paid" ? (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <CheckCircle className="w-3.5 h-3.5" /> Réglé
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    <Clock className="w-3.5 h-3.5" /> En attente
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-              <div className="rounded-xl p-4 bg-muted/20 border border-border/40">
-                <div className="text-xs text-muted-foreground mb-1">CA collecté</div>
-                <div className="text-xl font-bold font-display text-accent">{formatMGA(totalRevenue)}</div>
-              </div>
-              <div className="rounded-xl p-4 bg-violet-500/5 border border-violet-500/20">
-                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  Commission InBox
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number" min={0} max={100} step={0.5}
-                    value={inboxCommissionPct}
-                    onChange={e => setInboxCommissionPct(Number(e.target.value))}
-                    className="w-14 bg-transparent border-b border-violet-400/50 text-violet-300 font-bold text-lg text-center focus:outline-none"
-                  />
-                  <span className="text-violet-300 font-bold">%</span>
-                </div>
-                <div className="text-xs text-violet-400 mt-1">{formatMGA(commissionAmt)}</div>
-              </div>
-              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/20 md:col-span-2">
-                <div className="text-xs text-muted-foreground mb-1">Net à verser à l'organisateur</div>
-                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(netToOrganizer)}</div>
-                <div className="text-xs text-muted-foreground mt-1">après déduction de {inboxCommissionPct}% ({formatMGA(commissionAmt)})</div>
+              <div className="flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2">
+                <span className="text-xs text-muted-foreground">Commission InBox</span>
+                <input
+                  type="number" min={0} max={100} step={0.5}
+                  value={inboxCommissionPct}
+                  onChange={e => setInboxCommissionPct(Number(e.target.value))}
+                  className="w-12 bg-transparent text-violet-300 font-bold text-base text-center focus:outline-none border-b border-violet-400/40"
+                />
+                <span className="text-violet-300 font-bold text-sm">%</span>
               </div>
             </div>
 
-            {settlementStatus === "paid" && (settlementRef || settlementDate) && (
-              <div className="mb-4 flex flex-wrap gap-4 text-sm">
-                {settlementDate && <span className="text-muted-foreground">Date : <span className="text-foreground font-medium">{settlementDate}</span></span>}
-                {settlementRef  && <span className="text-muted-foreground">Réf. : <span className="text-foreground font-mono font-medium">{settlementRef}</span></span>}
-              </div>
-            )}
+            {/* Legend */}
+            <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-4">
+              <span className="flex items-center gap-1.5 text-emerald-400"><ArrowDownCircle className="w-3.5 h-3.5" /> InBox verse à l'organisateur (paiements digitaux)</span>
+              <span className="flex items-center gap-1.5 text-orange-400"><ArrowUpCircle className="w-3.5 h-3.5" /> Organisateur verse à InBox (espèces encaissées)</span>
+            </div>
 
-            <div className="flex flex-wrap gap-3">
-              {settlementStatus === "pending" ? (
-                <>
-                  <div className="flex gap-2 items-center flex-wrap">
-                    <input
-                      type="date"
-                      value={settlementDate}
-                      onChange={e => setSettlementDate(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent"
-                    />
-                    <input
-                      type="text" placeholder="Réf. virement…"
-                      value={settlementRef}
-                      onChange={e => setSettlementRef(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-input border border-border text-sm focus:outline-none focus:border-accent w-44"
-                    />
+            <div className="space-y-2">
+              {settlementData.map(({ method, amount, commission, net, direction, status, ref, date }) => {
+                const isPaid     = status === "paid";
+                const isOpening  = settlingMethod === method;
+                const dirColor   = direction === "inbox_to_org" ? "text-emerald-400" : "text-orange-400";
+                const dirBorder  = direction === "inbox_to_org" ? "border-emerald-500/20" : "border-orange-500/20";
+                return (
+                  <div key={method} className={`rounded-xl border p-4 transition-colors ${isPaid ? "bg-emerald-500/5 border-emerald-500/20" : `bg-muted/10 ${dirBorder}`}`}>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+
+                      {/* Mode */}
+                      <div className="flex items-center gap-2 w-36">
+                        <span className="font-bold text-sm" style={{ color: methodColors[method] }}>{methodLabels[method]}</span>
+                      </div>
+
+                      {/* Calcul */}
+                      <div className="flex items-center gap-2 text-sm flex-wrap flex-1">
+                        <span className="text-muted-foreground">{formatMGA(amount)}</span>
+                        <span className="text-muted-foreground text-xs">CA</span>
+                        <Minus className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-violet-400">{formatMGA(commission)}</span>
+                        <span className="text-muted-foreground text-xs">comm.</span>
+                        <span className="text-muted-foreground">=</span>
+                        <span className={`font-bold flex items-center gap-1 ${dirColor}`}>
+                          {direction === "inbox_to_org"
+                            ? <ArrowDownCircle className="w-3.5 h-3.5" />
+                            : <ArrowUpCircle className="w-3.5 h-3.5" />}
+                          {formatMGA(net)}
+                        </span>
+                        <span className={`text-xs ${dirColor} opacity-70`}>
+                          {direction === "inbox_to_org" ? "InBox → organisateur" : "Organisateur → InBox"}
+                        </span>
+                      </div>
+
+                      {/* Statut / Action */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {net === 0 ? (
+                          <span className="text-xs text-muted-foreground italic">Néant</span>
+                        ) : isPaid ? (
+                          <>
+                            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-1 rounded-full">
+                              <CheckCircle className="w-3 h-3" /> Réglé{date ? ` · ${date}` : ""}{ref ? ` · ${ref}` : ""}
+                            </span>
+                            <button
+                              onClick={() => setSettlementRows(prev => ({ ...prev, [method]: { status: "pending", ref: "", date: "" } }))}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+                            >Annuler</button>
+                          </>
+                        ) : isOpening ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input
+                              type="date" value={settlingDate}
+                              onChange={e => setSettlingDate(e.target.value)}
+                              className="px-2 py-1 rounded-lg bg-input border border-border text-xs focus:outline-none focus:border-accent"
+                            />
+                            <input
+                              type="text" placeholder="Réf…" value={settlingRef}
+                              onChange={e => setSettlingRef(e.target.value)}
+                              className="px-2 py-1 rounded-lg bg-input border border-border text-xs w-28 focus:outline-none focus:border-accent"
+                            />
+                            <button
+                              onClick={() => {
+                                setSettlementRows(prev => ({ ...prev, [method]: { status: "paid", ref: settlingRef, date: settlingDate } }));
+                                setSettlingMethod(null); setSettlingRef(""); setSettlingDate("");
+                              }}
+                              className="flex items-center gap-1 text-xs font-semibold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-full hover:bg-emerald-500/30 transition-colors"
+                            ><CheckCircle className="w-3 h-3" /> Confirmer</button>
+                            <button
+                              onClick={() => { setSettlingMethod(null); setSettlingRef(""); setSettlingDate(""); }}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >Annuler</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setSettlingMethod(method); setSettlingRef(""); setSettlingDate(""); }}
+                            className="flex items-center gap-1 text-xs font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/25 px-2.5 py-1 rounded-full hover:bg-amber-500/25 transition-colors"
+                          ><Clock className="w-3 h-3" /> Régler</button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="accent" size="sm"
-                    onClick={() => { if (settlementDate) setSettlementStatus("paid"); }}
-                    className="gap-1.5"
-                  >
-                    <CheckCircle className="w-4 h-4" /> Marquer comme réglé
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => { setSettlementStatus("pending"); setSettlementRef(""); setSettlementDate(""); }}
-                  className="gap-1.5 text-muted-foreground"
-                >
-                  <XCircle className="w-4 h-4" /> Annuler le règlement
-                </Button>
-              )}
+                );
+              })}
+            </div>
+
+            {/* Totaux récap */}
+            <div className="mt-5 pt-4 border-t border-border/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl p-4 bg-emerald-500/5 border border-emerald-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Total à verser à l'organisateur</div>
+                <div className="text-2xl font-bold font-display text-emerald-400">{formatMGA(totalToOrgNet)}</div>
+                <div className="text-xs text-muted-foreground mt-1">Orange Money + MVola + Mastercard (net)</div>
+              </div>
+              <div className="rounded-xl p-4 bg-orange-500/5 border border-orange-500/15">
+                <div className="text-xs text-muted-foreground mb-1">Commission espèces à encaisser</div>
+                <div className="text-2xl font-bold font-display text-orange-400">{formatMGA(totalEspecesCommission)}</div>
+                <div className="text-xs text-muted-foreground mt-1">L'organisateur verse cette commission à InBox</div>
+              </div>
             </div>
           </Card>
         </div>
