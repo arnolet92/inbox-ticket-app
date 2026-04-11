@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, Users, Building2, BookUser, LogOut, Info } from "lucide-react";
+import { Menu, X, LayoutDashboard, Calendar, ShoppingCart, CreditCard, ChevronRight, Ticket, User, Users, Building2, BookUser, LogOut, Info, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganizer } from "@/context/OrganizerContext";
 import { cn } from "@/lib/utils";
@@ -261,7 +261,7 @@ export function OrganizerLayout({ children }: { children: React.ReactNode }) {
 
   const links = [
     { href: "/organizer/events", label: "Mes Événements", icon: Calendar },
-    { href: "/organizer/referral", label: "Parrainage", icon: Users },
+    { href: "/organizer/referral", label: "Parrainage", icon: Sparkles },
   ];
 
   return (
