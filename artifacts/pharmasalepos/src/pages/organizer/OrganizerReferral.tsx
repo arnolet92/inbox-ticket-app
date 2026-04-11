@@ -1,15 +1,34 @@
-import React from "react";
-import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Copy, Sparkles, TrendingUp, Users, ShieldCheck, ArrowRight, BadgePercent, MessageCircle, Send, Instagram, Video } from "lucide-react";
 import { OrganizerLayout } from "@/components/layout";
 import { Card, Button, Badge } from "@/components/ui";
 import { useOrganizer } from "@/context/OrganizerContext";
 
 export default function OrganizerReferral() {
   const { organizer } = useOrganizer();
+  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const name = organizer?.name ?? "Organisateur";
   const company = organizer?.company ?? "InBox Ticket";
   const code = organizer?.id ? `ORG-${String(organizer.id).toUpperCase()}` : "ORG-INVITE";
   const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/organizer/login?ref=${encodeURIComponent(code)}`;
+
+  const shareLinks = useMemo(() => {
+    const text = encodeURIComponent(`Rejoins InBox avec mon lien : ${referralLink}`);
+    const url = encodeURIComponent(referralLink);
+    return {
+      whatsapp: `https://wa.me/?text=${text}`,
+      messenger: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      instagram: referralLink,
+      tiktok: referralLink,
+    };
+  }, [referralLink]);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
 
   const stats = [
     { label: "Commission", value: "0.25%", tone: "emerald" },
@@ -42,13 +61,29 @@ export default function OrganizerReferral() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button variant="accent" onClick={() => navigator.clipboard?.writeText(referralLink)}>
-                  <Copy className="w-4 h-4 mr-2" /> Copier le lien
+                <Button variant="accent" onClick={handleCopy}>
+                  <Copy className="w-4 h-4 mr-2" /> {copied ? "Lien copié" : "Copier le lien"}
                 </Button>
-                <Button variant="outline" className="border-white/10 text-muted-foreground">
+                <Button variant="outline" className="border-white/10 text-muted-foreground" onClick={() => setShareOpen((v) => !v)}>
                   <ArrowRight className="w-4 h-4 mr-2" /> Partager maintenant
                 </Button>
               </div>
+              {shareOpen && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <a href={shareLinks.whatsapp} target="_blank" rel="noreferrer" className="rounded-2xl p-3 bg-green-500/10 border border-green-500/20 text-green-200 text-sm font-semibold flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                  <a href={shareLinks.messenger} target="_blank" rel="noreferrer" className="rounded-2xl p-3 bg-blue-500/10 border border-blue-500/20 text-blue-200 text-sm font-semibold flex items-center gap-2">
+                    <Send className="w-4 h-4" /> Messenger
+                  </a>
+                  <a href={shareLinks.instagram} target="_blank" rel="noreferrer" className="rounded-2xl p-3 bg-pink-500/10 border border-pink-500/20 text-pink-200 text-sm font-semibold flex items-center gap-2">
+                    <Instagram className="w-4 h-4" /> Instagram
+                  </a>
+                  <a href={shareLinks.tiktok} target="_blank" rel="noreferrer" className="rounded-2xl p-3 bg-slate-500/10 border border-slate-500/20 text-slate-200 text-sm font-semibold flex items-center gap-2">
+                    <Video className="w-4 h-4" /> TikTok
+                  </a>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 pt-1">
                 <Badge className="bg-emerald-500/15 text-emerald-200 border-emerald-500/20">Lien actif</Badge>
                 <Badge className="bg-violet-500/15 text-violet-200 border-violet-500/20">Commission 0.25%</Badge>
