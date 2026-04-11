@@ -443,6 +443,70 @@ export function PhoneField({ value, countryCode, onChange, error, required }: Pr
           Numéro valide
         </p>
       )}
+
+      {/* ── Full phone preview ── */}
+      {value.replace(/\D/g, "") && (
+        <div
+          style={{
+            marginTop: 8,
+            borderRadius: 12,
+            border: "1px solid hsl(145 25% 14%)",
+            background: "hsl(145 14% 7%)",
+            display: "flex",
+            alignItems: "center",
+            overflow: "hidden",
+          }}
+        >
+          {/* Left accent bar */}
+          <div
+            style={{
+              width: 3,
+              alignSelf: "stretch",
+              background: isValid
+                ? "linear-gradient(180deg, hsl(145 65% 42%), hsl(160 55% 35%))"
+                : "hsl(145 20% 20%)",
+              flexShrink: 0,
+              transition: "background 300ms",
+            }}
+          />
+
+          <input
+            readOnly
+            tabIndex={-1}
+            value={`${country.dial}${value.replace(/\D/g, "")}`}
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              padding: "9px 14px",
+              fontSize: 13,
+              fontFamily: "monospace",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              color: isValid ? "hsl(145 55% 58%)" : "hsl(145 20% 40%)",
+              cursor: "default",
+              userSelect: "all",
+              transition: "color 300ms",
+            }}
+          />
+
+          {/* Copy hint */}
+          <span
+            style={{
+              paddingRight: 12,
+              fontSize: 10,
+              color: "hsl(145 20% 32%)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              flexShrink: 0,
+              fontWeight: 500,
+            }}
+          >
+            complet
+          </span>
+        </div>
+      )}
     </div>
   );
 }
