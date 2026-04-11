@@ -898,7 +898,7 @@ export default function AdminEventDetail() {
         </div>
       )}
 
-      {activeTab === "staff" && (
+      {activeTab === "referral" && (
         <div className="space-y-6">
           <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 via-transparent to-violet-950/20">
             <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
