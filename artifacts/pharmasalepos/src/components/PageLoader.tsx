@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/router";
 
-const LOADER_ROUTES = [
+const WORD1 = "InBox";
+const WORD2 = "Ticket";
+
+const INITIAL_LOADER_ROUTES = [
   "/",
   "/admin",
   "/auth",
@@ -12,45 +15,49 @@ const LOADER_ROUTES = [
   "/agent-scan",
 ];
 
-function shouldShowLoader(path: string): boolean {
-  return LOADER_ROUTES.includes(path);
-}
-
-const WORD1 = "InBox";
-const WORD2 = "Ticket";
-
 export function PageLoader() {
-  const [location] = useLocation();
+  const router = useRouter();
   const [show, setShow] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const prevLocation = useRef(location);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (shouldShowLoader(location)) trigger();
-  }, []);
-
-  useEffect(() => {
-    if (prevLocation.current !== location) {
-      prevLocation.current = location;
-      if (shouldShowLoader(location)) {
-        trigger();
-      }
-    }
-  }, [location]);
-
-  function trigger() {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
+  function showLoader() {
     if (exitTimer.current) clearTimeout(exitTimer.current);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
     setExiting(false);
     setShow(true);
-
-    hideTimer.current = setTimeout(() => {
-      setExiting(true);
-      exitTimer.current = setTimeout(() => setShow(false), 500);
-    }, 950);
   }
+
+  function hideLoader() {
+    setExiting(true);
+    exitTimer.current = setTimeout(() => setShow(false), 500);
+  }
+
+  useEffect(() => {
+    // Initial page load — show briefly on key routes
+    if (INITIAL_LOADER_ROUTES.includes(router.pathname)) {
+      showLoader();
+      hideTimer.current = setTimeout(hideLoader, 950);
+    }
+
+    // Navigation events — show until page is actually ready
+    const handleStart = () => showLoader();
+    const handleComplete = () => hideLoader();
+    const handleError = () => hideLoader();
+
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleComplete);
+    router.events.on("routeChangeError", handleError);
+
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleComplete);
+      router.events.off("routeChangeError", handleError);
+      if (exitTimer.current) clearTimeout(exitTimer.current);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!show) return null;
 
@@ -86,12 +93,20 @@ export function PageLoader() {
           0%   { transform: translateY(-100%); }
           100% { transform: translateY(100vh); }
         }
+        @keyframes loaderBar {
+          0%   { width: 0%; opacity: 1; }
+          80%  { width: 85%; opacity: 1; }
+          100% { width: 100%; opacity: 0; }
+        }
         .loader-scan {
           animation: scanLine 1.1s ease-in-out 0.1s both;
           pointer-events: none;
         }
         .loader-sub {
           animation: subtlePulse 1.8s ease-in-out infinite;
+        }
+        .loader-bar {
+          animation: loaderBar 2s cubic-bezier(0.4,0,0.2,1) infinite;
         }
       `}</style>
 
@@ -103,6 +118,14 @@ export function PageLoader() {
           top: 0,
         }}
       />
+
+      {/* Progress bar at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: "hsl(145 20% 10%)" }}>
+        <div
+          className="loader-bar h-full rounded-full"
+          style={{ background: "linear-gradient(90deg, hsl(145 70% 45%), hsl(145 70% 60%))" }}
+        />
+      </div>
 
       <div className="flex flex-col items-center gap-2 select-none px-6 w-full max-w-sm sm:max-w-none">
 
