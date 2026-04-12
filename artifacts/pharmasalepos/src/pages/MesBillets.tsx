@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { InboxQRCode } from "@/components/InboxQRCode";
 import { format, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,7 +36,7 @@ function QRModal({ order, qrValue, onClose }: { order: Order; qrValue: string; o
   const orderId = String(order.id).padStart(6, "0");
   const eventDate = order.event?.startDate ? new Date(order.event.startDate) : null;
 
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const base = "/pharmasalepos";
   // Build share URL with all ticket info embedded as query params
   const shareParams = new URLSearchParams({
     code: qrValue,
@@ -397,7 +398,7 @@ function TicketCard({ order }: { order: Order }) {
 
 export default function MesBillets() {
   const { user, logout } = useAuth();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
 
@@ -449,7 +450,7 @@ export default function MesBillets() {
               </div>
               <p className="text-muted-foreground">{allOrders.length} commande{allOrders.length > 1 ? "s" : ""} · {formatMGA(totalSpent)} dépensé{totalSpent > 0 ? "s" : ""}</p>
             </div>
-            <button onClick={() => { logout(); setLocation("/"); }}
+            <button onClick={() => { logout(); router.push("/"); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 text-sm font-semibold transition-all">
               <LogOut className="w-4 h-4" /> Déconnexion
             </button>
